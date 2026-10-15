@@ -54,8 +54,8 @@ const A = [
   S(async () => { C('[data-sx^="members:"]'); await W(() => document.querySelectorAll('.sx-mem').length === 2, 20000); return document.querySelector('.sx-mems').innerText.replace(/\s+/g, ' '); }, { wait: 500, shot: "S2-members.png" }),
   // admin: make a badge from a starter and give it to yourself, then to Bella
   S(async () => {
-    C('[data-sx="go:settings"]'); await W(() => document.querySelector('[data-sx="set:admin"]'), 20000);
-    C('[data-sx="set:admin"]'); await W(() => document.querySelector('.ad-stats'), 20000);
+    await W(() => !document.querySelector('#railAdmin').classList.contains('hidden'), 20000);
+    C('#railAdmin'); await W(() => document.querySelector('#adminPage .ad-stats'), 20000);
     const stats = document.querySelector('.ad-stats').innerText.replace(/\s+/g, ' ');
     C('[data-ad="tab:badges"]'); await W(() => document.querySelector('[data-ad="newbadge"]'));
     C('[data-ad="newbadge"]'); await W(() => document.querySelector('.ad-starters'));
@@ -79,7 +79,7 @@ const A = [
 
 const B = [
   { wait: 17000, js: H + "; return 1" },
-  S(async () => { await signUp("bella@test.local", "bella.b", "Bella"); return "B"; }),
+  S(async () => { await signUp("bella@test.local", "bella.b", "Bella"); return { B: 1, adminTabHidden: document.querySelector('#railAdmin').classList.contains('hidden') }; }),
   S(async () => { await W(() => document.querySelector('.rbtn[data-view=social] .rcount'), 90000); C('[data-sx="go:requests"]'); await W(() => document.querySelector('[data-sx^="accept:"]')); C('[data-sx^="accept:"]'); await W(() => document.querySelector('.sx-dm')); return 'friends'; }),
   // the invite arrives as a message, with a card: join from it
   S(async () => {

@@ -9,6 +9,7 @@ import { CallUI } from "./callui.js";
 import { SocialSettings, applyAppearance } from "./settings.js";
 import { profileCard, statusDialog, applyMotion } from "./profile.js";
 import { Servers, mentionTotal } from "./servers.js";
+import { Admin } from "./admin.js";
 
 let root = null, visible = false, hbTimer = 0, friendsTimer = 0, menuEl = null;
 
@@ -57,6 +58,15 @@ async function boot() {
     friendsTimer = setInterval(() => { if (!document.hidden) loadFriends(); }, 60000);   // presence ages out on its own
   }
   S.booting = false; render();
+  const ra = document.getElementById("railAdmin"); if (ra) ra.classList.toggle("hidden", !(S.me && S.isAdmin));   // the Admin tab: only Skyline's owner
+}
+// the Admin page (its own tab in the sidebar)
+let adminWired = false;
+function showAdmin() {
+  const el = document.getElementById("adminPage"); if (!el) return;
+  if (!S.me || !S.isAdmin) { el.innerHTML = `<p class="sx-none">Admin is only for Skyline's owner.</p>`; return; }
+  if (!adminWired) { adminWired = true; el.addEventListener("click", e => Admin.click(e)); el.addEventListener("input", e => Admin.input(e)); }
+  Admin.mount(el, () => reloadMe());
 }
 async function reloadMe() { const me = await api.rpc("my_profile"); S.me = me && me[0] || S.me; renderSide(); if (S.panel) renderPanel(); }
 new MutationObserver(() => { clearTimeout(reloadMe.t); reloadMe.t = setTimeout(() => applyMotion(document), 60); }).observe(document.body, { childList: true, subtree: true });
@@ -541,6 +551,7 @@ export const Social = {
     CallUI.renderDock();
   },
   visible: () => visible,
+  showAdmin,
   open,
   showProfile,
 };

@@ -32,7 +32,7 @@ const save = () => Settings.save();
 let view = "home";
 
 /* ---------- pages ---------- */
-const ORDER = ["home", "music", "social", "games", "school", "money", "youtube", "minecraft", "settings"];
+const ORDER = ["home", "music", "social", "games", "school", "money", "youtube", "minecraft", "admin", "settings"];
 function go(v, section) {
   const from = view, changed = from !== v;
   FX.transition(() => {
@@ -49,6 +49,7 @@ function go(v, section) {
     Extras.onView(v);
     Fun.onView(v);
     Social.show(v === "social");
+    if (v === "admin") Social.showAdmin();
   }, changed ? Math.sign(ORDER.indexOf(v) - ORDER.indexOf(from)) : 0);
   FX.railIndicator();
   if (changed) setTimeout(() => FX.cascade($("#view-" + v)), 20);

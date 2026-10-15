@@ -10,7 +10,7 @@ import { Admin } from "./admin.js";
 
 let ctx = null, host = null, section = "profile", testStream = null, meterRaf = 0, saveT = 0;
 // (Admin only shows for Skyline's owner)
-const SECTIONS = () => [...(S.isAdmin ? [["admin", "Admin", "crown"]] : []), ["profile", "Profile", "user"], ["badges", "Badges", "award"], ["appearance", "Appearance", "palette"], ["chat", "Chat", "message"], ["privacy", "Privacy & safety", "shield"],
+const SECTIONS = () => [["profile", "Profile", "user"], ["badges", "Badges", "award"], ["appearance", "Appearance", "palette"], ["chat", "Chat", "message"], ["privacy", "Privacy & safety", "shield"],
   ["notifications", "Notifications", "bell"], ["devices", "Voice & video", "mic"], ["blocked", "Blocked", "ban"], ["account", "Account", "logOut"]];
 
 /* ---------- your colours: applied to your Skyline only ---------- */
@@ -38,7 +38,7 @@ export function applyAppearance(a) {
 /* ---------- drawing ---------- */
 function render(el, sec) {
   host = el; section = sec || section;
-  if (section === "admin" && !S.isAdmin) section = "profile";
+  if (section === "admin") section = "profile";   // (Admin is its own tab now)
   stopTest();
   el.innerHTML = `<header class="sx-head"><h2>Social settings</h2></header>
     <div class="sx-set"><nav class="sx-set-nav">${SECTIONS().map(([k, l, ic]) => `<button class="${k === section ? "on" : ""}${k === "admin" ? " admin" : ""}" data-sx="set:${k}">${icon(ic)}<span>${l}</span></button>`).join("")}</nav>
@@ -57,7 +57,7 @@ function body() {
   if (section === "profile") return `<section class="sx-set-block pe-host"><div id="sxPe"></div></section>`;
   if (section === "admin") return `<section class="sx-set-block"><h3>Admin</h3><div id="sxAdmin"></div></section>`;
   if (section === "badges") return block("Your badges", `<div id="sxMyBadges"></div>`, "Badges show next to your name in chats, servers and on your profile. Choose which ones to show (up to six)."
-    + (S.isAdmin ? ` To make new badges or give them to people, open <button class="sx-link" data-sx="set:admin">Admin</button>.` : ""));
+    + (S.isAdmin ? ` To make new badges or give them to people, open the Admin tab in the sidebar.` : ""));
   if (section === "appearance") {
     const a = set.appearance || {}, cur = COLOR_FIELDS.every(([k]) => HEX.test(a[k] || "")) ? a : null;
     return block("Your colours", `
