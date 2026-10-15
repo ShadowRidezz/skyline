@@ -38,7 +38,7 @@ const RENDERER = path.join(__dirname, "..", "renderer");
 const ASSETS = path.join(__dirname, "assets");
 
 if (SHOT) app.setPath("userData", path.join(app.getPath("temp"), "skyline-shot-" + (arg("profile") || "a")));
-app.setAppUserModelId("app.skyline.dashboard");
+app.setAppUserModelId(app.isPackaged ? "app.skyline.dashboard" : "app.skyline.dashboard.dev");   // (test copies run as Electron: they must never borrow the real Skyline's name and icon in Windows)
 protocol.registerSchemesAsPrivileged([{ scheme: "sky", privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true, codeCache: true } }]);
 
 if (!SHOT && !app.requestSingleInstanceLock()) { app.quit(); process.exit(0); }
