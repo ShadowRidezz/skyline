@@ -1,0 +1,103 @@
+{
+  "name": "skyline",
+  "productName": "Skyline",
+  "version": "1.23.0",
+  "description": "A living night-city dashboard for your desktop",
+  "main": "main/main.js",
+  "author": "Skyline",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "shot": "electron . --shot",
+    "icon": "node build/make-icon.js",
+    "pack": "electron-builder --win dir",
+    "dist": "electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "app.skyline.dashboard",
+    "productName": "Skyline",
+    "copyright": "Skyline",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main/**",
+      "renderer/**",
+      "package.json",
+      "!**/node_modules/onnxruntime-node/bin/napi-v*/linux/**",
+      "!**/node_modules/onnxruntime-node/bin/napi-v*/darwin/**",
+      "!**/node_modules/onnxruntime-web/dist/*.mjs.map",
+      "!**/node_modules/onnxruntime-web/dist/*.js.map",
+      "!**/node_modules/@huggingface/transformers/dist/*.map",
+      "!**/node_modules/kokoro-js/voices/{e,f,h,i,j,p,z}*.bin",
+      "!**/node_modules/onnxruntime-node/bin/napi-v*/win32/arm64/**",
+      "!**/node_modules/onnxruntime-web/**",
+      "!**/node_modules/@huggingface/transformers/dist/*.wasm",
+      "!**/node_modules/@huggingface/transformers/dist/transformers{,.min,.web,.web.min}.js",
+      "!**/node_modules/kokoro-js/dist/kokoro.web.js",
+      "!**/node_modules/**/*.d.ts",
+      "!**/node_modules/**/*.d.mts",
+      "!**/node_modules/**/*.d.cts"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Skyline",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false
+    },
+    "extraResources": [
+      {
+        "from": "vendor/piper",
+        "to": "piper"
+      },
+      {
+        "from": "vendor/kokoro",
+        "to": "kokoro"
+      },
+      {
+        "from": "helper-extension",
+        "to": "helper-extension",
+        "filter": [
+          "**/*",
+          "!test/**"
+        ]
+      }
+    ],
+    "asarUnpack": [
+      "**/node_modules/onnxruntime-node/**",
+      "**/node_modules/sharp/**",
+      "**/node_modules/@img/**"
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "ShadowRidezz",
+        "repo": "skyline-releases",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.9",
+    "electron": "^44.7.0",
+    "electron-builder": "^26.15.3"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.132.1",
+    "@supabase/supabase-js": "^2.117.3",
+    "electron-updater": "^6.8.9",
+    "kokoro-js": "^1.2.1",
+    "music-metadata": "^11.16.1"
+  }
+}

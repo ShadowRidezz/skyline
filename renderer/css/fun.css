@@ -1,0 +1,51 @@
+/* Extras, round 2: share cards, focus gate, the city's neon sign, bedtime, savings goals */
+
+.fun-ov { position: fixed; inset: 0; z-index: 92; display: grid; place-items: center; padding: 30px; background: rgba(5,4,12,.65); backdrop-filter: blur(8px); }
+.fun-card { padding: 16px; display: grid; gap: 12px; background: var(--sheet); max-height: 92vh; }
+.fun-card img { display: block; max-height: calc(92vh - 110px); max-width: min(560px, 86vw); border-radius: 14px; box-shadow: 0 30px 80px -30px #000; }
+.fun-card .row { display: flex; gap: 8px; align-items: center; }
+
+.focus-gate { position: absolute; inset: 0; z-index: 30; display: grid; justify-items: center; align-items: start; padding: 30px; background: rgba(6,5,14,.72); backdrop-filter: blur(14px); }
+.view { position: relative; }
+.fg-box { position: sticky; top: 14vh; max-width: 460px; padding: 26px 28px; display: grid; gap: 10px; text-align: center; justify-items: center; }
+.fg-i { font-size: 46px; } .fg-box h2 { margin: 0; font: 600 26px var(--display); } .fg-box p { margin: 0; color: var(--muted); }
+.fg-box ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; } .fg-box li { padding: 6px 12px; border-radius: 9px; background: rgba(255,255,255,.05); font-size: 13.5px; }
+.fg-box .row { display: flex; gap: 8px; margin-top: 6px; }
+
+#citySign { position: absolute; right: 9vw; bottom: 30vh; z-index: 2; pointer-events: none; font: 700 clamp(18px, 2.2vw, 34px)/1 "Segoe UI", sans-serif; letter-spacing: .18em; text-transform: uppercase;
+  color: #fff; padding: 8px 16px; border: 2px solid var(--sc); border-radius: 10px; background: rgba(10,6,24,.55);
+  text-shadow: 0 0 6px var(--sc), 0 0 18px var(--sc), 0 0 36px var(--sc); box-shadow: 0 0 14px var(--sc), inset 0 0 12px color-mix(in srgb, var(--sc) 50%, transparent); opacity: .92; }
+body.resting #citySign, body.ambient #citySign { opacity: .6; }
+
+body.bedtime #scene { filter: brightness(.45) saturate(.8); transition: filter 3s; }
+#scene { transition: filter 3s; }
+
+.sh-card, .ai-msgs { user-select: text; }   /* text here can be selected and copied */
+.sh-card { padding: 16px 18px; display: grid; gap: 10px; margin-bottom: 14px; }
+.sh-head { display: flex; align-items: center; gap: 8px; } .sh-head b { font-size: 15px; }
+.sh-card p { margin: 0; font-size: 13px; }
+.sh-grid { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: center; }
+.sh-code { display: grid; gap: 2px; justify-items: start; padding: 10px 14px; border-radius: 12px; background: rgba(139,92,246,.12); border: 1px solid rgba(139,92,246,.35); }
+.sh-code small, .sh-prog small { color: var(--faint); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; }
+.sh-code b { font: 700 26px/1.1 "Cascadia Mono", Consolas, monospace; letter-spacing: .12em; }
+.sh-st { display: grid; gap: 3px; font-size: 13px; color: var(--muted); } .sh-st .ok { color: #6ee7b7; } .sh-st .bad, .sh-prog .bad { color: #fda4af; }
+.sh-steps { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: 13px; color: var(--muted); } .sh-steps b { color: var(--text); }
+.sh-sub { margin: 6px 0 4px; padding-left: 18px; display: grid; gap: 6px; list-style: lower-alpha; }
+.sh-folder { padding: 1px 6px; border-radius: 6px; background: rgba(251,191,36,.15); color: #fde68a !important; }
+.sh-steps code { font-size: 11.5px; color: var(--faint); word-break: break-all; }
+.sh-prog { display: grid; gap: 5px; } .sh-sk { display: grid; grid-template-columns: minmax(0, 1fr) 120px 40px; gap: 10px; align-items: center; font-size: 13px; }
+.sh-sk span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .sh-sk i { height: 6px; border-radius: 6px; background: rgba(255,255,255,.08); overflow: hidden; } .sh-sk i b { display: block; height: 100%; background: linear-gradient(90deg, #8b5cf6, #22d3ee); } .sh-sk em { font-style: normal; color: var(--muted); text-align: right; }
+.upd-banner { position: fixed; right: 22px; bottom: 22px; z-index: 80; display: flex; align-items: center; gap: 10px; padding: 10px 12px 10px 16px; font-size: 13.5px; background: var(--sheet); animation: rise .3s ease; }
+.g-goals { padding: 18px; } .g-goals:empty { display: none; }
+.gl-list { display: grid; gap: 8px; }
+.gl-row { display: grid; grid-template-columns: minmax(120px, 1fr) minmax(120px, 2fr) auto; gap: 4px 14px; align-items: center; }
+.gl-row b { font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gl-bar { height: 8px; border-radius: 8px; background: rgba(255,255,255,.08); overflow: hidden; } .gl-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #34d399, #fbbf24); }
+.gl-left { font: 600 16px var(--display); color: #fcd34d; white-space: nowrap; }
+.gl-row small { grid-column: 1 / -1; color: var(--faint); font-size: 12px; margin-top: -2px; }
+.st-wrap { margin: 0 0 10px; }
+
+
+/* the briefing never grows into the music player: it scrolls inside the space between the clock and the player */
+.brief { min-height: 0; max-height: 100%; overflow-y: auto; }
+.home { grid-template-rows: auto minmax(0, 1fr) auto; }

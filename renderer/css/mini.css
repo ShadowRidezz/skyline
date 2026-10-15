@@ -1,0 +1,36 @@
+:root { --np-color: var(--a1, #8b5cf6); --np-color2: var(--a2, #3b82f6); --text: #f2f1f8; --muted: #b3b1c6; color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; font: 13px/1.4 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; color: var(--text); user-select: none; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; }
+.mini { position: absolute; inset: 6px; border-radius: 18px; overflow: hidden; isolation: isolate; display: grid; grid-template-columns: 96px 1fr; gap: 14px; align-items: center; padding: 12px 14px 14px 12px;
+  background: linear-gradient(140deg, color-mix(in srgb, var(--np-color) 30%, #0c0a16), #0b0a14 70%); border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 10px 30px -8px rgba(0,0,0,.8); }
+/* move the mini player by its cover or its title; the buttons are never inside a drag area (on Windows that can swallow their clicks) */
+.art, .title, .artist, .top .app, .top .sp { -webkit-app-region: drag; }
+.bd { position: absolute; inset: -30px; background: center / cover no-repeat; filter: blur(30px) saturate(1.5); opacity: .45; z-index: -1; }
+.mini::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(8,7,14,.25), rgba(8,7,14,.7)); z-index: -1; }
+.art { position: relative; width: 96px; height: 96px; }
+.art .ph { position: absolute; inset: 0; border-radius: 12px; display: grid; place-items: center; font-size: 30px; color: color-mix(in srgb, var(--np-color) 60%, #fff);
+  background: linear-gradient(140deg, color-mix(in srgb, var(--np-color) 40%, #0b0a16), #0b0a16 75%); }
+.art img { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 12px; object-fit: cover; opacity: 0; transition: opacity .5s; box-shadow: 0 10px 24px -10px #000; }
+.art img.on { opacity: 1; }
+.info { min-width: 0; display: grid; gap: 1px; }
+.top { display: flex; align-items: center; gap: 2px; margin-top: -4px; }
+.app { font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: color-mix(in srgb, var(--np-color) 55%, #fff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sp { flex: 1; }
+.ib { -webkit-app-region: no-drag; width: 24px; height: 24px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); display: grid; place-items: center; cursor: pointer; padding: 0; }
+.ib:hover { background: rgba(255,255,255,.12); color: #fff; }
+.ib svg { width: 14px; height: 14px; }
+.title { font-weight: 650; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.artist { color: var(--muted); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 18px; }
+.ctl { display: flex; align-items: center; gap: 2px; margin-top: 4px; }
+.b { -webkit-app-region: no-drag; width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; display: grid; place-items: center; cursor: pointer; padding: 0; transition: background .12s, transform .08s; }
+.b:hover { background: rgba(255,255,255,.12); }
+.b:active { transform: scale(.93); }
+.b svg { width: 16px; height: 16px; }
+.b.big { width: 38px; height: 38px; background: #fff; color: #0b0a14; }
+.b.big svg { width: 18px; height: 18px; }
+.viz { width: 46px; height: 18px; }
+.prog { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255,255,255,.1); }
+.prog i { display: block; height: 100%; background: linear-gradient(90deg, var(--np-color), var(--np-color2)); transform-origin: left; transform: scaleX(0); transition: transform .5s linear; }
+body:not(.on) .ctl, body:not(.on) .prog { visibility: hidden; }

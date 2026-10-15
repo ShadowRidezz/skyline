@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' sky:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' sky: data: blob: https:; frame-src sky: https://www.youtube-nocookie.com; connect-src 'self' sky: https://api.open-meteo.com https://geocoding-api.open-meteo.com; worker-src 'self' blob:; media-src 'self' sky: blob: mediastream: data: https://*.supabase.co">
+<title>Skyline</title>
+<link rel="icon" href="img/icon.svg">
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/games.css">
+<link rel="stylesheet" href="css/fx.css">
+<link rel="stylesheet" href="css/more.css">
+<link rel="stylesheet" href="css/pages.css">
+<link rel="stylesheet" href="css/school.css">
+<link rel="stylesheet" href="css/extras.css">
+<link rel="stylesheet" href="css/fun.css">
+<link rel="stylesheet" href="css/social.css">
+<link rel="stylesheet" href="css/music.css">
+<link rel="stylesheet" href="css/profile.css">
+<link rel="stylesheet" href="css/chat.css">
+<link rel="stylesheet" href="css/servers.css">
+<script src="js/boot.js"></script>
+</head>
+<body>
+<div id="scene" aria-hidden="true"><div id="sceneImg"></div><div id="sceneOv"></div><canvas id="sceneCanvas"></canvas></div>
+
+<header class="titlebar">
+  <div class="tb-brand"><img src="img/icon.svg" alt=""><span>Skyline</span></div>
+  <div class="drag"></div>
+  <button class="tb-btn" id="tbMini" title="Mini player (M)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><rect x="12" y="12" width="7" height="5" rx="1.2" fill="currentColor" stroke="none"/></svg></button>
+  <button class="tb-btn" id="tbAmbient" title="Ambient mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></button>
+  <span class="tb-sep"></span>
+  <button class="tb-btn win" id="tbMin" title="Minimise"><svg viewBox="0 0 24 24"><path d="M6 12h12" stroke="currentColor" stroke-width="1.4"/></svg></button>
+  <button class="tb-btn win" id="tbMax" title="Maximise"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect class="mx1" x="6.5" y="6.5" width="11" height="11" rx="1.5"/><path class="mx2" d="M9 6.5V5.8A1.3 1.3 0 0 1 10.3 4.5h7.9a1.3 1.3 0 0 1 1.3 1.3v7.9a1.3 1.3 0 0 1-1.3 1.3H17.5"/></svg></button>
+  <button class="tb-btn win close" id="tbClose" title="Close (Skyline keeps running in the tray)"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17" stroke="currentColor" stroke-width="1.4"/></svg></button>
+</header>
+
+<div class="shell">
+  <nav class="rail">
+    <button class="rbtn on" data-view="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V10l4-3v14M9 21V4l6 3v14M15 21v-9l4 2v7"/></svg><span class="rl">Home</span><span class="tip">Home <kbd>Ctrl 1</kbd></span></button>
+    <button class="rbtn" data-view="music"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg><span class="rl">Music</span><span class="tip">Music &amp; lyrics <kbd>Ctrl 2</kbd></span><i class="rdot"></i></button>
+    <button class="rbtn" data-view="social"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 18.5V20"/><circle cx="10" cy="8" r="3.5"/><path d="M20 20v-1.4a3.4 3.4 0 0 0-2.5-3.3M15.5 4.6a3.5 3.5 0 0 1 0 6.8"/></svg><span class="rl">Social</span><span class="tip">Friends, messages &amp; calls</span></button>
+    <button class="rbtn" data-view="games"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 7h9a5 5 0 0 1 4.9 6l-.8 4a2.6 2.6 0 0 1-4.5 1.2L14.5 16h-5l-1.6 2.2a2.6 2.6 0 0 1-4.5-1.2l-.8-4A5 5 0 0 1 7.5 7z"/><path d="M8 10v4M6 12h4"/><circle cx="15.5" cy="11" r=".6" fill="currentColor"/><circle cx="17.5" cy="13" r=".6" fill="currentColor"/></svg><span class="rl">Games</span><span class="tip">Games <kbd>Ctrl 4</kbd></span></button>
+    <button class="rbtn" data-view="school"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/><path d="M22 9v6"/></svg><span class="rl">School</span><span class="tip">Homework, classes &amp; links <kbd>Ctrl 5</kbd></span></button>
+    <button class="rbtn" data-view="money"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18"/><path d="M16 15h2"/><path d="M6 6l9-3 1.5 3"/></svg><span class="rl">Money</span><span class="tip">Spending &amp; savings goals <kbd>Ctrl 6</kbd></span></button>
+    <button class="rbtn" data-view="youtube"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="4"/><path d="M10 9v6l5-3z" fill="currentColor"/></svg><span class="rl">YouTube</span><span class="tip">Search &amp; watch YouTube <kbd>Ctrl 7</kbd></span></button>
+    <button class="rbtn" data-view="minecraft"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5l8.5 4.8v9.4L12 21.5l-8.5-4.8V7.3z"/><path d="M3.5 7.3L12 12l8.5-4.7M12 12v9.5"/></svg><span class="rl">Minecraft</span><span class="tip">Play, servers &amp; Modrinth <kbd>Ctrl 8</kbd></span></button>
+    <button class="rbtn" data-view="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span class="rl">Settings</span><span class="tip">Settings &amp; Theme Studio <kbd>Ctrl 0</kbd></span></button>
+    <div class="grow"></div>
+    <button class="asst-orb" id="asstOrb" title="Talk to Sky (Ctrl+Space, or Alt+Shift+A from anywhere) · right-click to type"></button>
+    <button class="rbtn" data-goto="settings:about" title="Help"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 0 1 4.8.9c0 1.6-2.4 2.1-2.4 3.4M12 17h.01"/></svg><span class="rl">Help</span><span class="tip">Help &amp; about</span></button>
+  </nav>
+
+  <main id="main">
+    <!-- HOME -->
+    <section class="view" id="view-home">
+      <div class="home">
+        <header class="hero">
+          <div class="greet" data-greet>Good evening</div>
+          <div class="clock" data-clock>--:--</div>
+          <div class="date" data-date></div>
+        </header>
+        <section class="brief glass hidden" id="brief"></section>
+
+        <section class="player glass" id="player">
+          <div class="pl-backdrop" data-np-backdrop></div>
+          <div class="pl-fx" aria-hidden="true"><i class="pl-comet"></i><div class="pl-rain"></div><div class="pl-snow"></div></div>
+          <div class="pl-art"><div class="pl-glow" data-np-glow></div>
+            <div class="pl-ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
+            <div class="pl-disc"><img data-np-art alt=""></div><img data-np-art="main" alt=""></div>
+          <div class="pl-info">
+            <div class="pl-top"><span class="pl-app" data-np-app>Music</span><span class="sp"></span>
+              
+              <button class="ibtn sleep-btn" data-sleep title="Sleep timer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg><i></i></button>
+              <button class="ibtn" data-np="mini" title="Pop out the mini player (M)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-8 8M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/></svg></button>
+              <button class="ibtn" data-goto="music" title="Lyrics and more (L)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h13"/></svg></button></div>
+            <div class="pl-title" data-np-title>Nothing playing</div>
+            <div class="pl-artist" data-np-artist>Play something in Spotify, YouTube or any music app and it shows up here.</div>
+            <div class="pl-line" data-np-line></div>
+            <div class="pl-ctl">
+              <button class="pl-btn sm" data-np="shuffle" title="Shuffle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button>
+              <button class="pl-btn" data-np="prev" title="Previous (P)"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="2.6" height="14" rx="1"/><path d="M19 6.2v11.6a1 1 0 0 1-1.55.83L9.2 12.83a1 1 0 0 1 0-1.66l8.25-5.8A1 1 0 0 1 19 6.2z"/></svg></button>
+              <button class="pl-btn big" data-np="toggle" data-np-play title="Play (Space)"></button>
+              <button class="pl-btn" data-np="next" title="Next (N)"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="16.4" y="5" width="2.6" height="14" rx="1"/><path d="M5 6.2v11.6a1 1 0 0 0 1.55.83l8.25-5.8a1 1 0 0 0 0-1.66L6.55 5.37A1 1 0 0 0 5 6.2z"/></svg></button>
+              <button class="pl-btn sm" data-np="repeat" title="Repeat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg><i class="one">1</i></button>
+            </div>
+            <div class="pl-time hidden" data-np-time><span data-np-pos>0:00</span><div class="seek" data-np-seek><i data-np-fill></i></div><span data-np-dur>0:00</span></div>
+          </div>
+          <canvas class="pl-viz" data-viz="bars"></canvas>
+        </section>
+
+        <aside class="widgets" id="widgets">
+          <div class="glass widget" data-widget="weather"><div class="ctitle" draggable="true">Weather <span class="sp"></span><button class="ibtn xs" data-goto="settings:home" title="Change city">⋯</button></div><div id="weather"></div></div>
+          <div class="glass widget" data-widget="system"><div class="ctitle" draggable="true">System <span class="sp"></span><span id="uptime" class="ct-note"></span></div>
+            <div class="meter"><span>CPU</span><div class="mbar"><i id="cpuBar"></i></div><b id="cpuVal">–</b></div>
+            <canvas class="spark" id="cpuSpark"></canvas>
+            <div class="meter"><span>Memory</span><div class="mbar"><i id="ramBar"></i></div><b id="ramVal">–</b></div>
+            <div class="meter"><span>Disk</span><div class="mbar"><i id="diskBar"></i></div><b id="diskVal">–</b></div>
+            <div class="meter hidden" id="gpuRow"><span>GPU</span><div class="mbar"><i id="gpuBar"></i></div><b id="gpuVal">–</b></div>
+            <div class="meter hidden" id="batRow"><span>Battery</span><div class="mbar"><i id="batBar"></i></div><b id="batVal">–</b></div>
+            <div class="meter net"><span>Network</span><canvas class="spark sm" id="netSpark"></canvas><b id="netVal">–</b></div></div>
+          <div class="glass widget" data-widget="links"><div class="ctitle" draggable="true">Quick links <span class="sp"></span><button class="ibtn xs" data-goto="settings:home" title="Edit links">✎</button></div><div class="links" id="links"></div></div>
+          <div class="glass widget" data-widget="countdown"><div class="ctitle" draggable="true">Countdown <span class="sp"></span><button class="ibtn xs" id="cdAddBtn" title="Add a countdown">＋</button></div><div id="countdown"></div></div>
+          <div class="glass widget" data-widget="calendar"><div class="ctitle" draggable="true">Calendar</div><div id="calendar"></div></div>
+          <div class="glass widget" data-widget="focus"><div class="ctitle" draggable="true">Focus timer</div><div class="focus" id="focus"></div></div>
+          <div class="glass widget" data-widget="tasks"><div class="ctitle" draggable="true">Tasks <span class="sp"></span><span id="taskCount" class="ct-note"></span><button class="ibtn xs" id="taskClear" title="Clear finished">✓</button></div>
+            <form id="taskForm" class="task-add"><input id="taskIn" placeholder="Add a task…" maxlength="140" autocomplete="off"><button class="ibtn" title="Add">＋</button></form>
+            <div class="tasks" id="taskList"></div></div>
+          <div class="glass widget" data-widget="notes"><div class="ctitle" draggable="true">Notes</div><textarea id="notes" placeholder="Thoughts for tonight…" spellcheck="false"></textarea></div>
+        </aside>
+      </div>
+      <div class="amb-lyric" data-np-line></div>
+    </section>
+
+    <!-- MUSIC -->
+    <section class="view hidden" id="view-music">
+      <div class="music">
+        <div class="mu-backdrop" data-np-backdrop></div>
+        <div class="mu-left">
+          <div class="mu-art"><canvas data-viz="ring"></canvas><div class="mu-glow" data-np-glow></div>
+            <div class="mu-ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
+            <img data-np-art alt=""></div>
+          <div class="mu-meta"><div class="mu-app" data-np-app>Music</div><h1 data-np-title>Nothing playing</h1><div class="mu-artist" data-np-artist></div><div class="mu-album" data-np-album></div></div>
+          <div class="pl-time mu-time hidden" data-np-time><span data-np-pos>0:00</span><div class="seek" data-np-seek><i data-np-fill></i></div><span data-np-dur>0:00</span></div>
+          <div class="pl-ctl big">
+            <button class="pl-btn sm" data-np="shuffle" title="Shuffle" aria-label="Shuffle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button>
+            <button class="pl-btn" data-np="prev" title="Previous (P)" aria-label="Previous"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="2.6" height="14" rx="1"/><path d="M19 6.2v11.6a1 1 0 0 1-1.55.83L9.2 12.83a1 1 0 0 1 0-1.66l8.25-5.8A1 1 0 0 1 19 6.2z"/></svg></button>
+            <button class="pl-btn big" data-np="toggle" data-np-play title="Play (Space)" aria-label="Play or pause"></button>
+            <button class="pl-btn" data-np="next" title="Next (N)" aria-label="Next"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="16.4" y="5" width="2.6" height="14" rx="1"/><path d="M5 6.2v11.6a1 1 0 0 0 1.55.83l8.25-5.8a1 1 0 0 0 0-1.66L6.55 5.37A1 1 0 0 0 5 6.2z"/></svg></button>
+            <button class="pl-btn sm" data-np="repeat" title="Repeat" aria-label="Repeat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg><i class="one">1</i></button>
+          </div>
+          <div class="mu-foot">
+            <div class="mu-vol"><button class="ibtn" data-np="mute" title="Mute" aria-label="Mute"></button><input type="range" class="rg" min="0" max="100" data-np-vol title="System volume" aria-label="Volume"></div>
+            <div class="mu-tools">
+              <button class="ibtn" data-lycard title="Share a lyric as a picture" aria-label="Share a lyric as a picture"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-9 9"/></svg></button>
+              <button class="ibtn" data-lyf="open" title="Full-screen lyrics (Y)" aria-label="Full-screen lyrics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4H20v5.5M9.5 20H4v-5.5M20 4l-6.5 6.5M4 20l6.5-6.5"/></svg></button>
+              <button class="ibtn" data-np="mini" title="Mini player (M)" aria-label="Mini player"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><rect x="12" y="11" width="6" height="5" rx="1"/></svg></button>
+            </div>
+          </div>
+          <div class="mu-src hidden" id="npSourceRow"><span>Follow</span><select id="npSource" aria-label="Which app to follow"></select></div>
+        </div>
+        <div class="mu-right" id="songs">
+          <div class="mu-tabbar">
+            <div class="mu-tabs" id="songTabs" role="tablist">
+              <button data-v="lyrics" role="tab">Lyrics</button><button data-v="queue" role="tab">Up next</button><button data-v="lib" role="tab">Spotify</button><button data-v="find" role="tab">Search</button><button data-v="recent" role="tab">Recent</button><button data-v="stats" role="tab">Stats</button>
+              <i class="mu-tabline" aria-hidden="true"></i>
+            </div>
+            <span class="sp"></span>
+            <div class="mu-lytools" data-for="lyrics"><button class="ibtn xs" data-lynudge="-0.1" title="Lyrics later for this song ( [ )" aria-label="Lyrics later">−</button><button class="ly-sync" data-lysync title="Lyrics timing for this song (click to reset)">+0.55 s</button><button class="ibtn xs" data-lynudge="0.1" title="Lyrics earlier for this song ( ] )" aria-label="Lyrics earlier">+</button></div>
+          </div>
+          <div class="sg-pane mu-lypane" data-pane="lyrics"><div class="lyrics" id="lyrics" data-lyrics></div></div>
+          <div class="sg-pane hidden" data-pane="queue"><div class="sg-extra" id="sgQueue"></div></div>
+          <div class="sg-pane hidden" data-pane="lib"><div class="sg-list" id="spLib"></div></div>
+          <div class="sg-pane hidden" data-pane="find">
+            <form class="sg-bar" id="sgFindForm"><label class="mu-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/></svg><input id="sgFindQ" placeholder="Search songs, artists, albums and playlists" autocomplete="off" spellcheck="false" aria-label="Search music"></label><button class="btn sm primary">Search</button></form>
+            <div id="spHead"></div><div class="sg-list" id="sgFound"></div></div>
+          <div class="sg-pane hidden" data-pane="recent"><div class="history" id="history"></div></div>
+          <div class="sg-pane hidden" data-pane="stats"><div class="sg-extra" id="sgStats"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GAMES -->
+    <section class="view hidden" id="view-social"><div class="sx" id="sx"></div></section>
+    <section class="view hidden" id="view-games">
+      <div class="games">
+        <header class="g-head">
+          <div><h1>Games</h1><p>Play what you have, or find something new.</p></div>
+          <label class="g-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input id="gSearch" placeholder="Search games..." autocomplete="off" spellcheck="false"><kbd>Enter</kbd></label>
+        </header>
+        <section class="g-results hidden" id="gResults"></section>
+        <section class="g-sec"><div class="g-sec-h"><h2>🎮 My games</h2><span class="ct-note" id="gMineCount"></span><span class="sp"></span></div><div class="g-grid" id="gMine"></div></section>
+        <section class="g-sec"><div class="g-sec-h"><h2>📚 Library</h2><span class="ct-note">🌐 Browser · 💻 Local · 🔗 Web</span><span class="sp"></span>
+          <button class="btn sm" id="gScan">🔍 Find games on this PC</button><button class="btn sm" id="gAddLocal">＋ Add game…</button></div><div class="g-grid" id="gLib"></div></section>
+        <section class="g-sec glass g-time" id="gTime"></section>
+        <section class="g-sec glass g-goals" id="gGoals"></section>
+        <section class="g-sec glass g-find" id="gFindSec"><div class="g-sec-h"><h2>🔎 Find games</h2><span class="ct-note">Browser games from itch.io and free-to-play games from FreeToGame. Opening one takes you to its website.</span></div>
+          <form class="g-findbar" id="gFindForm"><input id="gFindQ" placeholder="Search for browser games… e.g. platformer, horror, racing" autocomplete="off" spellcheck="false">
+            <div class="seg" id="gSrc"><button type="button" data-v="all" class="on">All</button><button type="button" data-v="itch">itch.io</button><button type="button" data-v="freetogame">FreeToGame</button></div>
+            <button class="btn primary">Search</button></form>
+          <div id="gFound"><div class="g-empty slim"><b>Search legitimate game sites</b><p>Results show where they come from. Nothing is downloaded or installed.</p></div></div></section>
+      </div>
+    </section>
+
+    <!-- AI -->
+
+    <!-- SCHOOL -->
+    <section class="view hidden" id="view-school">
+      <div class="pg sc">
+        <header class="pg-head"><div><h1>School</h1><p>What's due, your classes, grades and study tools, all in one place.</p></div><span class="sp"></span>
+          <button class="btn sm" data-sc="refresh" title="Check Google Classroom for new work now">↻ Refresh</button><button class="btn sm" data-sc="study">⏱ Study 25 min</button></header>
+        <div class="sc-hero" id="scHero"></div>
+        <div class="sc-tabs"><div class="seg" id="scTabs"><button data-v="agenda">📋 Agenda</button><button data-v="calendar">📅 Calendar</button><button data-v="schedule">🕘 Schedule</button><button data-v="grades">📊 Grades</button><button data-v="study">🧠 Study</button></div></div>
+        <div id="scBody"></div>
+      </div>
+    </section>
+
+    <!-- MONEY -->
+    <section class="view hidden" id="view-money">
+      <div class="pg">
+        <header class="pg-head"><div><h1>Money</h1><p>Keep track of what comes in and goes out, and save up for things. Only on this PC.</p></div></header>
+        <div class="pg-stats" id="mStats"></div>
+        <div class="pg-cols">
+          <section class="glass pg-card">
+            <h3 class="pg-h">✍️ Log it</h3>
+            <div class="seg m-type"><button type="button" data-mtype="out">− Spent</button><button type="button" data-mtype="in">＋ Got</button></div>
+            <form class="pg-add" id="mAdd"><input name="amt" type="number" min="0" step="0.01" placeholder="$0.00" class="w-amt"><select name="cat"></select>
+              <input name="note" placeholder="What for? (optional)" autocomplete="off" maxlength="60"><input name="date" type="date"><button class="btn primary">Add</button></form>
+            <h3 class="pg-h">🧾 Recent</h3><div class="m-list" id="mList"></div>
+          </section>
+          <div class="pg-side">
+            <section class="glass pg-card"><h3 class="pg-h">📊 Where it went this month</h3><div class="m-cats" id="mCats"></div></section>
+            <section class="glass pg-card"><h3 class="pg-h">🎯 Savings goals</h3><div class="m-goals" id="mGoals"></div>
+              <form class="pg-add slim" id="mGoal"><input name="name" placeholder="Saving for… e.g. new headset" autocomplete="off" maxlength="40"><input name="target" type="number" min="1" step="1" placeholder="$" class="w-amt"><button class="btn sm">Add</button></form></section>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- YOUTUBE -->
+    <section class="view hidden" id="view-youtube">
+      <div class="pg">
+        <header class="pg-head"><div><h1>YouTube</h1><p>Search and watch without leaving Skyline.</p></div></header>
+        <form class="yt-bar" id="ytForm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="ytQ" placeholder="Search YouTube…" autocomplete="off" spellcheck="false"><button class="btn primary">Search</button></form>
+        <div class="yt-chips"><button class="gchip" data-ytq="lofi hip hop">lofi hip hop</button><button class="gchip" data-ytq="Minecraft">Minecraft</button><button class="gchip" data-ytq="Fortnite">Fortnite</button><button class="gchip" data-ytq="music videos">music videos</button><button class="gchip" data-ytq="funny">funny</button><button class="gchip" data-ytq="speedruns">speedruns</button><button class="gchip" data-ytq="tutorials">tutorials</button></div>
+        <section class="glass yt-now hidden" id="ytNow"><div class="yt-player" id="ytPlayer"></div>
+          <div class="yt-nowbar"><span class="yt-nt" id="ytNowT"></span><span class="sp"></span><button class="btn sm" data-yta="save">☆ Save</button><button class="btn sm" data-yta="full">⛶ Full screen</button><button class="btn sm" data-yta="open">Open on YouTube ↗</button><button class="btn sm ghost" data-yta="close">Close</button></div></section>
+        <div id="ytResults"></div><div id="ytMore" class="yt-more"></div><div id="ytSaved"></div><div id="ytRecent"></div>
+      </div>
+    </section>
+
+    <!-- MINECRAFT -->
+    <section class="view hidden" id="view-minecraft">
+      <div class="pg">
+        <header class="pg-head mc-hero glass"><div><h1>Minecraft</h1><p>Jump straight into a modpack. Play starts the one you played last; click any pack below to play that one.</p></div><span class="sp"></span>
+          <button class="btn primary mc-play" data-mc="play">▶ Play</button></header>
+        <div class="pg-cols">
+          <section class="glass pg-card"><div class="pg-h">🌍 Servers <span class="sp"></span><button class="btn xs ghost" data-mc="refresh">↻ Refresh</button></div>
+            <div class="mc-list" id="mcServers"></div>
+            <form class="pg-add slim" id="mcAdd"><input name="host" placeholder="Server address, e.g. play.example.net" autocomplete="off" spellcheck="false"><button class="btn sm">Add</button></form></section>
+          <div class="pg-side">
+            <section class="glass pg-card"><h3 class="pg-h">🧩 Your modpacks <span class="ct-note">click one to play it</span></h3><div class="mc-list" id="mcProfiles"></div></section>
+            <section class="glass pg-card"><h3 class="pg-h">🔗 Handy links</h3><div class="mc-links">
+              <button class="lk" data-mclink="https://modrinth.com/mods">Modrinth mods</button><button class="lk" data-mclink="https://modrinth.com/shaders">Shaders</button>
+              <button class="lk" data-mclink="https://minecraft.wiki">Minecraft Wiki</button><button class="lk" data-mclink="https://www.chunkbase.com/apps/seed-map">Seed map</button></div></section>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="view hidden" id="view-settings">
+      <div class="page">
+        <div class="head"><h1>Settings</h1><p>Shape your skyline. Everything saves by itself.</p></div>
+        <nav class="subnav">
+          <button data-sec="appearance">Theme Studio</button><button data-sec="ui">Interface</button><button data-sec="home">Home</button><button data-sec="music">Music</button>
+          <button data-sec="assistant">Assistant</button><button data-sec="ai">AI</button><button data-sec="auto">Automation</button><button data-sec="app">App</button><button data-sec="about">About</button>
+        </nav>
+
+        <div class="sset" id="set-appearance"><div class="glass studio" id="studio"></div></div>
+
+        <div class="sset hidden" id="set-ui"><div class="sgrid" id="uiSet"></div></div>
+
+        <div class="sset hidden" id="set-home"><div class="sgrid">
+          <div class="glass sbox"><h3>🌙 Bedtime</h3>
+            <label class="toggle"><input type="checkbox" id="setBed"><span class="sw"></span><span class="t"><b>Bedtime on school nights</b><small>Sunday–Thursday the city dims and Sky says good night</small></span></label>
+            <label class="field">Bedtime<input type="time" id="setBedAt"></label></div>
+          <div class="glass sbox"><h3>You &amp; the clock</h3>
+            <label class="field">Your name (for the greeting)<input id="setName" placeholder="e.g. Alex" maxlength="30" autocomplete="off"></label>
+            <div class="row"><div class="seg" id="setClock"><button data-v="12">12-hour</button><button data-v="24">24-hour</button></div>
+              <label class="toggle"><input type="checkbox" id="setSeconds"><span class="sw"></span><span class="t"><b>Seconds</b></span></label></div>
+            <div class="field">Clock style<div class="seg" id="setClockStyle"><button data-v="thin">Thin</button><button data-v="bold">Bold</button><button data-v="mono">Digital</button><button data-v="serif">Elegant</button></div></div>
+          </div>
+          <div class="glass sbox" id="set-weather"><h3>Weather</h3>
+            <div class="row"><span class="badge" id="cityNow">No city yet</span><span style="flex:1"></span><div class="seg" id="setUnits"><button data-v="f">°F</button><button data-v="c">°C</button></div></div>
+            <label class="field">Find your city<input id="cityQ" placeholder="Type a city name…" autocomplete="off" spellcheck="false"></label>
+            <div class="cityres" id="cityRes"></div>
+            <label class="toggle"><input type="checkbox" id="setLiveWx"><span class="sw"></span><span class="t"><b>Live weather in the sky</b><small>When it rains or snows outside, it does in Skyline too</small></span></label>
+            <label class="toggle"><input type="checkbox" id="setRainy"><span class="sw"></span><span class="t"><b>Rainy nights</b><small>Rain over every city, like a wet night in Tokyo</small></span></label>
+            <label class="toggle"><input type="checkbox" id="setCityTour"><span class="sw"></span><span class="t"><b>City tour</b><small>A different city every hour (Tokyo, Osaka, Seoul…), picked by the time of day</small></span></label>
+            <label class="toggle"><input type="checkbox" id="setHolidays"><span class="sw"></span><span class="t"><b>Holidays in the sky</b><small>Snow all December, fireworks on New Year's Eve and Day</small></span></label>
+            <p class="muted">From Open-Meteo: free, no account. Only the city you pick is sent.</p>
+          </div>
+          <div class="glass sbox"><h3>Widgets</h3><p class="muted">Choose what shows on Home. Drag a widget by its title to move it.</p><div class="wtoggles" id="widgetToggles"></div>
+            <div class="row"><label class="field small">Focus minutes<input type="number" id="setFocus" min="1" max="180"></label><label class="field small">Break minutes<input type="number" id="setBreak" min="1" max="60"></label></div></div>
+          <div class="glass sbox"><h3>Quick links</h3><div class="lrows" id="linkRows"></div>
+            <div class="row"><button class="btn sm" id="linkAdd">＋ Add link</button></div>
+            <label class="field">Websites open in<select id="linkBrowser"></select></label>
+            <label class="toggle"><input type="checkbox" id="linkApps"><span class="sw"></span><span class="t"><b>Open the app when it's installed</b><small>Discord, Spotify, Steam, Roblox, Epic Games… open in their app instead of the website.</small></span></label></div>
+        </div></div>
+
+        <div class="sset hidden" id="set-music"><div class="sgrid">
+          <div class="glass sbox"><h3>Spotify account</h3><p class="muted" id="spAcct">Checking…</p>
+            <div class="row"><button class="btn sm" id="spAcctUnlink" hidden>Unlink Spotify</button><button class="btn sm" id="spAcctLink" hidden>Link Spotify</button></div></div>
+          <div class="glass sbox"><h3>Music</h3>
+            <label class="toggle"><input type="checkbox" id="setViz"><span class="sw"></span><span class="t"><b>Spectrum visualiser</b><small>Listens to what your speakers play so bars and the city follow the bass. Nothing is recorded.</small></span></label>
+            <label class="toggle"><input type="checkbox" id="setTint"><span class="sw"></span><span class="t"><b>Album colours</b><small>The cover's colours tint the sky and the player</small></span></label>
+            <label class="toggle"><input type="checkbox" id="setNotify"><span class="sw"></span><span class="t"><b>New song notifications</b><small>When Skyline isn't in front</small></span></label>
+          </div>
+          <div class="glass sbox"><h3>Lyrics</h3>
+            <label class="toggle"><input type="checkbox" id="setLyrics"><span class="sw"></span><span class="t"><b>Show lyrics</b><small>Synced lyrics from LRCLIB (free). The song's title and artist are sent to find them.</small></span></label>
+            <label class="toggle"><input type="checkbox" id="setAmbLyrics"><span class="sw"></span><span class="t"><b>Lyrics in ambient mode</b><small>The current line floats over the city</small></span></label>
+          </div>
+        </div></div>
+
+        <div class="sset hidden" id="set-assistant"><div class="sgrid" id="asstSet"></div></div>
+
+        <div class="sset hidden" id="set-ai"><div class="sgrid">
+          <div class="glass sbox"><h3>Sky's brain</h3><p class="muted" id="aiNote">Checking…</p>
+            <div class="row"><button class="btn sm" data-ai="memory">🧠 What Sky remembers</button></div></div>
+          <div class="glass sbox"><h3>Study Helper</h3><p class="muted">The IXL &amp; Sadlier tutor in Chrome: hints, checking your answer, and the full solution after you try.</p>
+            <div class="row"><button class="btn sm" data-sh="toggle">📚 Set up / pair the helper</button></div></div>
+          <section class="glass sh-card hidden" id="shCard" style="grid-column: 1 / -1"></section>
+          <div class="glass sbox"><h3>Claude connection <span class="badge" id="aiBadge">Not connected</span></h3>
+            <p class="muted">Sky's smarter answers use Claude, Anthropic's AI, with your own API key (you pay Anthropic directly for what you use).
+              The key is stored encrypted on this PC; only Skyline's background process uses it, never the page or the games.</p>
+            <label class="field">API key<input type="password" id="aiKey" placeholder="sk-ant-…" autocomplete="off" spellcheck="false"></label>
+            <div class="row"><button class="btn sm primary" id="aiSave">Save key</button><button class="btn sm" id="aiTest">Test connection</button><button class="btn sm danger" id="aiClear">Remove key</button>
+              <button class="btn sm ghost" id="aiConsole">Get a key ↗</button></div>
+          </div>
+          <div class="glass sbox"><h3>Model</h3><label class="field">Which Claude builds your games<select id="aiModel"></select></label>
+            <p class="muted">Games run in a sandbox with no internet and no access to your files or to Skyline. The builder only makes games and refuses harmful code.</p></div>
+        </div></div>
+
+        <div class="sset hidden" id="set-auto"><div class="sgrid">
+          <div class="glass sbox"><h3>Themes by time of day</h3>
+            <label class="toggle"><input type="checkbox" id="setSched"><span class="sw"></span><span class="t"><b>Change theme automatically</b><small>Like a real sky through the day</small></span></label>
+            <div class="sched">
+              <label class="field">Morning (6–12)<select data-sched="morning"></select></label><label class="field">Afternoon (12–17)<select data-sched="afternoon"></select></label>
+              <label class="field">Evening (17–21)<select data-sched="evening"></select></label><label class="field">Night (21–6)<select data-sched="night"></select></label>
+            </div>
+          </div>
+          <div class="glass sbox"><h3>Motion &amp; performance</h3>
+            <label class="toggle"><input type="checkbox" id="setReduce"><span class="sw"></span><span class="t"><b>Reduce animations</b><small>A still, calm background. Follows Windows' setting until you change it.</small></span></label>
+            <div class="field">Smoothness<div class="seg" id="setFps"><button data-v="24">Battery saver</button><button data-v="30">Balanced</button><button data-v="60">Smooth</button></div></div>
+            <p class="muted">The background pauses whenever Skyline is hidden, minimised or a full-screen game or video is in front.</p>
+          </div>
+        </div></div>
+
+        <div class="sset hidden" id="set-app"><div class="sgrid">
+          <div class="glass sbox"><h3>Starting &amp; closing</h3>
+            <label class="toggle"><input type="checkbox" id="setLogin"><span class="sw"></span><span class="t"><b>Open Skyline when Windows starts</b><small>Your city is waiting when you sit down</small></span></label>
+            <p class="muted hidden" id="loginNote">Available in the installed app.</p>
+            <label class="toggle"><input type="checkbox" id="setHidden"><span class="sw"></span><span class="t"><b>Start quietly in the tray</b><small>When opened by Windows at sign-in</small></span></label>
+            <label class="toggle"><input type="checkbox" id="setTray"><span class="sw"></span><span class="t"><b>Keep running in the tray when closed</b><small>So music controls and the shortcut keep working</small></span></label>
+          </div>
+          <div class="glass sbox"><h3>Global shortcut</h3>
+            <label class="toggle"><input type="checkbox" id="setHotkeyOn"><span class="sw"></span><span class="t"><b>Show or hide Skyline from anywhere</b></span></label>
+            <label class="field">Shortcut (click, then press the keys)<input id="setHotkey" readonly></label>
+            <div class="row"><button class="btn sm" id="showKeys">All keyboard shortcuts</button></div>
+          </div>
+          <div class="glass sbox"><h3>Back up &amp; restore</h3>
+            <p class="muted">Everything you've made in Skyline in one file: themes, settings, notes, school, money, the assistant's memory, stats and the games you built. Sign-ins and keys are never included.</p>
+            <div class="row"><button class="btn sm" id="bkSave">💾 Back up…</button><button class="btn sm" id="bkRestore">Restore a backup…</button></div><p class="muted" id="bkNote"></p>
+          </div>
+        </div></div>
+
+        <div class="sset hidden" id="set-about"><div class="sgrid">
+          <div class="glass sbox about"><img src="img/icon.svg" alt=""><div><h3>Skyline</h3><p class="muted" id="aboutVer"></p>
+            <p>A living night-city dashboard. Skyline runs on your PC: your themes, settings and notes stay in its data folder.</p>
+            <div class="row"><span class="muted" id="updNote">Updates install by themselves.</span><button class="btn sm primary" id="updCheck">⟳ Check for updates</button></div></div></div>
+          <div class="glass sbox"><h3>Your data</h3><p class="muted" id="dataPath"></p>
+            <div class="row"><button class="btn sm" id="openData">Open data folder</button><button class="btn sm" id="replayTour">Show the welcome tour</button><button class="btn sm danger" id="quitApp">Quit Skyline</button></div></div>
+        </div></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<button class="btn sm" id="ambientExit">Exit ambient mode</button>
+<div class="resting-note">Skyline is resting while your game or video is full screen</div>
+<div class="g-stage hidden" id="gStage" data-mode="play">
+  <header class="gs-bar">
+    <button class="btn sm ghost" data-gs="back">← Back</button>
+    <div class="gs-title"><b id="gsName" data-gs="rename" title="Rename">Game</b><span class="badge" id="gsGenre"></span><span class="badge" id="gsSaved"></span></div>
+    <span class="sp"></span>
+    <span class="gs-build"><button class="btn sm ghost" data-gs="undo" id="gsUndo" title="Go back to before the last AI change">↶ Undo AI change</button>
+      <button class="btn sm" data-gs="regen">↻ Regenerate</button><button class="btn sm" data-gs="save">💾 Save Game</button><button class="btn sm" data-gs="export">⬇ Download Project</button></span>
+    <span class="gs-playonly"><button class="btn sm" data-gs="edit">✦ Edit with AI</button></span>
+    <button class="btn sm danger-solid" data-gs="exit">Exit Game</button>
+  </header>
+  <div class="gs-body">
+    <div class="gs-preview">
+      <div class="gs-tools"><button class="btn sm" data-gs="play">▶ Play</button><button class="btn sm" data-gs="pause" id="gsPause">⏸ Pause</button><button class="btn sm" data-gs="restart">↻ Restart</button>
+        <button class="btn sm" data-gs="expand">⛶ Expand</button><button class="btn sm gs-buildbtn" data-gs="save">💾 Save</button><span class="sp"></span><button class="btn sm ghost" data-gs="code" title="See the game's code">&lt;/&gt; Code</button></div>
+      <div class="gs-error hidden" id="gsError"></div>
+      <div class="gs-frame"><iframe id="gFrame" title="Game" sandbox="allow-scripts allow-pointer-lock" allow="fullscreen; gamepad; autoplay"></iframe><div class="gs-paused">⏸ Paused · press Play</div>
+        <div class="gs-code"><div class="gs-tabs"><div id="gsTabs"></div><span class="sp"></span><span class="muted" id="gsLines"></span><button class="btn xs ghost" data-gs="copy">Copy</button></div><pre id="gsCode"></pre></div></div>
+    </div>
+    <aside class="gs-chat glass">
+      <div class="ctitle">✦ AI Game Builder <span class="sp"></span><span class="ct-note">Ask for any change</span></div>
+      <div class="gs-msgs" id="gsChat"></div>
+      <div class="gs-tweaks" id="gsTweaks"></div>
+      <div class="gs-input"><textarea id="gsInput" rows="2" placeholder="Make the player faster, add a boss, fix the jump…" maxlength="2000"></textarea><button class="btn primary" id="gsSend">Send</button></div>
+    </aside>
+  </div>
+</div>
+<div class="asst glass hidden" id="asst" role="dialog" aria-label="Sky, your assistant">
+  <div class="as-head"><span class="as-dot"></span><b>Sky</b><span class="as-state" id="asState">Ready</span><span class="sp"></span>
+    <button class="ibtn xs" data-as="memory" title="What Sky remembers">🧠</button><button class="ibtn xs" data-as="close" title="Close (Esc)">✕</button></div>
+  <div class="as-body" id="asBody">
+    <canvas class="as-viz" id="asViz"></canvas>
+    <div class="as-heard" id="asHeard"></div>
+    <div class="as-reply" id="asReply"></div>
+    <div class="as-chips" id="asChips"></div>
+  </div>
+  <div class="as-mem hidden" id="asMem"></div>
+  <form class="as-in" id="asForm"><input id="asText" placeholder="Type to Sky…" autocomplete="off" spellcheck="false" maxlength="400">
+    <button class="as-mic" type="button" data-as="mic" title="Talk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></button></form>
+</div>
+<div class="lyfull hidden" id="lyFull">
+  <div class="lyf-glow"></div>
+  <header class="lyf-head"><div class="lyf-art"><img data-np-art alt=""></div><div class="lyf-t"><b data-np-title></b><small data-np-artist></small></div><span class="sp"></span>
+    <button class="pl-btn" data-np="prev" title="Previous"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="2.6" height="14" rx="1"/><path d="M19 6.2v11.6a1 1 0 0 1-1.55.83L9.2 12.83a1 1 0 0 1 0-1.66l8.25-5.8A1 1 0 0 1 19 6.2z"/></svg></button>
+    <button class="pl-btn big" data-np="toggle" data-np-play title="Play / pause"></button>
+    <button class="pl-btn" data-np="next" title="Next"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="16.4" y="5" width="2.6" height="14" rx="1"/><path d="M5 6.2v11.6a1 1 0 0 0 1.55.83l8.25-5.8a1 1 0 0 0 0-1.66L6.55 5.37A1 1 0 0 0 5 6.2z"/></svg></button>
+    <button class="ibtn" data-lyf="close" title="Close (Esc)">✕</button></header>
+  <div class="lyrics big" id="lyricsBig" data-lyrics></div>
+</div>
+<div class="g-menu hidden" id="gMenu"></div>
+<div class="tour hidden" id="tour"></div>
+<div class="toast" id="toast"></div>
+<div class="dlg hidden" id="dlg"></div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

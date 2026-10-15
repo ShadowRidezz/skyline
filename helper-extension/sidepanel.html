@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sky Study Helper</title>
+<link rel="stylesheet" href="sidepanel.css">
+</head>
+<body data-theme="night">
+  <header class="top">
+    <div class="brand"><span class="orb"></span><b>Sky</b><small>Study Helper</small></div>
+    <span class="sp"></span>
+    <button class="ib" id="pause" title="Pause question detection">⏸</button>
+    <button class="ib" id="refresh" title="Look for the question again">↻</button>
+    <button class="ib" id="gear" title="Settings">⚙</button>
+  </header>
+  <nav class="tabs"><button data-tab="help" class="on">Help</button><button data-tab="practice">Practice</button><button data-tab="progress">Progress</button></nav>
+  <div id="status" class="status hidden"></div>
+  <main id="view"></main>
+  <section id="settings" class="settings hidden">
+    <h3>Settings</h3>
+    <label>Pairing code (Skyline › Sky page › Study Helper)<input id="code" maxlength="8" autocomplete="off" spellcheck="false" placeholder="e.g. 7KQ2MX"></label>
+    <div class="row"><button class="btn primary" id="pair">Connect</button><span id="pairNote" class="muted"></span></div>
+    <label>Theme<select id="theme"><option value="night">Night (dark)</option><option value="ocean">Ocean (dark)</option><option value="rose">Rose (dark)</option><option value="light">Light</option></select></label>
+    <label class="check"><input type="checkbox" id="short"> Short explanations</label>
+    <p class="muted small">Works on IXL and Sadlier. Questions are read from the page you're looking at and sent only to Skyline on this PC. Typed answers, passwords and other sites are never read.</p>
+    <button class="btn" id="closeSettings">Done</button>
+  </section>
+<script src="sidepanel.js"></script>
+</body>
+</html>

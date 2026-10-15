@@ -1,0 +1,25 @@
+# Publish a Skyline update: builds the installer, then uploads it (with latest.yml and the blockmap) as a GitHub
+# release on ShadowRidezz/skyline-releases. Every installed Skyline (yours and your friends') picks it up by itself.
+# Needs GH_TOKEN (set once with: setx GH_TOKEN "your token"). Bump "version" in package.json first.
+$ErrorActionPreference = "Stop"
+Set-Location $PSScriptRoot
+$token = [Environment]::GetEnvironmentVariable("GH_TOKEN", "User"); if (-not $token) { throw "GH_TOKEN isn't set" }
+$ver = (Get-Content package.json -Raw | ConvertFrom-Json).version
+$H = @{ Authorization = "Bearer $token"; "User-Agent" = "skyline-release" }
+$api = "https://api.github.com/repos/ShadowRidezz/skyline-releases"
+
+npx electron-builder --win nsis --publish never
+if ($LASTEXITCODE) { throw "Build failed" }
+
+$exe = "dist\Skyline Setup $ver.exe"
+if (-not (Test-Path "dist\latest.yml")) { throw "latest.yml wasn't made" }
+try { $rel = Invoke-RestMethod "$api/releases/tags/v$ver" -Headers $H } catch { $rel = $null }
+if (-not $rel) { $rel = Invoke-RestMethod -Method Post "$api/releases" -Headers $H -ContentType "application/json" -Body (@{ tag_name = "v$ver"; name = "Skyline $ver"; body = "Skyline $ver. Installed copies update by themselves." } | ConvertTo-Json) }
+foreach ($f in @($exe, "$exe.blockmap", "dist\latest.yml")) {
+  $name = (Split-Path $f -Leaf) -replace ' ', '-'
+  $old = $rel.assets | Where-Object { $_.name -eq $name }
+  if ($old) { Invoke-RestMethod -Method Delete "$api/releases/assets/$($old.id)" -Headers $H | Out-Null }
+  Invoke-RestMethod -Method Post ($rel.upload_url -replace '\{.*\}', "?name=$name") -Headers $H -InFile $f -ContentType "application/octet-stream" | Out-Null
+  "uploaded $name"
+}
+"Published Skyline ${ver}: https://github.com/ShadowRidezz/skyline-releases/releases/tag/v$ver"

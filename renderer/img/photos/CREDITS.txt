@@ -1,0 +1,15 @@
+Photos used by Skyline's live photo themes, from Wikimedia Commons (resized to 3840 px wide).
+
+kanda.jpg: "Drone shot of Kanda River at night, facing east" by Benlisquare, CC BY-SA 4.0.
+akiba.jpg: "Drone shot of Akihabara Station at night" by Benlisquare, CC BY-SA 4.0.
+kiyosu.jpg: "Drone shot of Kiyosubashi-dori Avenue at night, northbound" by Benlisquare, CC BY-SA 4.0.
+umeda.jpg: "Night view from Umeda Sky Building (east side) 20250830" by 掬茶, CC BY-SA 4.0.
+osaka.jpg: "Night view from Umeda Sky Building (north side) 20250830" by 掬茶, CC BY-SA 4.0.
+shinjuku.jpg: "Looking roughly ESE from Tokyo Metropolitan Government Office Building South Tower at night 02 - partly equalized" by Joe Mabel, CC BY-SA 3.0.
+seoul.jpg: "View to the north from Lotte World Tower at night" by Christophe95, CC BY-SA 4.0.
+tokyoair.jpg: "Tokyo night aerial (52995843565)" by Raita Futo, CC BY 2.0.
+All at https://commons.wikimedia.org/wiki/File:<title>.jpg
+
+The View (your-view.jpg): your own photo, upscaled 4x with Real-ESRGAN.
+
+CC licences: https://creativecommons.org/licenses/

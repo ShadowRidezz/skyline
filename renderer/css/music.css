@@ -1,0 +1,111 @@
+/* The Music page: the cover on the left, one calm panel on the right (lyrics, up next, Spotify, search,
+   recent, stats). The album's own colours light the page and fade out softly before any edge. */
+
+.music { grid-template-columns: minmax(340px, 440px) minmax(0, 1fr); gap: 44px; padding: 26px 34px 26px 44px; }
+
+/* the light behind everything: the cover's colours, softly faded on every side (no hard cut by the sidebar) */
+.mu-backdrop { inset: 0; pointer-events: none;
+  background:
+    radial-gradient(42% 58% at 26% 46%, color-mix(in srgb, var(--np-color, var(--a1)) 24%, transparent), transparent 70%),
+    radial-gradient(38% 50% at 70% 30%, color-mix(in srgb, var(--np-color2, var(--a2)) 12%, transparent), transparent 70%);
+  -webkit-mask-image: radial-gradient(120% 110% at 40% 48%, #000 38%, transparent 78%);
+          mask-image: radial-gradient(120% 110% at 40% 48%, #000 38%, transparent 78%);
+  transition: opacity .9s ease; }
+
+/* a soft dark field behind the player so the title and controls read over any photo; it fades out before the edges */
+.music::before { content: ""; position: absolute; inset: 0; z-index: -3; pointer-events: none;
+  background: radial-gradient(62% 86% at 23% 52%, rgba(4,4,10,.74), rgba(4,4,10,.5) 45%, rgba(4,4,10,.18) 75%, transparent 100%); }
+
+/* ---------- now playing ---------- */
+.mu-left { justify-content: center; gap: 0; padding-bottom: 6px; }
+.mu-art { width: min(400px, 44vh, 100%); margin: 0 0 40px; }
+.mu-art img, .mu-ph { border-radius: 14px; }
+.mu-art img.on { box-shadow: 0 34px 70px -26px color-mix(in srgb, var(--np-color, #000) 60%, #000), 0 0 0 1px rgba(255,255,255,.06); }
+.mu-meta { width: 100%; text-align: center; margin-bottom: 20px; }
+.mu-app { font-size: 12.5px; color: var(--muted); font-weight: 500; }
+.mu-meta h1 { margin: 6px 0 4px; font: 700 clamp(24px, 2.4vw, 32px)/1.15 var(--display); letter-spacing: -.02em; text-shadow: none; }
+.mu-artist { font-size: 16px; opacity: .9; }
+.mu-album { font-size: 13px; color: var(--faint); margin-top: 3px; }
+.music .mu-time { width: min(420px, 100%); margin: 0 0 14px; display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 12px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.music .mu-time.hidden { display: none; }
+.music .mu-time > span:last-child { text-align: right; }
+.music .mu-time .seek { height: 5px; border-radius: 3px; background: rgba(255,255,255,.14); transition: height .15s; }
+.music .mu-time .seek:hover { height: 7px; }
+.music .mu-time .seek i { background: #fff; border-radius: inherit; }
+.mu-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: min(420px, 100%); margin-top: 22px; }
+.mu-foot .mu-vol { width: 200px; }
+.mu-tools { display: flex; gap: 2px; }
+.mu-tools .ibtn { width: 34px; height: 34px; border-radius: 9px; }
+.mu-tools .ibtn svg { width: 18px; height: 18px; }
+.mu-src { margin-top: 14px; }
+
+/* ---------- the panel ---------- */
+.mu-right, body.lib-open .mu-right { display: flex; flex-direction: column; min-height: 0; border-radius: 18px; overflow: hidden;
+  background: color-mix(in srgb, var(--bg) 66%, transparent); border: 1px solid var(--line); backdrop-filter: blur(var(--glass)) saturate(1.1); }
+.mu-right > * { overflow: visible; }
+.mu-tabbar { display: flex; align-items: center; gap: 12px; height: 58px; padding: 0 16px 0 26px; border-bottom: 1px solid var(--line); flex: none; }
+.mu-tabs { position: relative; display: flex; gap: 24px; height: 100%; }
+.mu-tabs button { position: relative; height: 100%; padding: 0; border: 0; background: none; color: var(--muted); font: 600 14px/1 var(--font); cursor: pointer; transition: color .15s; }
+.mu-tabs button:hover { color: var(--text); }
+.mu-tabs button.on { color: var(--text); }
+.mu-tabs button:focus-visible { outline: 2px solid color-mix(in srgb, var(--a1) 70%, transparent); outline-offset: 4px; border-radius: 4px; }
+.mu-tabline { position: absolute; left: 0; bottom: -1px; height: 2px; width: 0; border-radius: 2px; background: var(--np-color, var(--a1)); transition: transform .28s cubic-bezier(.2,.8,.2,1), width .28s cubic-bezier(.2,.8,.2,1); }
+.mu-lytools { display: flex; align-items: center; gap: 4px; }
+.mu-right .sg-pane { flex: 1; min-height: 0; overflow: hidden; padding: 16px 22px 0 26px; }
+.mu-right .sg-pane > .sg-list, .mu-right .sg-pane > .sg-extra, .mu-right .sg-pane > .history { flex: 1; min-height: 0; overflow-y: auto; padding: 0 6px 18px 0; }
+.mu-right .history { display: grid; align-content: start; gap: 2px; }
+
+/* lyrics: the page's big type */
+.mu-right .mu-lypane { padding: 0; }
+.mu-right .lyrics { flex: 1; padding: 30px 40px 0 30px; mask-image: linear-gradient(transparent, #000 56px, #000 calc(100% - 90px), transparent); }
+.mu-right .lyrics p { font: 650 clamp(20px, 1.7vw, 27px)/1.38 var(--display); letter-spacing: -.012em; padding: 8px 0; transform-origin: left center; }
+.mu-right .lyrics p.on { transform: none; }
+.mu-right .ly-empty { font-size: 15px; padding: 30px 4px; }
+
+/* search */
+.mu-right .sg-bar { gap: 8px; margin: 0 0 14px; }
+.mu-search { flex: 1; display: flex; align-items: center; gap: 9px; height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line2); background: rgba(0,0,0,.28); color: var(--faint); }
+.mu-search:focus-within { border-color: color-mix(in srgb, var(--a1) 60%, transparent); }
+.mu-search svg { width: 17px; height: 17px; flex: none; }
+.mu-search input { flex: 1; min-width: 0; height: 100%; border: 0 !important; background: none !important; box-shadow: none !important; padding: 0 !important; color: var(--text); font-size: 14px; outline: none; }
+.mu-right .sg-bar .btn { height: 40px; }
+
+/* Spotify: the account line, sections, and cover grids */
+.mu-right .sp-head { margin: 0 0 14px; font-size: 13px; gap: 10px; }
+.mu-right .sp-head .btn.xs { height: 28px; padding: 0 10px; }
+.mu-right .sp-seg { margin: 0 0 18px; }
+.mu-right .sp-lib { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 22px 16px; padding: 0 0 16px; }
+.mu-right .sp-lc { gap: 0; padding: 0; border-radius: 0; animation: none; }
+.mu-right .sp-lc:hover { background: none; transform: none; }
+.mu-right .sp-lc .sp-img { border-radius: 10px; margin-bottom: 10px; box-shadow: 0 16px 30px -18px #000; transition: box-shadow .2s; }
+.mu-right .sp-lc:hover .sp-img { box-shadow: 0 20px 36px -16px #000, 0 0 0 1px rgba(255,255,255,.1); }
+.mu-right .sp-lc.artist .sp-img { border-radius: 50%; }
+.mu-right .sp-lc b { font-size: 13.5px; font-weight: 600; }
+.mu-right .sp-lc small { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.mu-right .sp-play { width: 42px; height: 42px; right: 10px; bottom: 10px; box-shadow: 0 8px 18px -6px rgba(0,0,0,.6); }
+.mu-right .sp-dhead { grid-template-columns: 148px 1fr; gap: 22px; padding: 2px 0 14px; }
+.mu-right .sp-dhead .sp-img.big { width: 148px; }
+.mu-right .sp-dhead small { font-size: 12px; letter-spacing: 0; text-transform: none; font-weight: 500; color: var(--muted); }
+.mu-right .sp-dhead h3 { font-size: 28px; letter-spacing: -.02em; }
+
+/* rows (songs in playlists, search results, recent) */
+.mu-right .sg-row { border-radius: 10px; }
+
+/* smaller windows: the panel goes under the player */
+@media (max-width: 1100px) {
+  .music { grid-template-columns: 1fr; height: auto; min-height: calc(100vh - var(--tb)); overflow-y: auto; padding: 22px; gap: 26px; }
+  .mu-art { width: min(300px, 70vw); }
+  .mu-right, body.lib-open .mu-right { min-height: 70vh; }
+}
+@media (prefers-reduced-motion: reduce) { .mu-tabline { transition: none; } }
+
+/* Spotify search: recent searches and songs */
+.sp-sec-row { display: flex; align-items: center; justify-content: space-between; }
+.sp-sec-row .link { font-size: 11px; letter-spacing: 0; text-transform: none; font-weight: 600; color: var(--faint); background: none; border: 0; cursor: pointer; }
+.sp-sec-row .link:hover { color: var(--text); }
+.sp-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 2px 8px; }
+.sp-chip { display: inline-flex; align-items: center; height: 30px; border-radius: 15px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.07); overflow: hidden; }
+.sp-chip button { height: 100%; display: inline-flex; align-items: center; gap: 6px; padding: 0 6px 0 11px; background: none; border: 0; color: var(--text); font: 500 12.5px var(--font); cursor: pointer; }
+.sp-chip button svg { width: 13px; height: 13px; opacity: .55; }
+.sp-chip button.x { padding: 0 10px 0 4px; color: var(--faint); font-size: 10px; }
+.sp-chip:hover { background: rgba(255,255,255,.1); } .sp-chip button.x:hover { color: var(--text); }
