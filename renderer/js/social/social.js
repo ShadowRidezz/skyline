@@ -254,12 +254,14 @@ function renderSide() {
     <div class="sx-sec"><span>Direct messages</span></div>
     <div class="sx-dms">${recent.length ? recent.map(f => {
       const st = statusOf(f), on_ = v.kind === "chat" && v.id === f.id;
-      return `<button class="sx-dm${on_ ? " on" : ""}${f.unread ? " unread" : ""}${st === "offline" ? " off" : ""}" data-sx="chat:${f.id}" data-fid="${f.id}">${avatar(f, 32, st)}<span class="sx-dm-t"><b>${esc(f.display_name)}</b><small>${S.call && S.call.peer.id === f.id && S.call.state !== "ended" ? "In a call" : esc(subline(f))}</small></span>${f.unread ? `<b class="sx-pill">${f.unread > 99 ? "99+" : f.unread}</b>` : ""}</button>`;
+      return `<button class="sx-dm${on_ ? " on" : ""}${f.unread ? " unread" : ""}${st === "offline" ? " off" : ""}" data-sx="chat:${f.id}" data-fid="${f.id}">${avatar(f, 32, st)}<span class="sx-dm-t"><b>${esc(f.display_name)}</b><small>${S.call && S.call.peer.id === f.id && S.call.state !== "ended" ? "In a call" : esc(subline(f))}</small></span>${f.unread ? `<b class="sx-pill">${f.unread > 99 ? "99+" : f.unread}</b>` : f.last_message_at ? `<time class="sx-dm-time" title="Last message ${esc(new Date(f.last_message_at).toLocaleString())}">${shortAgo(f.last_message_at)}</time>` : ""}</button>`;
     }).join("") : `<p class="sx-side-empty">Friends you add show up here.</p>`}</div>
     <div class="sx-callslot" id="sxCallSlot"></div>
     <div class="sx-me" id="sxMe"></div>`;
   renderMe(); CallUI.renderSlot();
 }
+// "now", "5m", "3h", "2d", or a date: how long since you last talked
+function shortAgo(t) { const m = (Date.now() - new Date(t)) / 60000; return m < 1 ? "now" : m < 60 ? Math.floor(m) + "m" : m < 1440 ? Math.floor(m / 60) + "h" : m < 10080 ? Math.floor(m / 1440) + "d" : new Date(t).toLocaleDateString([], { month: "short", day: "numeric" }); }
 function renderMe() {
   const el = $("#sxMe"); if (!el || !S.me) return;
   const st = S.shown || myStatus(), my = S.me.badges || [];

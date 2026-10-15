@@ -136,8 +136,7 @@ function render(host, id) {
         <span class="sx-count hidden" id="sxCount"></span>
         <button type="button" class="sx-cmp-btn" data-sx="stickers" title="Stickers" aria-label="Stickers">${icon("sticker")}</button>
         <button type="button" class="sx-cmp-btn" data-sx="emoji" title="Emoji" aria-label="Emoji">${icon("smile")}</button>
-        <button class="sx-send" type="submit" title="Send (Enter)" aria-label="Send" disabled>${icon("send")}</button></div>
-      <small class="sx-compose-hint">${S.settings.enterSends === false ? "Ctrl+Enter to send" : "Enter to send · Shift+Enter for a new line"} · ↑ edits your last message${t.kind === "channel" ? " · @ mentions someone" : ""}</small>
+        <button class="sx-send" type="submit" title="${S.settings.enterSends === false ? "Send (Ctrl+Enter)" : "Send (Enter) · Shift+Enter for a new line · ↑ edits your last message"}" aria-label="Send" disabled>${icon("send")}</button></div>
     </form>`;
   const list = $("#sxMsgs"), ta = $("#sxText"), form = $("#sxCompose");
   list.onscroll = () => { if (list.scrollTop < 120) older(id); if (nearBottom()) $("#sxJump").classList.add("hidden"); };
