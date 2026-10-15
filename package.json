@@ -1,7 +1,7 @@
 {
   "name": "skyline",
   "productName": "Skyline",
-  "version": "1.23.2",
+  "version": "1.23.3",
   "description": "A living night-city dashboard for your desktop",
   "main": "main/main.js",
   "author": "Skyline",

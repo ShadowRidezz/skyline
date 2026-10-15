@@ -67,3 +67,5 @@
 .sx-act { width: 36px; height: 36px; }
 
 @media (prefers-reduced-motion: reduce) { .sx-msg, .sx-msg-av .sx-av, .sx-send, .sx-compose-box { transition: none; } }
+/* the box inside the bar has no frame of its own (the bar is the frame) */
+.sx-compose textarea, .sx-compose textarea:focus, .sx-compose textarea:focus-visible { border: 0 !important; outline: none !important; box-shadow: none !important; background: transparent !important; }

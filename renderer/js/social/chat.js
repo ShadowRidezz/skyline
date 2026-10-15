@@ -132,7 +132,7 @@ function render(host, id) {
       <div class="sx-compose-extra" id="sxComposeExtra"></div>
       <div class="sx-compose-box">
         <button type="button" class="sx-cmp-btn" data-sx="attach" title="Add a file (pictures, videos, PDFs, up to 25 MB)" aria-label="Add a file">${icon("plus")}</button>
-        <textarea id="sxText" rows="1" maxlength="4000" placeholder="Message ${esc(t.name)}" spellcheck="true" aria-label="Message ${esc(t.name)}">${esc(c.draft || "")}</textarea>
+        <textarea id="sxText" rows="1" maxlength="4000" spellcheck="true" aria-label="Message ${esc(t.name)}">${esc(c.draft || "")}</textarea>
         <span class="sx-count hidden" id="sxCount"></span>
         <button type="button" class="sx-cmp-btn" data-sx="stickers" title="Stickers" aria-label="Stickers">${icon("sticker")}</button>
         <button type="button" class="sx-cmp-btn" data-sx="emoji" title="Emoji" aria-label="Emoji">${icon("smile")}</button>
