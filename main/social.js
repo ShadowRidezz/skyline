@@ -256,12 +256,17 @@ class Social {
       if (process.env.SKY_SOCIAL_TEST) return [1, 2, 3, 4, 5, 6].map(i => ({ id: "testgif" + i, title: "Test GIF " + i, w: 200, h: 120 + i * 10, url: `https://media.giphy.com/media/testgif${i}/giphy.gif`,
         preview: "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="${120 + i * 10}"><rect width="100%" height="100%" fill="hsl(${i * 50},60%,45%)"/><text x="50%" y="55%" font-size="28" text-anchor="middle" fill="#fff" font-family="Segoe UI">GIF ${i}</text></svg>`) }));
       if (!this.cfg.gifKey) throw new Error("no_gif_key");
+      // (GIPHY's free key allows a limited number of searches an hour: the same search within 10 minutes is reused)
+      this.gifCache = this.gifCache || new Map(); const hit = this.gifCache.get(q.toLowerCase());
+      if (hit && Date.now() - hit.at < 10 * 60e3) return hit.list;
       const u = q ? `https://api.giphy.com/v1/gifs/search?${new URLSearchParams({ api_key: this.cfg.gifKey, q, limit: "30", rating: "pg-13", bundle: "messaging_non_clips" })}`
         : `https://api.giphy.com/v1/gifs/trending?${new URLSearchParams({ api_key: this.cfg.gifKey, limit: "30", rating: "pg-13", bundle: "messaging_non_clips" })}`;
       const r = await net.fetch(u); if (!r.ok) throw new Error(r.status === 401 || r.status === 403 ? "no_gif_key" : "offline");
       const j = await r.json();
-      return (j.data || []).filter(g => /^[A-Za-z0-9]{3,40}$/.test(g.id || "")).map(g => { const fw = (g.images && g.images.fixed_width) || {}, o = (g.images && g.images.original) || {};
-        return { id: g.id, title: String(g.title || "").slice(0, 100), w: +o.width || +fw.width || 0, h: +o.height || +fw.height || 0, url: `https://media.giphy.com/media/${g.id}/giphy.gif`, preview: `https://media.giphy.com/media/${g.id}/200w.gif` }; });
+      const list = (j.data || []).filter(g => /^[A-Za-z0-9]{3,40}$/.test(g.id || "")).map(g => { const fw = (g.images && g.images.fixed_width) || {}, o = (g.images && g.images.original) || {};
+        return { id: g.id, title: String(g.title || "").slice(0, 100), w: +o.width || +fw.width || 0, h: +o.height || +fw.height || 0, url: `https://media.giphy.com/media/${g.id}/giphy.webp`, preview: `https://media.giphy.com/media/${g.id}/200w.webp` }; });
+      this.gifCache.set(q.toLowerCase(), { at: Date.now(), list }); if (this.gifCache.size > 200) this.gifCache.delete(this.gifCache.keys().next().value);
+      return list;
     });
     h("social:notify", n => this.notify(String(n.title || "Skyline").slice(0, 80), String(n.body || "").slice(0, 200), n.target || null));
     // closing Skyline: tell friends you're offline first (waits at most 1.5 s)
