@@ -22,6 +22,7 @@ const { Links } = require("./links");
 const { Plays } = require("./plays");
 const { Playtime } = require("./playtime");
 const { Clips } = require("./clips");
+const { DbUpdate } = require("./dbupdate");
 const { Backup } = require("./backup");
 const { Study } = require("./study");
 const { StudyHelper } = require("./studyhelper");
@@ -527,7 +528,8 @@ app.whenReady().then(async () => {
   const study = new Study({ ai: games.ai, brain: assistant.brain }); study.install();
   new StudyHelper(DATA, study).install();
   new Updater(() => win).install(!!SHOT);
-  social = new Social(DATA, () => win, { shot: !!SHOT }); social.install();   // friends, messages and calls   // new versions arrive by themselves, on every PC   // the Chrome extension for IXL / Sadlier talks to this
+  social = new Social(DATA, () => win, { shot: !!SHOT }); social.install();
+  new DbUpdate(DATA, social).install(!!SHOT);   // the admin's Skyline brings the database up to date by itself   // friends, messages and calls   // new versions arrive by themselves, on every PC   // the Chrome extension for IXL / Sadlier talks to this
   if (settings.asst && settings.asst.wake && !SHOT) assistant.setWake(true);
   voice = new Voice(DATA, () => win); voice.install();
   Pages.install();

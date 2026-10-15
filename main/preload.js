@@ -32,6 +32,7 @@ contextBridge.exposeInMainWorld("sky", {
   openUrl: url => ipcRenderer.invoke("open:url", url),
   plays: { stats: range => ipcRenderer.invoke("plays:stats", range) },
   playtime: { stats: () => ipcRenderer.invoke("playtime:stats"), scan: () => ipcRenderer.invoke("playtime:scan") },
+  db: { status: () => ipcRenderer.invoke("db:status"), setToken: t => ipcRenderer.invoke("db:setToken", t), forget: () => ipcRenderer.invoke("db:forget"), apply: () => ipcRenderer.invoke("db:apply"), tokenPage: () => ipcRenderer.invoke("db:tokenPage") },   // database updates (admin)
   clips: {   // the clip saver: settings, the clips you saved, sending one
     status: () => ipcRenderer.invoke("clips:status"), set: p => ipcRenderer.invoke("clips:set", p), read: n => ipcRenderer.invoke("clips:read", n),
     open: n => ipcRenderer.invoke("clips:open", n), del: n => ipcRenderer.invoke("clips:delete", n), now: () => ipcRenderer.invoke("clips:now"),

@@ -1,7 +1,7 @@
 {
   "name": "skyline",
   "productName": "Skyline",
-  "version": "1.24.0",
+  "version": "1.24.1",
   "description": "A living night-city dashboard for your desktop",
   "main": "main/main.js",
   "author": "Skyline",
@@ -24,6 +24,7 @@
     },
     "files": [
       "main/**",
+      "supabase/social.sql",
       "renderer/**",
       "package.json",
       "!**/node_modules/onnxruntime-node/bin/napi-v*/linux/**",
