@@ -3,7 +3,8 @@
 import { $, esc, sky, toast, dialog } from "../util.js";
 import { icon } from "./icons.js";
 import { api } from "./api.js";
-import { S, emit, avatar, badgesHtml, statusOf, STATUS, initials, friend } from "./state.js";
+import { VoiceChat } from "./vchat.js";
+import { S, emit, avatar, badgesHtml, statusOf, STATUS, initials, friend, playingText } from "./state.js";
 
 const members = new Map();        // server id -> [member]
 const memberLoads = new Map();    // server id -> promise
@@ -26,9 +27,10 @@ async function load() {
   // a server you left (or were removed from) while looking at it
   if (S.view.kind === "channel" && !channel(S.view.id)) { const sv = server(S.view.server); S.view = sv ? { kind: "channel", id: firstChannel(sv), server: sv.id } : { kind: "friends" }; }
   emit("servers");
+  const v = VoiceChat.state(); if (v.channel) { const c = rawChannel(v.channel); VoiceChat.sync(c ? c.voice : []); if (!c) VoiceChat.leave(true); }
 }
 const loadSoon = () => { clearTimeout(loadT); loadT = setTimeout(load, 400); };
-function firstChannel(sv) { const last = (S.settings.lastChannel || {})[sv.id]; return (sv.channels.find(c => c.id === last) || sv.channels[0] || {}).id; }
+function firstChannel(sv) { const text = sv.channels.filter(c => c.kind !== "voice"), last = (S.settings.lastChannel || {})[sv.id]; return (text.find(c => c.id === last) || text[0] || {}).id; }
 async function loadMembers(sid, force) {
   if (!force && members.has(sid)) return members.get(sid);
   if (!force && memberLoads.has(sid)) return memberLoads.get(sid);
@@ -69,11 +71,32 @@ function renderSide(el) {
   const admin = isAdmin(sv.id);
   el.innerHTML = `<button class="sx-srv-head" data-sx="srvmenu:${sv.id}" aria-haspopup="menu" title="Server options"><b>${esc(sv.name)}</b>${icon("chevron")}</button>
     <div class="sx-sec"><span>Text channels</span><span class="sp"></span>${admin ? `<button class="ibtn xs" data-sx="newchannel:${sv.id}" title="Create channel" aria-label="Create channel">${icon("plus")}</button>` : ""}</div>
-    <div class="sx-chans">${sv.channels.map(c => { const on = S.view.id === c.id;
+    <div class="sx-chans">${sv.channels.filter(c => c.kind !== "voice").map(c => { const on = S.view.id === c.id;
       return `<button class="sx-chan${on ? " on" : ""}${c.unread && !on ? " unread" : ""}" data-sx="channel:${c.id}" data-cid="${c.id}" title="${esc(c.topic || "#" + c.name)}">${icon("hash")}<span>${esc(c.name)}</span>${c.mentions && !on ? `<b class="sx-pill">${c.mentions > 99 ? "99+" : c.mentions}</b>` : ""}${admin ? `<span class="sx-chan-gear" data-sx="editchannel:${c.id}" title="Edit channel" role="button" aria-label="Edit channel">${icon("settings")}</span>` : ""}</button>`; }).join("")}</div>
+    ${voiceList(sv, admin)}
+    <div class="sx-voiceslot" id="sxVoiceSlot">${voicePanel()}</div>
     <div class="sx-callslot" id="sxCallSlot"></div>
     <div class="sx-me" id="sxMe"></div>`;
   return true;
+}
+// voice channels, with who's in each (a green ring while they talk)
+function voiceList(sv, admin) {
+  const vs = sv.channels.filter(c => c.kind === "voice"); if (!vs.length && !admin) return "";
+  const mine = VoiceChat.state().channel;
+  return `<div class="sx-sec"><span>Voice channels</span><span class="sp"></span>${admin ? `<button class="ibtn xs" data-sx="newvoice:${sv.id}" title="Create voice channel" aria-label="Create voice channel">${icon("plus")}</button>` : ""}</div>
+    <div class="sx-vchans">${vs.map(c => { const people = c.voice || [], here = mine === c.id;
+      return `<button class="sx-chan voice${here ? " on" : ""}" data-sx="vjoin:${c.id}" data-cid="${c.id}" title="${here ? "You're here" : "Join " + esc(c.name)}">${icon("speaker")}<span>${esc(c.name)}</span>${people.length ? `<em>${people.length}</em>` : ""}${admin ? `<span class="sx-chan-gear" data-sx="editchannel:${c.id}" title="Edit channel" role="button" aria-label="Edit channel">${icon("settings")}</span>` : ""}</button>
+        ${people.length ? `<div class="sx-vmems">${people.map(p => `<div class="sx-vmem" data-vu="${p.id}">${avatar(p, 22)}<span>${esc(p.display_name)}</span>${p.deafened ? icon("headphonesOff") : p.muted ? icon("micOff") : ""}</div>`).join("")}</div>` : ""}`; }).join("")
+      || `<p class="sx-side-empty">No voice channels yet.</p>`}</div>`;
+}
+// you're in voice: where, and mute / deafen / leave (shown on every Social page)
+export function voicePanel() {
+  const v = VoiceChat.state(); if (!v.channel) return "";
+  const c = channel(v.channel), sv = server(v.server), ok = v.peers.filter(p => p.state === "connected").length, all = v.peers.length;
+  return `<div class="sx-vpanel"><div class="sx-vpanel-t"><b><i class="sx-live-dot"></i>Voice connected</b><small>${c ? esc(c.name) : "Voice"} · ${sv ? esc(sv.name) : ""}${all ? ` · ${ok}/${all} connected` : " · just you"}</small>${v.noMic ? `<small class="bad">No microphone: they can't hear you</small>` : ""}</div>
+    <div class="sx-vpanel-b"><button class="sx-cbtn sm${v.muted ? " off" : ""}" data-sx="vmute" title="${v.muted ? "Unmute" : "Mute"}" aria-label="${v.muted ? "Unmute" : "Mute"}" aria-pressed="${v.muted}">${icon(v.muted ? "micOff" : "mic")}</button>
+      <button class="sx-cbtn sm${v.deafened ? " off" : ""}" data-sx="vdeafen" title="${v.deafened ? "Undeafen" : "Deafen (hear nobody)"}" aria-label="Deafen" aria-pressed="${v.deafened}">${icon(v.deafened ? "headphonesOff" : "headphones")}</button>
+      <button class="sx-cbtn sm end" data-sx="vleave" title="Leave voice" aria-label="Leave voice">${icon("phoneOff")}</button></div></div>`;
 }
 
 /* ================= members (the right-hand panel) ================= */
@@ -84,7 +107,7 @@ function renderMembers(el, sid) {
   const on = list.filter(m => (m.status || "offline") !== "offline"), off = list.filter(m => (m.status || "offline") === "offline");
   const row = m => { const st = m.id === S.me.id ? (S.shown || "online") : m.status || "offline", d = m.details || {};
     return `<button class="sx-mem${st === "offline" ? " off" : ""}" data-sx="profile:${m.id}" data-mem="${m.id}">${avatar(m, 32, st, d.decoration)}<span class="sx-mem-t"><b class="${m.role === "owner" || m.role === "admin" ? "sx-role-" + m.role : ""}">${esc(m.display_name)}${m.role === "owner" ? `<i class="sx-role-ic" title="Server owner">${icon("crown")}</i>` : ""}</b>
-      <small>${d.status_text || d.status_emoji ? esc(((d.status_emoji || "") + " " + (d.status_text || "")).trim()) : m.role === "admin" ? "Admin" : st !== "offline" ? STATUS[st].label : "@" + esc(m.username)}</small></span>${badgesHtml((m.badges || []).slice(0, 2), true)}</button>`; };
+      <small>${m.activity && m.activity.game && st !== "offline" ? `<span class="sx-playing">${esc(playingText(m.activity))}</span>` : d.status_text || d.status_emoji ? esc(((d.status_emoji || "") + " " + (d.status_text || "")).trim()) : m.role === "admin" ? "Admin" : st !== "offline" ? STATUS[st].label : "@" + esc(m.username)}</small></span>${badgesHtml((m.badges || []).slice(0, 2), true)}</button>`; };
   el.innerHTML = `<div class="sx-panel-head"><b>Members</b><small>${list.length}</small><span class="sp"></span>${close}</div>
     <div class="sx-mems">${on.length ? `<div class="sx-group">Online — ${on.length}</div>` + on.map(row).join("") : ""}${off.length ? `<div class="sx-group">Offline — ${off.length}</div>` + off.map(row).join("") : ""}</div>
     <div class="sx-mem-acts"><button class="btn sm primary sx-wide" data-sx="invite:${sid}">${icon("userPlus")}Invite people</button></div>`;
@@ -227,9 +250,11 @@ async function inviteDialog(sid) {
 }
 
 // a channel: make one, or change / delete it
-async function channelDialog(sid, cid) {
+async function channelDialog(sid, cid, kind = "text") {
   const sv = server(sid), c = cid ? rawChannel(cid) : null; if (!sv) return;
-  const { m, close } = modal(`${head(c ? "Edit #" + c.name : "Create a channel")}
+  if (c) kind = c.kind || "text";
+  const { m, close } = modal(`${head(c ? "Edit " + (kind === "voice" ? "" : "#") + c.name : "Create a channel")}
+    ${c ? "" : `<div class="sx-radio sx-chkind">${[["text", "Text", "Messages, pictures, GIFs and stickers", "hash"], ["voice", "Voice", "Hang out and talk, up to 10 people", "speaker"]].map(([k, l, d, ic]) => `<label><input type="radio" name="sxChKind" value="${k}" ${kind === k ? "checked" : ""}><span><b>${icon(ic)}${l}</b><small>${d}</small></span></label>`).join("")}</div>`}
     <label class="sx-field"><span>Channel name</span><div class="sx-at"><i>#</i><input id="sxChName" maxlength="32" value="${esc(c ? c.name : "")}" placeholder="new-channel" spellcheck="false" autocomplete="off"></div><small id="sxChHint">Lowercase letters, numbers and dashes. Spaces become dashes.</small></label>
     <label class="sx-field"><span>Topic</span><input id="sxChTopic" maxlength="200" value="${esc(c ? c.topic : "")}" placeholder="What's this channel for? (optional)" autocomplete="off"></label>
     <div class="dlg-acts">${c ? `<button class="btn danger" data-d="delete">${icon("trash")}Delete channel</button>` : ""}<span class="sp"></span><button class="btn ghost" data-d="close">Cancel</button><button class="btn primary" data-d="save">${c ? "Save" : "Create channel"}</button></div>`);
@@ -245,7 +270,8 @@ async function channelDialog(sid, cid) {
       b.disabled = true;
       try {
         if (c) await api.rpc("update_channel", { p_channel: c.id, p_name: name.value, p_topic: m.querySelector("#sxChTopic").value });
-        else { const id = await api.rpc("create_channel", { p_server: sid, p_name: name.value, p_topic: m.querySelector("#sxChTopic").value }); close(); await load(); return go(sid, id); }
+        else { const k = (m.querySelector('input[name="sxChKind"]:checked') || {}).value || "text";
+          const id = await api.rpc("create_channel", { p_server: sid, p_name: name.value, p_topic: m.querySelector("#sxChTopic").value, p_kind: k }); close(); await load(); return k === "voice" ? VoiceChat.join(id, sid) : go(sid, id); }
         close(); await load();
       } catch (er) { toast(er.message, true); b.disabled = false; }
     }
@@ -338,6 +364,6 @@ setInterval(() => { if (S.me && S.view.kind === "channel" && !document.hidden) l
 export const Servers = {
   load, loadSoon, loadMembers, server, channel, isAdmin, unreadOf, members: memberList, member, memberByName, roleOf,
   markRead, bump: (cid, you) => { bump(cid, you); loadSoon(); }, notifyLevel, renderRail, renderSide, renderMembers,
-  inviteCard, invitePreview, fillInvites, join, go, addServer, inviteDialog, channelDialog, settingsDialog, serverMenu, onChange, mentionTotal,
+  inviteCard, invitePreview, fillInvites, join, go, addServer, voicePanel, inviteDialog, channelDialog, settingsDialog, serverMenu, onChange, mentionTotal,
   serverUnread, firstChannel,
 };

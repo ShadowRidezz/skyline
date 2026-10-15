@@ -70,7 +70,8 @@ function body() {
   }
   if (section === "privacy") return block("Your status", `
       ${row("Status", "What friends see next to your name.", `<select class="sx-select" data-set="status">${[["online", "Online"], ["away", "Away"], ["dnd", "Do not disturb"], ["invisible", "Invisible (appear offline)"]].map(([v, l]) => `<option value="${v}" ${(set.status || "online") === v ? "selected" : ""}>${l}</option>`).join("")}</select>`)}
-      ${row("Go Away when idle", "After 10 minutes without using your PC.", toggle("autoAway", set.autoAway !== false))}`)
+      ${row("Go Away when idle", "After 10 minutes without using your PC.", toggle("autoAway", set.autoAway !== false))}
+      ${row("Show what I'm playing", "Friends and your servers see “Playing Fortnite · 25 min” while a game is open.", toggle("shareGame", set.shareGame !== false))}`)
     + block("Friend requests", row("Who can send you requests", "Anyone else can still find you by username, but can't send a request.", `<select class="sx-select" data-set="allow_requests">${[["everyone", "Everyone"], ["friends_of_friends", "Friends of friends"], ["nobody", "No one"]].map(([v, l]) => `<option value="${v}" ${me.allow_requests === v ? "selected" : ""}>${l}</option>`).join("")}</select>`))
     + block("Calls", row("Who can call you", "Off: friends can still message you. Checked by the server, not just this app.", `<select class="sx-select" data-set="allow_calls"><option value="true" ${(me.details || {}).allow_calls !== false ? "selected" : ""}>Friends</option><option value="false" ${(me.details || {}).allow_calls === false ? "selected" : ""}>No one</option></select>`))
     + block("Messages", `<p class="sx-set-note">Only you and the friend you're talking to can read your messages and open your files. Blocking someone stops them messaging, calling or finding you.</p>`);
@@ -194,7 +195,7 @@ async function change(e) {
     else if (k.startsWith("motion.")) { S.settings.motion = { ...(S.settings.motion || {}), [k.slice(7)]: v }; document.querySelectorAll("img[data-frozen]").forEach(i => { if (i.dataset.live) i.src = i.dataset.live; delete i.dataset.frozen; delete i.dataset.live; }); import("./profile.js").then(m => m.applyMotion(document)); }
     else S.settings[k] = v;
     await save().catch(() => {});
-    if (k === "status") { document.dispatchEvent(new CustomEvent("sx:status")); }
+    if (k === "status" || k === "shareGame") { document.dispatchEvent(new CustomEvent("sx:status")); }
     return;
   }
   if (t.dataset.dev) { S.settings.devices = { ...(S.settings.devices || {}), [t.dataset.dev]: t.value }; saveSoon(); return; }

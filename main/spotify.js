@@ -200,6 +200,7 @@ class Spotify {
   async play(item) {
     const isTrack = /^spotify:track:/.test(item.uri);
     const body = isTrack ? (item.context && !item.solo ? { context_uri: item.context, offset: { uri: item.uri } } : { uris: [item.uri] }) : { context_uri: item.uri };
+    if (isTrack && +item.position > 0) body.position_ms = Math.round(+item.position * 1000);
     const premium = !!(this.conf().user || {}).premium;
     if (premium && Date.now() - this.remoteStuck > 6 * 3600e3) {
       try { await this.api("PUT", "/me/player/play", body); if (await this.started(item)) { this.tuck(2500); return { ok: true, how: "played" }; } return this.openDirect(item); }
@@ -245,7 +246,8 @@ class Spotify {
     this.playedOnce = true;
     if (cold) await this.wake();   // never let a closed Spotify open in a big window
     for (let i = 0; i < 3 && tok === this.playTok; i++) {
-      this.tuck(cold ? 25000 : long ? 12000 : 6000); await shell.openExternal(uri + "#0:00");   // the watcher is already running when the window appears
+      const at = +item.position > 0 ? Math.floor(+item.position) : 0;
+      this.tuck(cold ? 25000 : long ? 12000 : 6000); await shell.openExternal(uri + `#${Math.floor(at / 60)}:${String(at % 60).padStart(2, "0")}`);   // the watcher is already running when the window appears
       let got = await this.confirm(want, tok, cold && i === 0 ? 15000 : 6000);
       if (got === "paused") { if (this.media) this.media.send("play"); got = await this.confirm(want, tok, 3000); }
       if (got === "playing") { this.tuck(long ? 5000 : 2000); return { ok: true, how: "played" }; }   // and a little longer, for a window that shows up late
@@ -316,6 +318,13 @@ class Spotify {
     h("sp:search", q => this.search(q));
     h("sp:play", item => { if (!item || !/^spotify:(track|album|artist|playlist):[A-Za-z0-9]+$/.test(item.uri || "")) throw new Error("Not a Spotify link"); return this.play(item); });
     h("sp:upNext", () => this.upNext());
+    // what your Spotify is playing right now (for listening along in a call)
+    h("sp:current", async () => {
+      if (!this.status().connected) return null;
+      const j = await this.api("GET", "/me/player/currently-playing").catch(() => null);
+      const t = j && j.item; if (!t || !t.uri || !/^spotify:track:/.test(t.uri)) return null;
+      return { uri: t.uri, title: t.name, artist: (t.artists || []).map(a => a.name).join(", "), art: this.img(t.album && t.album.images), dur: Math.round((t.duration_ms || 0) / 1000), pos: (j.progress_ms || 0) / 1000, playing: !!j.is_playing, at: Date.now() };
+    });
     h("sp:skipTo", n => this.skipTo(n));
     h("sp:queue", uri => { if (!/^spotify:track:[A-Za-z0-9]+$/.test(uri || "")) throw new Error("Not a song"); return this.queue(uri); });
     h("sp:like", id => { if (!/^[A-Za-z0-9]+$/.test(id || "")) throw new Error("Not a song"); return this.like(id); });

@@ -125,6 +125,7 @@ function newGrades(s, was) {
   if (!list.length) return;
   D.reminded.grades = [...seen, ...list.map(g => g.id + "|" + g.score + "/" + g.outOf)].slice(-300); save();
   const name = g => { const c = D.classes.find(c => c.cr === g.course); return (c ? c.name + " · " : "") + g.title; };
+  say(list.length === 1 ? `New grade: you got ${Math.round(pct(list[0]))} percent on ${list[0].title}.` : `You have ${list.length} new grades in Google Classroom.`);
   sky.app.notify({ title: list.length === 1 ? `📊 New grade: ${fmtPct(pct(list[0]))}` : `📊 ${list.length} new grades`, body: list.slice(0, 4).map(g => `${name(g)}: ${fmtPct(pct(g))} (${g.score}/${g.outOf})`).join("\n") });
 }
 
@@ -246,12 +247,17 @@ function offlineQuiz(deck, n = 10) {
 }
 
 /* ---------- reminders ---------- */
+const voiceOn = () => D.remind.voice !== false;
+function say(text) { if (!voiceOn() || !text) return; import("./assistant.js").then(m => m.Assistant.speak(text)).catch(() => {}); }
+const spokenList = list => list.length === 1 ? list[0] : list.slice(0, -1).join(", ") + " and " + list[list.length - 1];
 function remind() {
   if (!D || !D.remind.on || !sky) return;
   const now = new Date(), k = ymd(now), mins = now.getHours() * 60 + now.getMinutes(), all = items().filter(i => !i.done);
   if (mins >= toMin(D.remind.at || "19:00") && D.reminded.evening !== k) {   // the evening heads-up: what's due tomorrow
     D.reminded.evening = k; save();
     const tmr = all.filter(i => dayStart(i.when) === addDays(today(), 1)), over = all.filter(late);
+    if (tmr.length) say(`Heads up: ${tmr.length === 1 ? "your " + tmr[0].title + " is" : "you have " + tmr.length + " things"} due tomorrow${tmr.length > 1 ? ": " + spokenList(tmr.slice(0, 4).map(i => i.title)) : ""}.${over.length ? ` And ${over.length} ${over.length === 1 ? "thing is" : "things are"} overdue.` : ""}`);
+    else if (over.length) say(`You have ${over.length} overdue ${over.length === 1 ? "assignment" : "assignments"}.`);
     if (tmr.length || over.length) sky.app.notify({ title: tmr.length ? `📚 ${tmr.length} thing${tmr.length > 1 ? "s" : ""} due tomorrow` : `📚 ${over.length} overdue`,
       body: tmr.slice(0, 4).map(i => `• ${i.title}${clsName(i.classId) ? " (" + clsName(i.classId) + ")" : ""}`).join("\n") + (over.length && tmr.length ? `\n+ ${over.length} overdue` : over.length ? over.slice(0, 4).map(i => `• ${i.title}`).join("\n") : "") });
   }
@@ -382,7 +388,8 @@ export const School = {
   },
   remindCard() {
     return `<section class="glass pg-card"><div class="pg-h">🔔 Reminders</div>
-      <label class="toggle"><input type="checkbox" data-remind="on" ${D.remind.on ? "checked" : ""}><span class="sw"></span><span class="t"><b>Remind me</b><small>What's due tomorrow at <input type="time" data-remind="at" value="${esc(D.remind.at || "19:00")}" class="sc-time">, tests 3 days and 1 day ahead, and new Classroom work.</small></span></label></section>`;
+      <label class="toggle"><input type="checkbox" data-remind="on" ${D.remind.on ? "checked" : ""}><span class="sw"></span><span class="t"><b>Remind me</b><small>What's due tomorrow at <input type="time" data-remind="at" value="${esc(D.remind.at || "19:00")}" class="sc-time">, tests 3 days and 1 day ahead, new Classroom work and new grades.</small></span></label>
+      <label class="toggle"><input type="checkbox" data-remind="voice" ${voiceOn() ? "checked" : ""}><span class="sw"></span><span class="t"><b>Sky says it out loud</b><small>“Your Chapter 7 HW is due tomorrow”, and new grades as they come in.</small></span></label></section>`;
   },
   favicons() {
     $$("#view-school [data-host]").forEach(async e => { if (!e.dataset.host || e.classList.contains("img")) return; const url = await sky.favicon(e.dataset.host).catch(() => null); if (url) { const img = new Image(); img.onload = () => { e.textContent = ""; e.appendChild(img); e.classList.add("img"); }; img.src = url; } });
@@ -707,7 +714,7 @@ export const School = {
       if (t.matches("[data-wcls]")) { w.classId = t.value; save(); return this.render(); }
       if (t.matches("[data-wkind]")) { w.kind = t.value; save(); return this.render(); } }
     if (t.closest("#scQuick")) { const f = t.closest("#scQuick"); if (t.name !== "text") f.dataset[t.name] = "1"; return; }
-    if (t.matches("[data-remind]")) { if (t.dataset.remind === "on") D.remind.on = t.checked; else { D.remind.at = t.value || "19:00"; if (toMin(D.remind.at) > new Date().getHours() * 60 + new Date().getMinutes()) D.reminded.evening = ""; } save(); return; }
+    if (t.matches("[data-remind]")) { if (t.dataset.remind === "on") D.remind.on = t.checked; else if (t.dataset.remind === "voice") D.remind.voice = t.checked; else { D.remind.at = t.value || "19:00"; if (toMin(D.remind.at) > new Date().getHours() * 60 + new Date().getMinutes()) D.reminded.evening = ""; } save(); return; }
     const pr = t.closest("[data-pid]"), p = pr && D.periods.find(x => x.id === pr.dataset.pid);
     if (p && t.dataset.pf) {
       if (t.dataset.pf === "classId" && t.value === "__name") { dialog({ title: "Name this period", input: p.name || "Lunch", ok: "Save" }).then(n => { if (n && n.trim()) { p.name = n.trim().slice(0, 24); p.classId = ""; } save(); this.renderPeriods(); this.renderTimeline(); this.renderHero(); }); return; }

@@ -65,8 +65,10 @@ export function dayLabel(t) {
   if (diff === 1) return "Yesterday";
   return d.toLocaleDateString([], { weekday: diff < 7 ? "long" : undefined, month: "long", day: "numeric", year: d.getFullYear() !== today.getFullYear() ? "numeric" : undefined });
 }
-export function subline(f) {   // under a friend's name: their custom status, what they're up to, or when they were last around
+export const playingText = a => { if (!a || !a.game) return ""; const m = Math.max(0, Math.round((Date.now() - new Date(a.since || Date.now())) / 60000)); return `Playing ${a.game}${m >= 1 ? ` · ${m < 60 ? m + " min" : Math.floor(m / 60) + " h " + (m % 60) + " min"}` : ""}`; };
+export function subline(f) {   // under a friend's name: what they're playing, their custom status, or when they were last around
   const st = statusOf(f);
+  if (st !== "offline" && f.activity && f.activity.game) return playingText(f.activity);
   if (st !== "offline" && (f.status_text || f.status_emoji)) return ((f.status_emoji ? f.status_emoji + " " : "") + (f.status_text || "")).trim();
   if (st !== "offline") return STATUS[st].label;
   return f.last_seen ? "Last seen " + ago(f.last_seen) : "Offline";

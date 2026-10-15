@@ -80,7 +80,7 @@ export function pickSticker(anchor, onPick, save) {
       : tab === "recent" ? recent().map(k => A.find(s => key(s) === k)).filter(Boolean)
       : tab === "favs" ? favs().map(k => A.find(s => key(s) === k)).filter(Boolean) : A.filter(s => s.pack === tab);
     const fav = new Set(favs());
-    el.querySelector(".sx-stk-grid").innerHTML = (list.length ? list.map(s => `<div class="sx-stk-item"><button class="sx-stk-pick" data-k="${esc(key(s))}" title="${esc(s.name)}" aria-label="Send ${esc(s.name)} sticker"><img src="${esc(s.src)}" alt="" draggable="false"></button>
+    el.querySelector(".sx-stk-grid").innerHTML = (list.length ? list.map(s => `<div class="sx-stk-item"><button class="sx-stk-pick" data-k="${esc(key(s))}" title="${esc(s.name)}${s.pack === "mine" ? " · right-click to delete" : ""}" aria-label="Send ${esc(s.name)} sticker"><img src="${esc(s.src)}" alt="" draggable="false"></button>
         <button class="sx-stk-fav${fav.has(key(s)) ? " on" : ""}" data-fav="${esc(key(s))}" title="${fav.has(key(s)) ? "Remove from favorites" : "Add to favorites"}" aria-label="Favorite">${icon("star")}</button></div>`).join("")
       : `<p class="sx-none">${q ? "No stickers found." : tab === "favs" ? "Star a sticker to keep it here." : tab === "mine" ? "Upload your own stickers below." : tab === "recent" ? "Stickers you send show up here." : ""}</p>`)
       + (tab === "mine" && !q ? `<button class="sx-stk-add" data-add title="Upload a sticker (PNG, WebP or GIF, up to 1 MB)">${icon("plus")}<span>Add sticker</span></button>` : "");
@@ -99,6 +99,33 @@ export function pickSticker(anchor, onPick, save) {
     const p = e.target.closest("[data-k]"); if (!p) return;
     const k = p.dataset.k; S.settings.recentStickers = [k, ...recent().filter(x => x !== k)].slice(0, 16); save();
     onPick(k.startsWith("b:") ? { sticker: k.slice(2) } : { url: k.slice(2) }); closeStickers();
+  });
+  // right-click a sticker: delete your own, or take it off Recent / Favorites
+  el.addEventListener("contextmenu", e => {
+    const p = e.target.closest("[data-k]"); if (!p) return;
+    e.preventDefault(); e.stopPropagation();
+    const k = p.dataset.k, own = k.startsWith("u:") && mine().some(x => "u:" + x.url === k);
+    const items = [
+      ...(own ? [["Delete sticker", "trash", true, async () => {
+        const url = k.slice(2);
+        S.settings.stickers = mine().filter(x => x.url !== url);
+        S.settings.favStickers = favs().filter(x => x !== k); S.settings.recentStickers = recent().filter(x => x !== k);
+        save(); draw(); toast("Sticker deleted"); api.removeMedia(url).catch(() => {});
+      }]] : []),
+      ...(recent().includes(k) ? [["Remove from Recent", "refresh", false, () => { S.settings.recentStickers = recent().filter(x => x !== k); save(); draw(); }]] : []),
+      ...(favs().includes(k) ? [["Remove from Favorites", "star", false, () => { S.settings.favStickers = favs().filter(x => x !== k); save(); draw(); }]] : []),
+    ];
+    if (!items.length) return;
+    const m = document.createElement("div"); m.className = "sx-menu sx-stk-menu"; m.setAttribute("role", "menu");
+    m.innerHTML = items.map(([l, ic, d]) => `<button role="menuitem" class="${d ? "danger" : ""}">${icon(ic)}<span>${l}</span></button>`).join("");
+    el.appendChild(m);
+    const box = el.getBoundingClientRect();
+    m.style.position = "fixed"; m.style.left = Math.min(e.clientX, innerWidth - 200) + "px"; m.style.top = Math.min(e.clientY, innerHeight - 40 * items.length - 10) + "px";
+    const shut = () => { m.remove(); el.removeEventListener("mousedown", out, true); };
+    const out = ev => { if (!m.contains(ev.target)) shut(); };
+    setTimeout(() => el.addEventListener("mousedown", out, true));
+    [...m.querySelectorAll("button")].forEach((b, i) => b.onclick = ev => { ev.stopPropagation(); shut(); items[i][3](); });
+    m.querySelector("button").focus();
   });
   const r = anchor.getBoundingClientRect(), w = el.offsetWidth, h = el.offsetHeight;
   el.style.left = Math.max(8, Math.min(r.right - w, innerWidth - w - 8)) + "px"; el.style.top = Math.max(8, r.top - h - 8) + "px";

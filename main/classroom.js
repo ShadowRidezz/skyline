@@ -198,7 +198,7 @@ class Classroom {
     h("cr:sync", async force => { await this.sync({ grades: !!force }); return this.status(); });
     h("cr:disconnect", () => this.disconnect());
     h("cr:open", url => this.openAsSchool(url));
-    if (!testing) setInterval(() => { const d = this.read(); if (d.connected && !d.expired && Date.now() - (d.at || 0) > 25 * 60e3) this.sync().catch(() => {}); }, 5 * 60e3);
+    if (!testing) setInterval(() => { const d = this.read(); if (d.connected && !d.expired && Date.now() - (d.at || 0) > 4.5 * 60e3) this.sync().catch(() => {}); }, 5 * 60e3);
   }
 }
 

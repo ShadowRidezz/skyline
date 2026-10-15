@@ -2,20 +2,21 @@
 // supabase/social.sql, and live updates (Supabase Realtime), handed to the page over IPC.
 // The page never sees your session token; it only asks for a named server function.
 // For tests, SKY_SOCIAL_TEST=http://127.0.0.1:port points everything at test/social/server.mjs instead.
-const { ipcMain, safeStorage, desktopCapturer, Notification, powerMonitor, app } = require("electron");
+const { ipcMain, safeStorage, desktopCapturer, Notification, powerMonitor, app, net } = require("electron");
 const fs = require("fs");
 const path = require("path");
 
 const RPCS = new Set([
   "create_server", "get_servers", "get_members", "update_server", "delete_server", "leave_server", "kick_member", "set_member_role", "create_channel", "update_channel",
   "delete_channel", "reorder_channels", "create_invite", "get_invite", "join_server", "get_invites", "revoke_invite", "send_channel_message", "cm_edit", "cm_delete", "cm_react",
+  "voice_join", "voice_leave", "voice_state", "voice_heartbeat", "send_voice_signal", "set_typing",
   "cm_pin", "get_channel_messages", "get_channel_message", "search_channel", "get_channel_pins", "mark_channel_read",
   "is_admin", "my_badges", "show_badge", "admin_badges", "admin_save_badge", "admin_delete_badge", "admin_give_badge", "admin_take_badge", "admin_badge_holders", "admin_users", "admin_suspend", "admin_stats", "admin_announce",
   "edit_message", "delete_message", "react", "pin_message", "get_message", "search_messages", "get_pins", "update_profile_details", "set_status", "can_make_badges", "username_available", "create_profile", "update_profile", "my_profile", "get_settings", "save_settings", "heartbeat",
   "search_users", "get_profile", "send_request", "respond_request", "cancel_request", "get_requests", "get_friends", "remove_friend",
   "block_user", "unblock_user", "get_blocked", "send_message", "get_messages", "mark_read", "send_signal", "get_notifications", "mark_notifications_read"]);
 const TABLES = ["messages", "message_reactions", "friend_requests", "friendships", "presence", "notifications", "profile_details",
-  "servers", "server_members", "channels", "channel_messages", "channel_reactions"];
+  "servers", "server_members", "channels", "channel_messages", "channel_reactions", "voice_members", "typing_state"];
 const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/;
 // pictures you can upload, recognised by their actual bytes (a renamed file isn't accepted)
 const KINDS = { avatar: 4 * 1048576, banner: 6 * 1048576, background: 6 * 1048576, sticker: 1048576, server: 4 * 1048576 };
@@ -44,7 +45,7 @@ function config() {
   try { c = JSON.parse(fs.readFileSync(path.join(__dirname, "social-config.json"), "utf8")); } catch (e) {}
   const ice = Array.isArray(c.iceServers) && c.iceServers.length ? c.iceServers
     : [{ urls: ["stun:stun.l.google.com:19302", "stun:stun.cloudflare.com:3478"] }];
-  return { url: String(c.url || "").trim(), key: String(c.anonKey || "").trim(), ice };
+  return { url: String(c.url || "").trim(), key: String(c.anonKey || "").trim(), ice, gifKey: String(c.gifKey || "").trim() };
 }
 const tidyError = e => {   // server errors are short codes (see social.sql); anything else gets a plain message
   const m = String((e && (e.message || e.msg || e.error_description)) || e || "");
@@ -116,7 +117,7 @@ class SupabaseLink {
     if (!this.uid) return;
     const ch = this.sb.channel("skyline-social-" + this.uid);
     for (const table of TABLES) ch.on("postgres_changes", { event: "*", schema: "public", table }, p => this.emit("change", { table, type: p.eventType, row: p.new, old: p.old }));
-    ch.on("postgres_changes", { event: "INSERT", schema: "public", table: "call_signals", filter: `to_id=eq.${this.uid}` }, p => this.emit("change", { table: "call_signals", type: "INSERT", row: p.new }));
+    for (const t of ["call_signals", "voice_signals"]) ch.on("postgres_changes", { event: "INSERT", schema: "public", table: t, filter: `to_id=eq.${this.uid}` }, p => this.emit("change", { table: t, type: "INSERT", row: p.new }));
     ch.subscribe(status => this.emit("live", { status }));
     this.ch = ch;
   }
@@ -248,6 +249,20 @@ class Social {
     });
     h("social:shareSource", id => { this.share = { id: String(id || ""), at: Date.now() }; return true; });
     h("social:idle", () => powerMonitor.getSystemIdleTime());
+    // GIFs from GIPHY: trending, or a search. Each comes back as a small preview and the link that's sent
+    // (GIPHY's plain link for the GIF, the only kind the server accepts).
+    h("social:gifs", async q => {
+      q = String(q || "").trim().slice(0, 50);
+      if (process.env.SKY_SOCIAL_TEST) return [1, 2, 3, 4, 5, 6].map(i => ({ id: "testgif" + i, title: "Test GIF " + i, w: 200, h: 120 + i * 10, url: `https://media.giphy.com/media/testgif${i}/giphy.gif`,
+        preview: "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="${120 + i * 10}"><rect width="100%" height="100%" fill="hsl(${i * 50},60%,45%)"/><text x="50%" y="55%" font-size="28" text-anchor="middle" fill="#fff" font-family="Segoe UI">GIF ${i}</text></svg>`) }));
+      if (!this.cfg.gifKey) throw new Error("no_gif_key");
+      const u = q ? `https://api.giphy.com/v1/gifs/search?${new URLSearchParams({ api_key: this.cfg.gifKey, q, limit: "30", rating: "pg-13", bundle: "messaging_non_clips" })}`
+        : `https://api.giphy.com/v1/gifs/trending?${new URLSearchParams({ api_key: this.cfg.gifKey, limit: "30", rating: "pg-13", bundle: "messaging_non_clips" })}`;
+      const r = await net.fetch(u); if (!r.ok) throw new Error(r.status === 401 || r.status === 403 ? "no_gif_key" : "offline");
+      const j = await r.json();
+      return (j.data || []).filter(g => /^[A-Za-z0-9]{3,40}$/.test(g.id || "")).map(g => { const fw = (g.images && g.images.fixed_width) || {}, o = (g.images && g.images.original) || {};
+        return { id: g.id, title: String(g.title || "").slice(0, 100), w: +o.width || +fw.width || 0, h: +o.height || +fw.height || 0, url: `https://media.giphy.com/media/${g.id}/giphy.gif`, preview: `https://media.giphy.com/media/${g.id}/200w.gif` }; });
+    });
     h("social:notify", n => this.notify(String(n.title || "Skyline").slice(0, 80), String(n.body || "").slice(0, 200), n.target || null));
     // closing Skyline: tell friends you're offline first (waits at most 1.5 s)
     let said = false;

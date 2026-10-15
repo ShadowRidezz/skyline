@@ -21,6 +21,7 @@ const { Classroom } = require("./classroom");
 const { Links } = require("./links");
 const { Plays } = require("./plays");
 const { Playtime } = require("./playtime");
+const { Clips } = require("./clips");
 const { Backup } = require("./backup");
 const { Study } = require("./study");
 const { StudyHelper } = require("./studyhelper");
@@ -44,6 +45,7 @@ if (!SHOT && !app.requestSingleInstanceLock()) { app.quit(); process.exit(0); }
 const DATA = app.getPath("userData");
 const BG_DIR = path.join(DATA, "backgrounds");
 const ICON_DIR = path.join(DATA, "favicons");
+let clips = null;
 let win = null, mini = null, tray = null, quitting = false, media = null, games = null, songs = null, art = null, assistant = null, voice = null, trayThemes = [];
 let settings = {};
 
@@ -87,6 +89,7 @@ function registerHotkey() {
   if (a.on !== false && a.hotkeyOn !== false) {   // talk to the assistant from anywhere
     try { globalShortcut.register(a.hotkey || "Alt+Shift+A", () => { showWindow(); send(win, "asst:hotkey"); }); } catch (e) {}
   }
+  if (clips) clips.registerKey();   // (unregisterAll above took the clip key too)
 }
 
 /* ---------- windows ---------- */
@@ -518,7 +521,8 @@ app.whenReady().then(async () => {
   assistant = new Assistant(DATA, { games, songs, spotify, ai: games.ai, media, getWin: () => win, shot: !!SHOT }); assistant.install(!!SHOT);
   new Links({ getSettings: () => settings, assistant }).install();
   const plays = new Plays(DATA, media); plays.install(); app.on("before-quit", () => plays.stop());
-  new Playtime(DATA, games, media).install(!!SHOT);
+  const playtime = new Playtime(DATA, games, media); playtime.install(!!SHOT);
+  clips = new Clips(DATA, () => win, playtime, { shot: !!SHOT }); clips.install();   // the clip saver (off until you turn it on)
   new Backup(DATA, () => win).install(!!SHOT);
   const study = new Study({ ai: games.ai, brain: assistant.brain }); study.install();
   new StudyHelper(DATA, study).install();

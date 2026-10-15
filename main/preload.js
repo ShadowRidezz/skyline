@@ -32,6 +32,11 @@ contextBridge.exposeInMainWorld("sky", {
   openUrl: url => ipcRenderer.invoke("open:url", url),
   plays: { stats: range => ipcRenderer.invoke("plays:stats", range) },
   playtime: { stats: () => ipcRenderer.invoke("playtime:stats"), scan: () => ipcRenderer.invoke("playtime:scan") },
+  clips: {   // the clip saver: settings, the clips you saved, sending one
+    status: () => ipcRenderer.invoke("clips:status"), set: p => ipcRenderer.invoke("clips:set", p), read: n => ipcRenderer.invoke("clips:read", n),
+    open: n => ipcRenderer.invoke("clips:open", n), del: n => ipcRenderer.invoke("clips:delete", n), now: () => ipcRenderer.invoke("clips:now"),
+    onSaved: fn => ipcRenderer.on("clips:saved", (e, d) => fn(d)), onStatus: fn => ipcRenderer.on("clips:status", (e, d) => fn(d)), onToast: fn => ipcRenderer.on("clips:toast", (e, d) => fn(d)),
+  },
   backup: { save: () => ipcRenderer.invoke("backup:save"), pick: () => ipcRenderer.invoke("backup:pick"), restore: () => ipcRenderer.invoke("backup:restore"), test: (f, r) => ipcRenderer.invoke("backup:test", f, r) },
   links: {
     open: (url, name) => ipcRenderer.invoke("links:open", url, name),
@@ -98,6 +103,7 @@ contextBridge.exposeInMainWorld("sky", {
     disconnect: () => ipcRenderer.invoke("sp:disconnect"),
     search: q => ipcRenderer.invoke("sp:search", q),
     play: item => ipcRenderer.invoke("sp:play", item),
+    current: () => ipcRenderer.invoke("sp:current"),
     queue: uri => ipcRenderer.invoke("sp:queue", uri),
     upNext: () => ipcRenderer.invoke("sp:upNext"),
     skipTo: n => ipcRenderer.invoke("sp:skipTo", n),
@@ -133,6 +139,7 @@ contextBridge.exposeInMainWorld("sky", {
     screens: () => ipcRenderer.invoke("social:screens"),
     shareSource: id => ipcRenderer.invoke("social:shareSource", id),
     idle: () => ipcRenderer.invoke("social:idle"),
+    gifs: q => ipcRenderer.invoke("social:gifs", q),
     notify: n => ipcRenderer.invoke("social:notify", n),
     onAuth: on("social:auth"), onChange: on("social:change"), onLive: on("social:live"), onOpen: on("social:open"),
   },

@@ -92,8 +92,11 @@ export class Call {
   useChannel(dc) {
     this.dc = dc;
     dc.onopen = () => this.sendState();
-    dc.onmessage = e => { try { const m = JSON.parse(e.data); if (m && typeof m === "object") { this.peerState = { mic: !!m.mic, cam: !!m.cam, screen: !!m.screen }; this.onChange(this); } } catch (er) {} };
+    dc.onmessage = e => { try { const m = JSON.parse(e.data); if (!m || typeof m !== "object") return;
+      if (m.t) { if (this.onData) this.onData(m); return; }   // something shared (watching together)
+      this.peerState = { mic: !!m.mic, cam: !!m.cam, screen: !!m.screen }; this.onChange(this); } catch (er) {} };
   }
+  sendData(obj) { if (this.dc && this.dc.readyState === "open" && JSON.stringify(obj).length < 8000) this.dc.send(JSON.stringify(obj)); }
   sendState() {
     if (this.dc && this.dc.readyState === "open") this.dc.send(JSON.stringify({ mic: !this.muted && !!this.local.mic, cam: !!this.local.cam, screen: !!this.local.screen }));
   }

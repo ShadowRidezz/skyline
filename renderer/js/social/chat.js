@@ -9,12 +9,37 @@ import { CallUI } from "./callui.js";
 import { notify } from "./social.js";
 import { pickEmoji, EMOJI_QUICK, closeEmoji } from "./emoji.js";
 import { pickSticker, stickerSrc, stickerName, closeStickers } from "./stickers.js";
+import { pickGif, closeGifs, gifHtml } from "./gifs.js";
 import { Servers } from "./servers.js";
 
 const PAGE = 60, GROUP_MS = 5 * 60e3, MAX_FILES = 6, MAX_FILE = 25 * 1048576;
 let cur = null, el = null, reply = null, editing = null, pending = [], menuEl = null, mention = null;
 const prefs = () => S.settings.chat || {};
 const urls = new Map();   // attachment path -> { url, at }
+// typing: tell the other side every few seconds while you type; show who's typing here
+const typing = new Map();   // user id -> { key, at }
+let typedAt = 0, typedKey = null, typingTimer = 0;
+function iAmTyping(key) {
+  if (Date.now() - typedAt < 3000 && typedKey === key) return;
+  typedAt = Date.now(); typedKey = key;
+  const t = T(key); if (!t) return;
+  api.rpc("set_typing", t.kind === "dm" ? { p_to: t.id } : { p_channel: t.id }).catch(() => {});
+}
+function stopTyping() { if (!typedKey) return; typedKey = null; typedAt = 0; api.rpc("set_typing", {}).catch(() => {}); }
+function drawTyping() {
+  const box = $("#sxTyping"); if (!box) return;
+  const now = Date.now(), t = T(), who = [...typing.entries()].filter(([u, x]) => x.key === cur && now - x.at < 7000 && u !== S.me.id).map(([u]) => t ? t.who(u).display_name : "Someone");
+  box.innerHTML = who.length ? `<span class="sx-typing-dots"><i></i><i></i><i></i></span><span><b>${esc(who.slice(0, 3).join(", "))}</b> ${who.length === 1 ? "is" : "are"} typing…</span>` : "";
+  box.classList.toggle("on", !!who.length);
+  clearTimeout(typingTimer); if (who.length) typingTimer = setTimeout(drawTyping, 1500);
+}
+function onTyping(ch) {
+  if (ch.type === "DELETE") { const u = ch.old && ch.old.user_id; if (u && typing.delete(u)) drawTyping(); return; }
+  const r = ch.row || {}; if (!r.user_id || r.user_id === S.me.id) return;
+  const key = r.channel_id ? "ch:" + r.channel_id : r.to_user === S.me.id ? r.user_id : null;
+  if (!key) { typing.delete(r.user_id); return drawTyping(); }
+  typing.set(r.user_id, { key, at: Date.now() }); drawTyping();
+}
 
 /* ---------- targets: what's different between a direct message and a channel ---------- */
 const UNKNOWN = id => ({ id, display_name: "Former member", username: "unknown", accent: "#475569" });
@@ -128,12 +153,14 @@ function render(host, id) {
     ${t.kind === "dm" ? `<div class="sx-stage-slot" id="sxStageSlot"></div>` : ""}
     <div class="sx-msgs${compact ? " compact" : ""}" id="sxMsgs" tabindex="-1"></div>
     <button class="sx-jump hidden" id="sxJump" data-sx="jump">New messages ${icon("chevron")}</button>
+    <div class="sx-typing" id="sxTyping" aria-live="polite"></div>
     <form class="sx-compose" id="sxCompose">
       <div class="sx-compose-extra" id="sxComposeExtra"></div>
       <div class="sx-compose-box">
         <button type="button" class="sx-cmp-btn" data-sx="attach" title="Add a file (pictures, videos, PDFs, up to 25 MB)" aria-label="Add a file">${icon("plus")}</button>
         <textarea id="sxText" rows="1" maxlength="4000" spellcheck="true" aria-label="Message ${esc(t.name)}">${esc(c.draft || "")}</textarea>
         <span class="sx-count hidden" id="sxCount"></span>
+        <button type="button" class="sx-cmp-btn sx-gif-btn" data-sx="gifs" title="GIFs" aria-label="GIFs">GIF</button>
         <button type="button" class="sx-cmp-btn" data-sx="stickers" title="Stickers" aria-label="Stickers">${icon("sticker")}</button>
         <button type="button" class="sx-cmp-btn" data-sx="emoji" title="Emoji" aria-label="Emoji">${icon("smile")}</button>
         <button class="sx-send" type="submit" title="${S.settings.enterSends === false ? "Send (Ctrl+Enter)" : "Send (Enter) · Shift+Enter for a new line · ↑ edits your last message"}" aria-label="Send" disabled>${icon("send")}</button></div>
@@ -143,7 +170,7 @@ function render(host, id) {
   list.onclick = msgClick; list.oncontextmenu = msgMenu;
   list.onkeydown = editKeys;
   const grow = () => { ta.style.height = "auto"; ta.style.height = Math.min(ta.scrollHeight, 200) + "px"; form.querySelector(".sx-send").disabled = !ta.value.trim() && !pending.some(p => p.done); const n = ta.value.length, cnt = $("#sxCount"); cnt.classList.toggle("hidden", n < 3500); cnt.textContent = 4000 - n; c.draft = ta.value; };
-  ta.oninput = () => { grow(); if (t.kind === "channel") mentionSuggest(ta); };
+  ta.oninput = () => { grow(); if (t.kind === "channel") mentionSuggest(ta); if (ta.value.trim()) iAmTyping(id); else stopTyping(); };
   grow();
   ta.onkeydown = e => {
     if (mention && mentionKeys(e, ta)) return;
@@ -157,11 +184,12 @@ function render(host, id) {
   host.ondragover = e => { if ([...(e.dataTransfer.types || [])].includes("Files")) { e.preventDefault(); host.classList.add("dropping"); } };
   host.ondragleave = e => { if (!host.contains(e.relatedTarget)) host.classList.remove("dropping"); };
   host.ondrop = e => { host.classList.remove("dropping"); const files = [...(e.dataTransfer.files || [])]; if (files.length) { e.preventDefault(); e.stopPropagation(); addFiles(files); } };
-  form.onsubmit = e => { e.preventDefault(); const v = ta.value.trim(); if (!v && !pending.some(p => p.done)) return; ta.value = ""; grow(); closeMention(); sendNow(id, v); };
+  form.onsubmit = e => { e.preventDefault(); const v = ta.value.trim(); if (!v && !pending.some(p => p.done)) return; ta.value = ""; grow(); closeMention(); stopTyping(); sendNow(id, v); };
   if (!c.loaded) { list.innerHTML = `<div class="sx-msgs-load">${'<div class="sx-skel msg"></div>'.repeat(4)}</div>`; load(id); }
   else { draw(true); seen(id); }
   extra();
   if (t.kind === "dm") CallUI.renderStage();
+  drawTyping();
   if (t.kind === "channel") Servers.loadMembers(t.sv.id).then(() => { if (cur === id) draw(false); });
   setTimeout(() => ta.focus(), 30);
 }
@@ -184,6 +212,7 @@ function textHtml(body, t) {
 }
 function bodyHtml(m, t) {
   if (m.deleted_at) return `<div class="sx-msg-t gone">${icon("trash")}This message was deleted.</div>`;
+  if (m.kind === "gif") return gifHtml(m);
   if (m.kind === "sticker") {
     const src = m.meta && m.meta.sticker ? stickerSrc(m.meta.sticker) : m.meta && m.meta.url ? m.meta.url : "";
     return `<div class="sx-sticker">${src ? `<img src="${esc(src)}" alt="${esc(m.meta.sticker ? stickerName(m.meta.sticker) : "Sticker")}" draggable="false"${/\.gif$|-anim\./.test(src) ? " data-anim" : ""}>` : ""}</div>`;
@@ -227,7 +256,7 @@ function draw(toBottom) {
     if (c.divider && m.id === c.divider) h += `<div class="sx-new"><span>New</span></div>`;
     const grouped = prev && prev.sender === m.sender && !m.reply && ts - new Date(prev.created_at).getTime() < GROUP_MS && dayLabel(prev.created_at) === dayLabel(m.created_at) && m.id !== c.divider;
     const state = m._state === "sending" ? `<span class="sx-state">${m._progress ? "Uploading…" : "Sending…"}</span>` : m._state === "failed" ? `<span class="sx-state bad">Not sent · <button class="sx-link" data-retry="${esc(m.client_id)}">Retry</button></span>` : "";
-    const quote = m.reply ? `<button class="sx-quote" data-jump="${esc(m.reply.id)}" title="Jump to the message">${icon("reply")}<b>${esc(t.who(m.reply.sender).display_name)}</b><span>${m.reply.deleted ? "Deleted message" : m.reply.kind === "sticker" ? "Sticker" : m.reply.kind === "attachment" && !m.reply.body ? "Attachment" : esc(m.reply.body)}</span></button>` : "";
+    const quote = m.reply ? `<button class="sx-quote" data-jump="${esc(m.reply.id)}" title="Jump to the message">${icon("reply")}<b>${esc(t.who(m.reply.sender).display_name)}</b><span>${m.reply.deleted ? "Deleted message" : m.reply.kind === "sticker" ? "Sticker" : m.reply.kind === "gif" ? "GIF" : m.reply.kind === "attachment" && !m.reply.body ? "Attachment" : esc(m.reply.body)}</span></button>` : "";
     const isEditing = editing === m.id, role = t.kind === "channel" ? Servers.roleOf(t.sv.id, m.sender) : "";
     h += `<div class="sx-msg${grouped ? " cont" : ""}${m._state ? " " + m._state : ""}${m.pinned_at ? " pinned" : ""}${isEditing ? " editing" : ""}${m.kind === "sticker" ? " stk" : ""}${!mine && !m.deleted_at && mentionsMe(m, t) ? " mention" : ""}" data-mid="${esc(m.id)}" data-mine="${mine ? 1 : 0}">
       ${quote}
@@ -281,7 +310,7 @@ function closeMention() { mention = null; const b = $("#sxMention"); if (b) b.re
 function extra() {
   const box = $("#sxComposeExtra"); if (!box) return;
   const t = T();
-  box.innerHTML = (reply && t ? `<div class="sx-replying">${icon("reply")}<span>Replying to <b>${esc(reply.sender === S.me.id ? "yourself" : t.who(reply.sender).display_name)}</b></span><em>${esc(reply.kind === "sticker" ? "Sticker" : reply.body || "Attachment")}</em><button class="ibtn sm" data-sx="noreply" aria-label="Cancel reply">${icon("x")}</button></div>` : "")
+  box.innerHTML = (reply && t ? `<div class="sx-replying">${icon("reply")}<span>Replying to <b>${esc(reply.sender === S.me.id ? "yourself" : t.who(reply.sender).display_name)}</b></span><em>${esc(reply.kind === "sticker" ? "Sticker" : reply.kind === "gif" ? "GIF" : reply.body || "Attachment")}</em><button class="ibtn sm" data-sx="noreply" aria-label="Cancel reply">${icon("x")}</button></div>` : "")
     + (pending.length ? `<div class="sx-pending-files">${pending.map((p, i) => `<div class="sx-pf${p.error ? " bad" : ""}" title="${esc(p.name)}">${p.preview ? `<img src="${p.preview}" alt="">` : icon("file")}<span><b>${esc(p.name)}</b><small>${p.error ? esc(p.error) : p.done ? sizeText(p.size) : "Uploading…"}</small></span>
         ${p.done || p.error ? "" : `<i class="sx-pf-bar"><i></i></i>`}<button class="ibtn sm" data-sx="unfile:${i}" aria-label="Remove ${esc(p.name)}">${icon("x")}</button></div>`).join("")}</div>` : "");
   const send = document.querySelector("#sxCompose .sx-send"), ta = $("#sxText");
@@ -447,7 +476,7 @@ async function panel(kind) {
   p.innerHTML = `<div class="sx-float-head"><b>${kind === "pins" ? "Pinned messages" : "Search"}</b><span class="sp"></span><button class="ibtn sm" data-f="close" aria-label="Close">${icon("x")}</button></div>
     ${kind === "search" ? `<label class="sx-search sm">${icon("search")}<input id="sxMsgQ" placeholder="Search ${t.kind === "dm" ? "messages with " + esc(t.name) : esc(t.name)}" spellcheck="false"></label>` : ""}<div class="sx-float-list" id="sxFloatList"><div class="sx-skel"></div></div>`;
   el.appendChild(p);
-  const fill = list => { $("#sxFloatList").innerHTML = list.length ? list.map(m => { const w = t.who(m.sender); return `<button class="sx-float-item" data-f="go" data-id="${esc(m.id)}">${avatar(w, 28)}<span><b>${esc(w.display_name)}</b><small>${esc(new Date(m.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }))}</small><em>${esc(m.kind === "sticker" ? "Sticker" : m.body || "Attachment")}</em></span></button>`; }).join("")
+  const fill = list => { $("#sxFloatList").innerHTML = list.length ? list.map(m => { const w = t.who(m.sender); return `<button class="sx-float-item" data-f="go" data-id="${esc(m.id)}">${avatar(w, 28)}<span><b>${esc(w.display_name)}</b><small>${esc(new Date(m.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }))}</small><em>${esc(m.kind === "sticker" ? "Sticker" : m.kind === "gif" ? "GIF" : m.body || "Attachment")}</em></span></button>`; }).join("")
     : `<p class="sx-none">${kind === "pins" ? "No pinned messages yet. Pin one from a message's menu." : "No messages match."}</p>`; };
   if (kind === "pins") t.pins().then(fill).catch(() => fill([]));
   else { $("#sxFloatList").innerHTML = ""; const q = $("#sxMsgQ"); q.focus(); let tm = 0; q.oninput = () => { clearTimeout(tm); tm = setTimeout(() => { if (q.value.trim().length < 2) return ($("#sxFloatList").innerHTML = ""); t.search(q.value.trim()).then(fill).catch(() => fill([])); }, 250); }; }
@@ -469,6 +498,7 @@ function onMessage(ch) {
     return;
   }
   if (ch.type !== "INSERT" || S.seenMsgs.has(m.id)) return; S.seenMsgs.add(m.id);
+  if (typing.delete(m.sender)) drawTyping();
   const full = { ...m, reactions: [], reply: null };
   if (c && (c.loaded || c.loading)) {   // (while loading too: the load keeps it)
     if (m.sender === S.me.id && c.msgs.some(x => x.client_id && x.client_id === m.client_id)) return;   // our own, being confirmed by send
@@ -486,7 +516,7 @@ function onMessage(ch) {
     if (f) f.unread = (f.unread || 0) + 1;
     if (cur === other) draw(false);
     const np = S.settings.notify || {};
-    const preview = m.kind === "sticker" ? "Sent a sticker" : m.kind === "attachment" && !m.body ? "Sent a file" : m.body.slice(0, 140);
+    const preview = m.kind === "sticker" ? "Sent a sticker" : m.kind === "gif" ? "Sent a GIF" : m.kind === "attachment" && !m.body ? "Sent a file" : m.body.slice(0, 140);
     if (f) notify(f.display_name, np.preview === false ? "Sent you a message" : preview, { chat: other }, "message");
   }
   emit("friends");
@@ -502,7 +532,7 @@ function channelMessage(m, key, full) {
   const level = Servers.notifyLevel(t.sv.id);
   if (level === "none" || (level === "mentions" && !you)) return;
   const np = S.settings.notify || {}, w = t.who(m.sender);
-  const preview = m.kind === "sticker" ? "Sent a sticker" : m.kind === "attachment" && !m.body ? "Sent a file" : m.body.slice(0, 140);
+  const preview = m.kind === "sticker" ? "Sent a sticker" : m.kind === "gif" ? "Sent a GIF" : m.kind === "attachment" && !m.body ? "Sent a file" : m.body.slice(0, 140);
   notify(`${w.display_name} in #${t.ch.name}${you ? " (mentioned you)" : ""}`, np.preview === false ? `New message in ${t.sv.name}` : preview, { channel: t.id }, "message");
 }
 function catchUp() {   // after reconnecting: reload whatever conversation you're in
@@ -516,7 +546,7 @@ export const Chat = {
     document.addEventListener("keydown", e => { if (e.key === "Escape" && $("#sxFloat")) closePanels(); });
     document.addEventListener("sx:chatprefs", () => { const l = $("#sxMsgs"); if (l) { l.classList.toggle("compact", prefs().density === "compact"); draw(false); } });
   },
-  render, onMessage, catchUp, viewKey,
+  render, onMessage, catchUp, viewKey, onTyping,
   redraw: () => draw(false),
   forget: key => { S.convos.delete(key); if (cur === key) cur = null; },
   seen: id => seen(id),
@@ -525,8 +555,9 @@ export const Chat = {
     if (a === "reload" && cur) { const c = convo(cur); c.error = null; load(cur); }
     if (a === "togglepanel") { if (S.panel && S.panel.id === x) { S.panel = null; emit("panel"); } else import("./social.js").then(m => m.Social.showProfile(x, true)); }
     if (a === "callshare") { const f = friend(x); if (f) CallUI.start(f, false, { share: true }); }
-    if (a === "emoji") { closeStickers(); pickEmoji(b, e => { const ta = $("#sxText"), s = ta.selectionStart ?? ta.value.length; ta.value = ta.value.slice(0, s) + e + ta.value.slice(ta.selectionEnd ?? s); ta.focus(); ta.setSelectionRange(s + e.length, s + e.length); ta.dispatchEvent(new Event("input")); }, { save: saveSettings, keepOpen: true }); }
-    if (a === "stickers") { closeEmoji(); pickSticker(b, pick => { const rp = reply; reply = null; extra(); send(cur, { kind: "sticker", meta: pick, reply: rp }); }, saveSettings); }
+    if (a === "emoji") { closeStickers(); closeGifs(); pickEmoji(b, e => { const ta = $("#sxText"), s = ta.selectionStart ?? ta.value.length; ta.value = ta.value.slice(0, s) + e + ta.value.slice(ta.selectionEnd ?? s); ta.focus(); ta.setSelectionRange(s + e.length, s + e.length); ta.dispatchEvent(new Event("input")); }, { save: saveSettings, keepOpen: true }); }
+    if (a === "gifs") { closeEmoji(); closeStickers(); pickGif(b, g => { const rp = reply; reply = null; extra(); send(cur, { kind: "gif", meta: g, reply: rp }); }); }
+    if (a === "stickers") { closeEmoji(); closeGifs(); pickSticker(b, pick => { const rp = reply; reply = null; extra(); send(cur, { kind: "sticker", meta: pick, reply: rp }); }, saveSettings); }
     if (a === "attach") { const inp = document.createElement("input"); inp.type = "file"; inp.multiple = true; inp.onchange = () => addFiles([...inp.files]); inp.click(); }
     if (a === "unfile") { const p = pending.splice(+x, 1)[0]; if (p && p.preview) URL.revokeObjectURL(p.preview); extra(); }
     if (a === "noreply") { reply = null; extra(); }

@@ -5,6 +5,7 @@ import { icon } from "./icons.js";
 import { api } from "./api.js";
 import { S, emit, friend, statusOf, avatar } from "./state.js";
 import { Call, SHARE_QUALITY } from "./call.js";
+import { Watch } from "./watch.js";
 
 const ENDED = {
   no_answer: "No answer", unreachable: "Couldn't reach them. They may have just gone offline.", declined: "Call declined", busy: "They're in another call", missed: "Missed call", ended_by_them: "Call ended",
@@ -19,7 +20,9 @@ async function start(f, video, opts = {}) {
   if (S.call && S.call.state !== "ended") { toast(S.call.peer.id === f.id ? "You're already in a call with them" : "You're already in a call", true); return; }
   if (statusOf(f) === "offline") { toast(`${f.display_name} is offline. You can call when they're back.`, true); return; }
   const id = crypto.randomUUID();
+  const { VoiceChat } = await import("./vchat.js"); if (VoiceChat.inVoice()) await VoiceChat.leave(true);
   const call = new Call({ id, peer: f, role: "caller", video, ice: S.ice, devices: S.settings.devices || {}, send: sender(id, f.id), onChange: changed });
+  Watch.attach(call);
   S.call = call; call.wantShare = !!opts.share;
   goChat(f.id); changed(call);
   call.voice = S.settings.voice || {}; call.joinMuted = !!call.voice.joinMuted;
@@ -35,6 +38,7 @@ async function onSignal(sig) {
     const f = friend(sig.from_id); if (!f) return;
     if ((S.call && S.call.state !== "ended") || S.incoming) { sender(sig.call_id, sig.from_id)("busy", {}).catch(() => {}); return; }
     const call = new Call({ id: sig.call_id, peer: f, role: "callee", video: !!(sig.payload && sig.payload.video), ice: S.ice, devices: S.settings.devices || {}, send: sender(sig.call_id, f.id), onChange: changed });
+    Watch.attach(call);
     call.seen.add(sig.id); call.ringTimer = setTimeout(() => { if (call.state === "incoming") call.end("missed"); }, 32000);
     S.call = call; S.incoming = call; changed(call);
     call.send("ringing", {}).catch(() => {});   // tell the caller this PC is ringing
@@ -53,7 +57,7 @@ function changed(call) {
   if (call.state === "ended") {
     const msg = ENDED[call.reason] || (call.reason && call.reason.length > 12 ? call.reason : "Call ended");
     if (call.reason !== "declined_by_you") toast(msg, ["failed", "lost", "their_device", "unreachable"].includes(call.reason) || call.reason.length > 24);
-    clearInterval(tick); tick = 0;
+    clearInterval(tick); tick = 0; Watch.end();
     setTimeout(() => { if (S.call === call) { S.call = null; renderAll(); } }, 50);
   } else if (!tick) tick = setInterval(() => { const d = $(".sx-call-time"); if (d && S.call) d.textContent = timeText(S.call); $$("[data-calltime]").forEach(x => x.textContent = timeText(S.call)); }, 1000);
   renderAll();
@@ -94,7 +98,7 @@ function renderStage() {
   if (!c || c.state === "ended" || c.state === "incoming" || S.view.kind !== "chat" || S.view.id !== c.peer.id) { if (slot.firstChild) { slot.innerHTML = ""; slot.className = "sx-stage-slot"; } return; }
   const sharingThem = c.peerState.screen && c.remote.screen, sharingMe = !!c.local.screen;
   const camThem = c.peerState.cam && c.remote.cam, camMe = !!c.local.cam;
-  const mode = sharingThem || sharingMe ? "share" : camThem || camMe ? "video" : "voice";
+  const mode = Watch.watching() ? "watch" : sharingThem || sharingMe ? "share" : camThem || camMe ? "video" : "voice";
   slot.className = "sx-stage-slot on " + mode;
   if (!slot.querySelector(".sx-stage")) {
     slot.innerHTML = `<div class="sx-stage" id="sxStage">
@@ -118,7 +122,10 @@ function renderStage() {
   const main = $("#sxStageMain"), strip = $("#sxStageStrip");
   const themMuted = !c.peerState.mic, meMuted = c.muted;
   let mainKey, mainHtml, stripHtml;
-  if (mode === "share") {
+  if (mode === "watch") {   // a video you're watching together; the two of you along the side
+    mainKey = Watch.videoKey(); mainHtml = `<div class="sx-watch" id="sxWatch"></div>`;
+    stripHtml = tile(c.peer, camThem ? c.remote.cam : null, false, themMuted, "cam") + tile(S.me, camMe ? c.local.cam : null, true, meMuted, "mycam");
+  } else if (mode === "share") {
     const mine = sharingMe && !sharingThem;
     mainKey = "share:" + (mine ? "me" : "them");
     mainHtml = `<div class="sx-share"><video autoplay playsinline ${mine ? "muted" : ""} data-stream="${mine ? "myscreen" : "screen"}"></video>
@@ -142,6 +149,10 @@ function renderStage() {
     const sh = main.querySelector(".sx-share"); if (sh) { sh.ondblclick = e => { if (!e.target.closest("button")) shareFull(); }; shareStats(); }
   }
   if (strip.dataset.k !== stripHtml) { strip.dataset.k = stripHtml; strip.innerHTML = stripHtml; }
+  if (mode === "watch") Watch.mount($("#sxWatch"));
+  let tg = slot.querySelector(".sx-together-bar"); const tgHtml = Watch.barHtml(c.peer);
+  if (!tg) { tg = document.createElement("div"); tg.className = "sx-together-bar"; slot.querySelector(".sx-stage").appendChild(tg); }
+  if (tg.dataset.k !== tgHtml) { tg.dataset.k = tgHtml; tg.innerHTML = tgHtml; }
   const streams = { cam: c.remote.cam, screen: c.remote.screen, mycam: c.local.cam ? new MediaStream([c.local.cam]) : null, myscreen: c.local.screen ? new MediaStream([c.local.screen]) : null };
   slot.querySelectorAll("video[data-stream]").forEach(v => { const s = streams[v.dataset.stream]; const id = s && s.getTracks()[0] && s.getTracks()[0].id; if (v.dataset.tid !== id) { v.dataset.tid = id || ""; v.srcObject = s || null; } });
   // controls
@@ -149,10 +160,12 @@ function renderStage() {
     <button class="sx-cbtn${c.muted || !c.local.mic ? " off" : ""}" data-cc="mute" title="${!c.local.mic ? "No microphone" : c.muted ? "Unmute" : "Mute"}" aria-label="${c.muted ? "Unmute" : "Mute"}" aria-pressed="${c.muted}" ${c.local.mic ? "" : "disabled"}>${icon(c.muted || !c.local.mic ? "micOff" : "mic")}</button>
     <button class="sx-cbtn${camMe ? " active" : ""}" data-cc="cam" title="${camMe ? "Turn camera off" : "Turn camera on"}" aria-label="Camera" aria-pressed="${camMe}" ${c.state === "calling" ? "" : ""}>${icon(camMe ? "video" : "videoOff")}</button>
     <button class="sx-cbtn${sharingMe ? " active" : ""}" data-cc="share" title="${sharingMe ? "Stop sharing" : "Share your screen"}" aria-label="Share screen" aria-pressed="${sharingMe}" ${c.state !== "connected" && c.state !== "reconnecting" ? "disabled" : ""}>${icon(sharingMe ? "screenOff" : "screen")}</button>
+    <button class="sx-cbtn${Watch.watching() ? " active" : ""}" data-cc="together" title="Watch a video or listen to a song together" aria-label="Together" ${c.state !== "connected" && c.state !== "reconnecting" ? "disabled" : ""}>${icon("play")}</button>
     <label class="sx-callvol" title="Their volume"><span>${icon("volume")}</span><input type="range" class="rg" min="0" max="300" step="10" value="${(S.settings.voice || {}).volume ?? 200}" data-cc-vol aria-label="Their volume"></label>
     <button class="sx-cbtn end" data-cc="end" title="${c.state === "calling" ? "Cancel call" : "Leave call"}" aria-label="End call">${icon("phoneOff")}</button>`;
 }
 async function controls(e) {
+  const w = e.target.closest("[data-wt]"); if (w) return Watch.click(w.dataset.wt, w);
   const b = e.target.closest("[data-cc]"); if (!b || !S.call) return;
   const c = S.call, a = b.dataset.cc;
   try {
@@ -163,6 +176,7 @@ async function controls(e) {
     else if (a === "end") c.hangup("ended");
     else if (a === "retrymic") { if (await c.retryMic()) toast("Microphone on"); else toast(c.noMic, true); }
     else if (a === "sharefull") shareFull();
+    else if (a === "together") Watch.click("together", b);
     else if (a === "full") { const st = $("#sxStage"); if (document.fullscreenElement) document.exitFullscreen(); else st.requestFullscreen().catch(() => {}); }
   } catch (er) { toast(er.message, true); }
 }

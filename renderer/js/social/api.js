@@ -53,6 +53,8 @@ const WORDS = {
   not_admin: "Only Skyline's admins can do that.",
   badge_invalid: "That badge isn't valid. Check its name and colours.",
   suspended: "Your Social account is suspended. If you think that's a mistake, talk to Skyline's owner.",
+  not_in_voice: "You're not in that voice channel any more.",
+  voice_full: "That voice channel is full (10 people).",
   announcement_invalid: "Announcements are 2–500 characters.",
 };
 export const words = code => WORDS[code] || (/^[a-z_]+$/.test(code || "") ? "Something went wrong (" + code + ")." : code || "Something went wrong.");

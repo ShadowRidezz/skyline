@@ -70,8 +70,8 @@ function foundCard(r, i) {
 function renderMine() {
   const box = $("#gMine"); if (!box) return;
   $("#gMineCount").textContent = G.projects.length ? `${G.projects.length} game${G.projects.length > 1 ? "s" : ""}` : "";
-  box.innerHTML = G.projects.length ? G.projects.map(projectCard).join("")
-    : `<div class="g-empty"><span>✦</span><b>Your games appear here</b><p>Describe a game above and the AI builds it for you.</p></div>`;
+  box.innerHTML = G.projects.length ? G.projects.map(projectCard).join("") : "";
+  box.closest(".g-sec").classList.toggle("hidden", !G.projects.length);   // (only games you made before; nothing to show otherwise)
 }
 function renderLib() {
   const box = $("#gLib"); if (!box) return;

@@ -9,7 +9,7 @@ import { openDb, as } from "./db.mjs";
 const PORT = +(process.argv[2] || 47900);
 const SECRET = crypto.randomBytes(16).toString("hex");
 const db = await openDb();
-const TABLES = { servers: "id", server_members: "server_id", channels: "id", channel_messages: "id", channel_reactions: "message_id", message_reactions: "message_id", messages: "id", friend_requests: "id", friendships: "id", presence: "user_id", notifications: "id", call_signals: "id", profile_details: "user_id" };
+const TABLES = { voice_members: "user_id", voice_signals: "id", typing_state: "user_id", servers: "id", server_members: "server_id", channels: "id", channel_messages: "id", channel_reactions: "message_id", message_reactions: "message_id", messages: "id", friend_requests: "id", friendships: "id", presence: "user_id", notifications: "id", call_signals: "id", profile_details: "user_id" };
 for (const [t, pk] of Object.entries(TABLES)) {
   await db.exec(`create or replace function public.tg_${t}() returns trigger language plpgsql as $$ begin
     perform pg_notify('changes', json_build_object('table', '${t}', 'type', TG_OP, 'pk', (case when TG_OP = 'DELETE' then OLD.${pk} else NEW.${pk} end)::text)::text);
@@ -41,7 +41,7 @@ await db.listen("changes", payload => {
         if (c.type === "DELETE") { cl.res.write(JSON.stringify({ table: c.table, type: "DELETE", row: {}, old: { [pk]: c.pk } }) + "\n"); continue; }
         const r = await as(db, cl.uid, `select to_jsonb(t) as row from public.${c.table} t where ${pk}::text = $1`, [c.pk]);
         const row = r.rows[0] && r.rows[0].row; if (!row) continue;
-        if (c.table === "call_signals" && row.to_id !== cl.uid) continue;
+        if ((c.table === "call_signals" || c.table === "voice_signals") && row.to_id !== cl.uid) continue;
         cl.res.write(JSON.stringify({ table: c.table, type: c.type, row, old: {} }) + "\n");
       } catch (e) {}
     }

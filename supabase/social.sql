@@ -89,7 +89,7 @@ alter table public.messages drop constraint if exists messages_body_check;
 alter table public.messages drop constraint if exists messages_body_ok;
 alter table public.messages add constraint messages_body_ok check (char_length(body) <= 4000 and (char_length(body) >= 1 or kind <> 'text' or deleted_at is not null));
 alter table public.messages drop constraint if exists messages_kind_ok;
-alter table public.messages add constraint messages_kind_ok check (kind in ('text', 'sticker', 'attachment'));
+alter table public.messages add constraint messages_kind_ok check (kind in ('text', 'sticker', 'attachment', 'gif'));
 alter table public.messages drop constraint if exists messages_meta_ok;
 alter table public.messages add constraint messages_meta_ok check (jsonb_typeof(meta) = 'object' and pg_column_size(meta) <= 6000);
 
@@ -399,14 +399,26 @@ begin
 end $$;
 
 -- ---------- presence ----------
-create or replace function public.heartbeat(p_status text default 'online') returns void
+alter table public.presence add column if not exists activity jsonb;
+-- you're here (every ~20 s), and what you're playing, if you share it: { "game": "Fortnite", "since": "<time>" }
+drop function if exists public.heartbeat(text);
+create or replace function public.heartbeat(p_status text default 'online', p_activity jsonb default null) returns void
 language plpgsql security definer set search_path = public as $$
-declare u uuid := public.require_profile();
+declare u uuid := public.require_profile(); a jsonb := null;
 begin
   if p_status not in ('online', 'away', 'dnd', 'offline') then raise exception 'status_invalid'; end if;
-  insert into presence (user_id, status, last_seen) values (u, p_status, now())
-    on conflict (user_id) do update set status = excluded.status, last_seen = now();
+  if p_activity is not null and p_status <> 'offline' and jsonb_typeof(p_activity) = 'object' and char_length(coalesce(p_activity->>'game', '')) between 1 and 60 then
+    a := jsonb_build_object('game', p_activity->>'game', 'since', coalesce((p_activity->>'since')::timestamptz, now()));
+  end if;
+  insert into presence (user_id, status, last_seen, activity) values (u, p_status, now(), a)
+    on conflict (user_id) do update set status = excluded.status, last_seen = now(), activity = excluded.activity;
+exception when invalid_datetime_format or datetime_field_overflow then raise exception 'status_invalid';
 end $$;
+-- what someone's playing, as others see it: nothing when they look offline
+create or replace function public.shown_activity(p_user uuid) returns jsonb
+language sql stable security definer set search_path = public as $$
+  select case when public.shown_status(p_user) <> 'offline' then (select activity from presence where user_id = p_user) end;
+$$;
 
 -- ---------- finding people ----------
 create or replace function public.relation(me uuid, other uuid) returns text
@@ -530,7 +542,7 @@ $$;
 drop function if exists public.get_friends();
 create or replace function public.get_friends()
 returns table (id uuid, username text, display_name text, avatar text, accent text, badges jsonb, status text, last_seen timestamptz,
-               unread int, last_message_at timestamptz, friends_since timestamptz, status_text text, status_emoji text, decoration text)
+               unread int, last_message_at timestamptz, friends_since timestamptz, status_text text, status_emoji text, decoration text, activity jsonb)
 language sql stable security definer set search_path = public as $$
   select p.id, p.username, p.display_name, p.avatar, p.accent, p.badges, public.shown_status(p.id),
          (select pr.last_seen from presence pr where pr.user_id = p.id),
@@ -539,7 +551,8 @@ language sql stable security definer set search_path = public as $$
          f.created_at,
          coalesce((select case when d.status_expires is null or d.status_expires > now() then d.status_text else '' end from profile_details d where d.user_id = p.id), ''),
          coalesce((select case when d.status_expires is null or d.status_expires > now() then d.status_emoji else '' end from profile_details d where d.user_id = p.id), ''),
-         coalesce((select d.decoration from profile_details d where d.user_id = p.id), '')
+         coalesce((select d.decoration from profile_details d where d.user_id = p.id), ''),
+         public.shown_activity(p.id)
   from friendships f join profiles p on p.id = case when f.a = auth.uid() then f.b else f.a end
   where auth.uid() in (f.a, f.b)
   order by lower(p.display_name);
@@ -587,7 +600,7 @@ create or replace function public.send_message(p_to uuid, p_body text, p_client_
 language plpgsql security definer set search_path = public as $$
 declare u uuid := public.require_profile(); m messages%rowtype; b text := btrim(coalesce(p_body, ''), E' \n\r\t'); meta jsonb := '{}'::jsonb; a jsonb; k text := coalesce(p_kind, 'text');
 begin
-  if k not in ('text', 'sticker', 'attachment') then raise exception 'message_invalid'; end if;
+  if k not in ('text', 'sticker', 'attachment', 'gif') then raise exception 'message_invalid'; end if;
   if k = 'text' and char_length(b) = 0 then raise exception 'empty'; end if;
   if char_length(b) > 4000 then raise exception 'too_long'; end if;
   if not public.are_friends(u, p_to) or public.is_blocked(u, p_to) then raise exception 'not_friends'; end if;
@@ -597,6 +610,9 @@ begin
     if p_meta ? 'sticker' and (p_meta->>'sticker') ~ '^[a-z0-9]{1,20}/[a-z0-9_-]{1,32}$' then meta := jsonb_build_object('sticker', p_meta->>'sticker');
     elsif p_meta ? 'url' and public.media_ok(p_meta->>'url', u) and (p_meta->>'url') is not null then meta := jsonb_build_object('url', p_meta->>'url');
     else raise exception 'message_invalid'; end if;
+  elsif k = 'gif' then   -- a GIF from GIPHY: only its own picture links
+    if coalesce(p_meta->>'url', '') !~ '^https://media[0-9]?\.giphy\.com/media/[A-Za-z0-9/_.-]{1,200}$' then raise exception 'message_invalid'; end if;
+    meta := jsonb_build_object('url', p_meta->>'url', 'w', least(greatest(coalesce((p_meta->>'w')::int, 0), 0), 2000), 'h', least(greatest(coalesce((p_meta->>'h')::int, 0), 0), 2000), 'title', left(coalesce(p_meta->>'title', ''), 100));
   elsif k = 'attachment' then   -- files in the two of you's folder, with a name, size and type
     if jsonb_typeof(p_meta->'files') <> 'array' or jsonb_array_length(p_meta->'files') not between 1 and 6 then raise exception 'message_invalid'; end if;
     for a in select * from jsonb_array_elements(p_meta->'files') loop
@@ -793,11 +809,44 @@ create table if not exists public.channels (
   server_id uuid not null references public.servers (id) on delete cascade,
   name text not null check (name ~ '^[a-z0-9_-]{1,32}$'),
   topic text not null default '' check (char_length(topic) <= 200),
-  kind text not null default 'text' check (kind in ('text')),
+  kind text not null default 'text',
   position int not null default 0,
   created_at timestamptz not null default now()
 );
+alter table public.channels drop constraint if exists channels_kind_check;
+alter table public.channels drop constraint if exists channels_kind_ok;
+alter table public.channels add constraint channels_kind_ok check (kind in ('text', 'voice'));
 create index if not exists channels_server on public.channels (server_id, position);
+-- who's in a voice channel right now (one at a time; gone after 45 s without a heartbeat)
+create table if not exists public.voice_members (
+  user_id uuid primary key references public.profiles (id) on delete cascade,
+  channel_id uuid not null references public.channels (id) on delete cascade,
+  server_id uuid not null references public.servers (id) on delete cascade,
+  muted boolean not null default false,
+  deafened boolean not null default false,
+  joined_at timestamptz not null default now(),
+  last_seen timestamptz not null default now()
+);
+create index if not exists voice_members_ch on public.voice_members (channel_id);
+-- signals between two people in the same voice channel (offer / answer / ice), like call_signals
+create table if not exists public.voice_signals (
+  id bigserial primary key,
+  channel_id uuid not null references public.channels (id) on delete cascade,
+  from_id uuid not null references public.profiles (id) on delete cascade,
+  to_id uuid not null references public.profiles (id) on delete cascade,
+  kind text not null check (kind in ('offer', 'answer', 'ice', 'bye')),
+  payload jsonb,
+  created_at timestamptz not null default now()
+);
+create index if not exists voice_signals_to on public.voice_signals (to_id, created_at);
+-- typing: one row per person, where they're typing (a friend or a channel), refreshed every few seconds
+create table if not exists public.typing_state (
+  user_id uuid primary key references public.profiles (id) on delete cascade,
+  to_user uuid references public.profiles (id) on delete cascade,
+  channel_id uuid references public.channels (id) on delete cascade,
+  server_id uuid references public.servers (id) on delete cascade,
+  at timestamptz not null default now()
+);
 create table if not exists public.channel_messages (
   id uuid primary key default gen_random_uuid(),
   channel_id uuid not null references public.channels (id) on delete cascade,
@@ -806,7 +855,7 @@ create table if not exists public.channel_messages (
   body text not null default '',
   client_id text check (client_id is null or char_length(client_id) <= 64),
   reply_to uuid references public.channel_messages (id) on delete set null,
-  kind text not null default 'text' check (kind in ('text', 'sticker', 'attachment')),
+  kind text not null default 'text',
   meta jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   edited_at timestamptz,
@@ -815,6 +864,9 @@ create table if not exists public.channel_messages (
   constraint cm_body_ok check (char_length(body) <= 4000 and (char_length(body) >= 1 or kind <> 'text' or deleted_at is not null)),
   constraint cm_meta_ok check (jsonb_typeof(meta) = 'object' and pg_column_size(meta) <= 6000)
 );
+alter table public.channel_messages drop constraint if exists channel_messages_kind_check;
+alter table public.channel_messages drop constraint if exists cm_kind_ok;
+alter table public.channel_messages add constraint cm_kind_ok check (kind in ('text', 'sticker', 'attachment', 'gif'));
 create index if not exists channel_messages_ch on public.channel_messages (channel_id, created_at desc);
 create index if not exists channel_messages_rate on public.channel_messages (sender, created_at);
 create table if not exists public.channel_reactions (
@@ -907,6 +959,7 @@ begin
   chs := case p_template when 'gaming' then array['general', 'clips', 'looking-for-group'] when 'study' then array['general', 'homework-help', 'resources']
     when 'friends' then array['general', 'memes', 'music'] else array['general'] end;
   insert into channels (server_id, name, position) select s, c, i::int from unnest(chs) with ordinality as t(c, i);
+  insert into channels (server_id, name, position, kind) values (s, 'lounge', 100, 'voice');
   return s;
 end $$;
 
@@ -926,7 +979,10 @@ begin
         'mentions', (select count(*) from (select 1 from channel_messages cm where cm.channel_id = c.id and cm.sender <> u and cm.deleted_at is null
                     and cm.created_at > coalesce(r.read_at, m.joined_at)
                     and (position(tag in lower(cm.body)) > 0 or exists (select 1 from channel_messages p where p.id = cm.reply_to and p.sender = u)) limit 100) z),
-        'last_at', (select max(cm.created_at) from channel_messages cm where cm.channel_id = c.id)) order by c.position, c.created_at)
+        'last_at', (select max(cm.created_at) from channel_messages cm where cm.channel_id = c.id),
+        'voice', case when c.kind = 'voice' then coalesce((select jsonb_agg(jsonb_build_object('id', p.id, 'display_name', p.display_name, 'username', p.username, 'avatar', p.avatar, 'accent', p.accent,
+            'muted', v.muted, 'deafened', v.deafened) order by v.joined_at) from voice_members v join profiles p on p.id = v.user_id
+            where v.channel_id = c.id and v.last_seen > now() - interval '45 seconds'), '[]'::jsonb) end) order by c.position, c.created_at)
       from channels c left join channel_reads r on r.channel_id = c.id and r.user_id = u where c.server_id = s.id), '[]'::jsonb))
   from server_members m join servers s on s.id = m.server_id where m.user_id = u order by m.joined_at;
 end $$;
@@ -936,7 +992,7 @@ create or replace function public.get_members(p_server uuid) returns setof jsonb
 language sql stable security definer set search_path = public as $$
   select jsonb_build_object('id', p.id, 'username', p.username, 'display_name', p.display_name, 'avatar', p.avatar, 'accent', p.accent, 'badges', p.badges,
       'role', m.role, 'joined_at', m.joined_at, 'status', public.shown_status(p.id), 'details', public.details_for(p.id, auth.uid()),
-      'friend', public.are_friends(auth.uid(), p.id))
+      'friend', public.are_friends(auth.uid(), p.id), 'activity', public.shown_activity(p.id))
   from server_members m join profiles p on p.id = m.user_id
   where m.server_id = p_server and public.is_member(p_server, auth.uid())
   order by case m.role when 'owner' then 0 when 'admin' then 1 else 2 end, lower(p.display_name);
@@ -997,15 +1053,17 @@ begin
 end $$;
 
 -- ---------- channels ----------
-create or replace function public.create_channel(p_server uuid, p_name text, p_topic text default '') returns uuid
+drop function if exists public.create_channel(uuid, text, text);
+create or replace function public.create_channel(p_server uuid, p_name text, p_topic text default '', p_kind text default 'text') returns uuid
 language plpgsql security definer set search_path = public as $$
 declare u uuid := public.require_admin(p_server); n text := public.channel_name(p_name); c uuid;
 begin
+  if coalesce(p_kind, 'text') not in ('text', 'voice') then raise exception 'channel_invalid'; end if;
   if n = '' or char_length(coalesce(p_topic, '')) > 200 then raise exception 'channel_invalid'; end if;
   if exists (select 1 from channels where server_id = p_server and name = n) then raise exception 'channel_exists'; end if;
   if (select count(*) from channels where server_id = p_server) >= 50 then raise exception 'too_many_channels'; end if;
-  insert into channels (server_id, name, topic, position) values (p_server, n, btrim(coalesce(p_topic, '')),
-    coalesce((select max(position) + 1 from channels where server_id = p_server), 0)) returning id into c;
+  insert into channels (server_id, name, topic, position, kind) values (p_server, n, btrim(coalesce(p_topic, '')),
+    coalesce((select max(position) + 1 from channels where server_id = p_server), 0), coalesce(p_kind, 'text')) returning id into c;
   return c;
 end $$;
 
@@ -1119,7 +1177,7 @@ declare c channels%rowtype; u uuid; m channel_messages%rowtype; b text := btrim(
 begin
   select * into c from channels where id = p_channel; if c.id is null then raise exception 'not_member'; end if;
   u := public.require_member(c.server_id);
-  if k not in ('text', 'sticker', 'attachment') then raise exception 'message_invalid'; end if;
+  if k not in ('text', 'sticker', 'attachment', 'gif') then raise exception 'message_invalid'; end if;
   if k = 'text' and char_length(b) = 0 then raise exception 'empty'; end if;
   if char_length(b) > 4000 then raise exception 'too_long'; end if;
   if (select count(*) from channel_messages where sender = u and created_at > now() - interval '10 seconds') >= 20 then raise exception 'rate_limited'; end if;
@@ -1128,6 +1186,9 @@ begin
     if p_meta ? 'sticker' and (p_meta->>'sticker') ~ '^[a-z0-9]{1,20}/[a-z0-9_-]{1,32}$' then meta := jsonb_build_object('sticker', p_meta->>'sticker');
     elsif p_meta ? 'url' and public.media_ok(p_meta->>'url', u) and (p_meta->>'url') is not null then meta := jsonb_build_object('url', p_meta->>'url');
     else raise exception 'message_invalid'; end if;
+  elsif k = 'gif' then   -- a GIF from GIPHY: only its own picture links
+    if coalesce(p_meta->>'url', '') !~ '^https://media[0-9]?\.giphy\.com/media/[A-Za-z0-9/_.-]{1,200}$' then raise exception 'message_invalid'; end if;
+    meta := jsonb_build_object('url', p_meta->>'url', 'w', least(greatest(coalesce((p_meta->>'w')::int, 0), 0), 2000), 'h', least(greatest(coalesce((p_meta->>'h')::int, 0), 0), 2000), 'title', left(coalesce(p_meta->>'title', ''), 100));
   elsif k = 'attachment' then   -- files in the server's folder
     if jsonb_typeof(p_meta->'files') <> 'array' or jsonb_array_length(p_meta->'files') not between 1 and 6 then raise exception 'message_invalid'; end if;
     for a in select * from jsonb_array_elements(p_meta->'files') loop
@@ -1487,6 +1548,85 @@ begin
   return n;
 end $$;
 
+
+-- ---------- voice channels ----------
+create or replace function public.voice_join(p_channel uuid) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare c channels%rowtype; u uuid;
+begin
+  select * into c from channels where id = p_channel; if c.id is null or c.kind <> 'voice' then raise exception 'channel_invalid'; end if;
+  u := public.require_member(c.server_id);
+  delete from voice_members where last_seen < now() - interval '45 seconds';
+  if (select count(*) from voice_members where channel_id = p_channel and user_id <> u) >= 10 then raise exception 'voice_full'; end if;
+  insert into voice_members (user_id, channel_id, server_id) values (u, p_channel, c.server_id)
+    on conflict (user_id) do update set channel_id = excluded.channel_id, server_id = excluded.server_id, muted = false, deafened = false, joined_at = now(), last_seen = now();
+  -- the people already there (you connect to each of them)
+  return coalesce((select jsonb_agg(jsonb_build_object('id', v.user_id, 'muted', v.muted, 'deafened', v.deafened)) from voice_members v where v.channel_id = p_channel and v.user_id <> u), '[]'::jsonb);
+end $$;
+create or replace function public.voice_leave() returns void
+language plpgsql security definer set search_path = public as $$
+declare u uuid := public.require_profile();
+begin
+  delete from voice_members where user_id = u;
+  delete from voice_signals where (from_id = u or to_id = u) and created_at < now() - interval '1 minute';
+end $$;
+create or replace function public.voice_state(p_muted boolean, p_deafened boolean) returns void
+language plpgsql security definer set search_path = public as $$
+declare u uuid := public.require_profile();
+begin
+  update voice_members set muted = coalesce(p_muted, muted), deafened = coalesce(p_deafened, deafened), last_seen = now() where user_id = u;
+  if not found then raise exception 'not_in_voice'; end if;
+end $$;
+create or replace function public.voice_heartbeat() returns void
+language plpgsql security definer set search_path = public as $$
+declare u uuid := public.require_profile();
+begin
+  update voice_members set last_seen = now() where user_id = u;
+  if not found then raise exception 'not_in_voice'; end if;
+end $$;
+create or replace function public.send_voice_signal(p_channel uuid, p_to uuid, p_kind text, p_payload jsonb default null) returns void
+language plpgsql security definer set search_path = public as $$
+declare u uuid := public.require_profile();
+begin
+  if p_kind not in ('offer', 'answer', 'ice', 'bye') then raise exception 'signal_invalid'; end if;
+  if p_payload is not null and pg_column_size(p_payload) > 16000 then raise exception 'signal_invalid'; end if;
+  if not exists (select 1 from voice_members where user_id = u and channel_id = p_channel)
+     or not exists (select 1 from voice_members where user_id = p_to and channel_id = p_channel and last_seen > now() - interval '45 seconds') then raise exception 'not_in_voice'; end if;
+  if (select count(*) from voice_signals where from_id = u and created_at > now() - interval '1 minute') >= 600 then raise exception 'rate_limited'; end if;
+  insert into voice_signals (channel_id, from_id, to_id, kind, payload) values (p_channel, u, p_to, p_kind, p_payload);
+end $$;
+
+-- ---------- typing ----------
+create or replace function public.set_typing(p_to uuid default null, p_channel uuid default null) returns void
+language plpgsql security definer set search_path = public as $$
+declare u uuid := public.require_profile(); sv uuid;
+begin
+  if p_to is null and p_channel is null then delete from typing_state where user_id = u; return; end if;
+  if p_channel is not null then
+    select server_id into sv from channels where id = p_channel and kind = 'text';
+    if sv is null or not public.is_member(sv, u) then raise exception 'not_member'; end if;
+    insert into typing_state (user_id, to_user, channel_id, server_id, at) values (u, null, p_channel, sv, now())
+      on conflict (user_id) do update set to_user = null, channel_id = excluded.channel_id, server_id = excluded.server_id, at = now();
+  else
+    if not public.are_friends(u, p_to) or public.is_blocked(u, p_to) then raise exception 'not_friends'; end if;
+    insert into typing_state (user_id, to_user, channel_id, server_id, at) values (u, p_to, null, null, now())
+      on conflict (user_id) do update set to_user = excluded.to_user, channel_id = null, server_id = null, at = now();
+  end if;
+end $$;
+
+alter table public.voice_members enable row level security;
+alter table public.voice_signals enable row level security;
+alter table public.typing_state enable row level security;
+drop policy if exists voice_members_read on public.voice_members;
+create policy voice_members_read on public.voice_members for select to authenticated using (public.is_member(server_id, auth.uid()));
+drop policy if exists voice_signals_read on public.voice_signals;
+create policy voice_signals_read on public.voice_signals for select to authenticated using (to_id = auth.uid());
+drop policy if exists typing_read on public.typing_state;
+create policy typing_read on public.typing_state for select to authenticated
+  using (to_user = auth.uid() or (server_id is not null and public.is_member(server_id, auth.uid())));
+revoke all on public.voice_members, public.voice_signals, public.typing_state from anon, authenticated;
+grant select on public.voice_members, public.voice_signals, public.typing_state to authenticated;
+
 -- only signed-in users can call any of this
 do $$ declare f record; begin
   for f in select p.oid::regprocedure as sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
@@ -1498,7 +1638,8 @@ do $$ declare f record; begin
              'delete_channel','reorder_channels','create_invite','get_invite','join_server','get_invites','revoke_invite','send_channel_message','cm_edit','cm_delete','cm_react',
              'cm_pin','get_channel_messages','get_channel_message','search_channel','get_channel_pins','mark_channel_read','is_member','server_role','require_member','require_admin',
              'channel_name','attach_ok','is_admin','require_admin_user','my_badges','show_badge','admin_badges','admin_save_badge','admin_delete_badge','admin_give_badge',
-             'admin_take_badge','admin_badge_holders','admin_users','admin_suspend','admin_stats','admin_announce')
+             'admin_take_badge','admin_badge_holders','admin_users','admin_suspend','admin_stats','admin_announce',
+             'shown_activity','voice_join','voice_leave','voice_state','voice_heartbeat','send_voice_signal','set_typing')
   loop
     execute format('revoke all on function %s from public, anon', f.sig);
     execute format('grant execute on function %s to authenticated', f.sig);
@@ -1515,7 +1656,7 @@ revoke all on function public.badge_json(public.badge_catalog) from public, anon
 do $$ declare t text; begin
   if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
     foreach t in array array['messages', 'friend_requests', 'friendships', 'presence', 'call_signals', 'notifications', 'profile_details', 'message_reactions',
-      'servers', 'server_members', 'channels', 'channel_messages', 'channel_reactions'] loop
+      'servers', 'server_members', 'channels', 'channel_messages', 'channel_reactions', 'voice_members', 'voice_signals', 'typing_state'] loop
       if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t) then
         execute format('alter publication supabase_realtime add table public.%I', t);
       end if;

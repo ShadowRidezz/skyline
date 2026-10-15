@@ -64,7 +64,8 @@ export const PlayTime = {
     const s = await sky.playtime.stats().catch(() => null); if (!s) return;
     const sum = l => l.reduce((a, g) => a + g.mins, 0), today = sum(s.today), week = sum(s.week), max = Math.max(1, ...s.days.map(d => d.mins));
     const label = k => { const d = new Date(k + "T12:00"); return k === ymd(Date.now()) ? "Today" : d.toLocaleDateString(undefined, { weekday: "short" }); };
-    const html = `<div class="g-sec-h"><h2>⏱ Play time</h2><span class="ct-note">${s.now.length ? `<b class="pt-now"><i></i>Playing ${esc(s.now.join(", "))}</b>` : "Counts only while the game is the window you're in, not when it's just open in the background. Nothing leaves your PC."}</span></div>
+    this.last = s;
+    const html = `<div class="g-sec-h"><h2>⏱ Play time</h2>${s.week.length ? `<button class="btn sm pt-share" data-ptshare title="Make a picture of your week and send it to a friend or a server">📤 Share my week</button>` : ""}<span class="ct-note">${s.now.length ? `<b class="pt-now"><i></i>Playing ${esc(s.now.join(", "))}</b>` : "Counts only while the game is the window you're in, not when it's just open in the background. Nothing leaves your PC."}</span></div>
       <div class="pt">
         <div class="pt-stats"><div><b>${mins(today)}</b><span>today</span></div><div><b>${mins(week)}</b><span>last 7 days</span></div><div><b class="pt-top">${s.week[0] ? esc(s.week[0].name) : "–"}</b><span>most played</span></div></div>
         <div class="pt-chart">${s.days.map(d => `<span title="${esc(label(d.day))}: ${mins(d.mins)}" class="${d.day === ymd(Date.now()) ? "on" : ""}"><em>${d.mins ? mins(d.mins).replace(" min", "m").replace(" h", "h") : ""}</em><i style="height:${Math.max(2, d.mins / max * 100)}%"></i><small>${esc(label(d.day))}</small></span>`).join("")}</div>
@@ -74,7 +75,91 @@ export const PlayTime = {
     if (box.dataset.sig !== html) { box.innerHTML = html; box.dataset.sig = html; }
   },
   show(on) { clearInterval(this.t); if (on) { this.render(); this.t = setInterval(() => this.render(), 60e3); } },
+  // the week as a picture: total, each game's bar, the busiest day
+  async card() {
+    const s = this.last || await sky.playtime.stats().catch(() => null); if (!s || !s.week.length) return null;
+    const W = 1200, H = 675, cv = new OffscreenCanvas(W, H), g = cv.getContext("2d");
+    const css = getComputedStyle(document.documentElement), a1 = css.getPropertyValue("--a1").trim() || "#8b5cf6", a2 = css.getPropertyValue("--a2").trim() || "#3b82f6";
+    const bg = g.createLinearGradient(0, 0, W, H); bg.addColorStop(0, "#0b0a18"); bg.addColorStop(1, "#141230"); g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    const glow = g.createRadialGradient(W * .85, H * .1, 10, W * .85, H * .1, 520); glow.addColorStop(0, a1 + "55"); glow.addColorStop(1, "transparent"); g.fillStyle = glow; g.fillRect(0, 0, W, H);
+    for (let i = 0; i < 90; i++) { g.fillStyle = `rgba(255,255,255,${.15 + Math.random() * .5})`; g.fillRect(Math.random() * W, Math.random() * H * .55, 1.5, 1.5); }   // a few stars
+    const font = (w, px) => `${w} ${px}px "Segoe UI Variable Display", "Segoe UI", sans-serif`;
+    let name = "My"; try { const { S } = await import("./social/state.js"); if (S.me) name = S.me.display_name + "'s"; } catch (e) {}
+    const total = s.week.reduce((x, y) => x + y.mins, 0);
+    g.fillStyle = "rgba(255,255,255,.6)"; g.font = font(600, 26); g.fillText("SKYLINE · PLAY TIME", 64, 84);
+    g.fillStyle = "#fff"; g.font = font(700, 54); g.fillText(`${name} week in games`, 64, 150);
+    g.font = font(800, 96); const grad = g.createLinearGradient(64, 0, 520, 0); grad.addColorStop(0, a1); grad.addColorStop(1, a2); g.fillStyle = grad; g.fillText(mins(total), 64, 268);
+    g.fillStyle = "rgba(255,255,255,.55)"; g.font = font(500, 26); g.fillText("played in the last 7 days", 64, 312);
+    const top = s.week.slice(0, 5), max = top[0].mins, x0 = 64, bw = 640, y0 = 380;
+    top.forEach((t, i) => {
+      const y = y0 + i * 52;
+      g.fillStyle = "#fff"; g.font = font(600, 26); g.fillText(t.name.length > 26 ? t.name.slice(0, 25) + "…" : t.name, x0, y);
+      g.fillStyle = "rgba(255,255,255,.08)"; g.beginPath(); g.roundRect(x0 + 380, y - 22, bw - 380, 22, 11); g.fill();
+      const bar = g.createLinearGradient(x0 + 380, 0, x0 + bw, 0); bar.addColorStop(0, a1); bar.addColorStop(1, a2);
+      g.fillStyle = bar; g.beginPath(); g.roundRect(x0 + 380, y - 22, Math.max(22, (bw - 380) * t.mins / max), 22, 11); g.fill();
+      g.fillStyle = "rgba(255,255,255,.7)"; g.font = font(600, 22); g.textAlign = "left"; g.fillText(mins(t.mins), x0 + bw + 16, y - 3);
+    });
+    // the week, day by day
+    const dx = 850, dw = 290, dh = 220, dy = 600, dmax = Math.max(1, ...s.days.map(d => d.mins)), cw = dw / 7;
+    s.days.forEach((d, i) => { const h = Math.max(4, d.mins / dmax * dh); const bar = g.createLinearGradient(0, dy - h, 0, dy); bar.addColorStop(0, a1); bar.addColorStop(1, a2 + "88");
+      g.fillStyle = bar; g.beginPath(); g.roundRect(dx + i * cw + 6, dy - h, cw - 12, h, 8); g.fill();
+      g.fillStyle = "rgba(255,255,255,.5)"; g.font = font(600, 18); g.textAlign = "center"; g.fillText(new Date(d.day + "T12:00").toLocaleDateString(undefined, { weekday: "narrow" }), dx + i * cw + cw / 2, dy + 28); });
+    g.textAlign = "left"; g.fillStyle = "rgba(255,255,255,.55)"; g.font = font(600, 22); g.fillText("Most played: " + top[0].name, dx - 10, dy - dh - 30 > 300 ? dy - dh - 30 : 340);
+    return cv.convertToBlob({ type: "image/png" });
+  },
+  async share() {
+    const blob = await this.card(); if (!blob) return toast("No game time yet this week", true);
+    const { shareImage } = await import("./social/share.js");
+    shareImage({ title: "Share my week in games", blob, name: "my-week-in-games.png", text: "my week in games 🎮" });
+  },
 };
+document.addEventListener("click", e => { if (e.target.closest("[data-ptshare]")) PlayTime.share(); });
+
+/* ================= the clip saver (Games page) ================= */
+const KEYS = ["Alt+Shift+C", "Alt+F9", "Ctrl+Shift+F9", "F8"];
+const size = n => n > 1048576 ? (n / 1048576).toFixed(1) + " MB" : Math.round(n / 1024) + " KB";
+export const ClipsUI = {
+  st: null,
+  async render() {
+    const box = $("#gClips"); if (!box || !sky || !sky.clips) return;
+    const r = await sky.clips.status().catch(() => null); if (!r || !r.ok) return; const s = this.st = r.data;
+    box.innerHTML = `<div class="g-sec-h"><h2>🎬 Clips</h2><span class="ct-note">${s.on ? (s.recording ? `<b class="pt-now"><i></i>Ready: press <kbd>${esc(s.key)}</kbd> to save the last 30-60 seconds</b>` : `Starts recording by itself when you open a game. Press <kbd>${esc(s.key)}</kbd> to save a clip.`) : "Save the last 30-60 seconds of your game with one key, then send it to a friend."}</span></div>
+      <div class="cl-set">
+        <label class="toggle"><input type="checkbox" data-clip="on" ${s.on ? "checked" : ""}><span class="sw"></span><span class="t"><b>Clip saver</b><small>Keeps the last minute of your screen and game sound in memory while you play. Uses some graphics power.</small></span></label>
+        <label class="cl-opt"><span>Clip key</span><select data-clip="key">${KEYS.map(k => `<option ${k === s.key ? "selected" : ""}>${k}</option>`).join("")}</select></label>
+        <label class="cl-opt"><span>Quality</span><select data-clip="quality"><option value="720" ${s.quality === "720" ? "selected" : ""}>720p (fits in a chat)</option><option value="1080" ${s.quality === "1080" ? "selected" : ""}>1080p (sharper, bigger)</option></select></label>
+        <label class="cl-opt"><span>Smoothness</span><select data-clip="fps"><option value="60" ${s.fps == 60 ? "selected" : ""}>60 fps</option><option value="30" ${s.fps == 30 ? "selected" : ""}>30 fps</option></select></label>
+        <button class="btn sm ghost" data-clipopen>📂 Open clips folder</button>
+      </div>
+      <div class="cl-list">${s.list.length ? s.list.map(c => `<div class="cl-row"><span class="cl-ic">🎞</span><span class="cl-t"><b>${esc(c.name.replace(/\.(mp4|webm)$/i, ""))}</b><small>${size(c.size)} · ${new Date(c.at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</small></span>
+          <button class="btn xs primary" data-clipsend="${esc(c.name)}" ${c.size > 25 * 1048576 ? `disabled title="Over 25 MB: too big to send in a chat"` : ""}>📤 Send</button><button class="btn xs" data-clipshow="${esc(c.name)}">Show</button><button class="btn xs ghost" data-clipdel="${esc(c.name)}" title="Move to the Recycle Bin">🗑</button></div>`).join("")
+        : `<div class="pt-empty"><b>No clips yet</b><span>Turn the clip saver on, play, and press your clip key when something cool happens.</span></div>`}</div>`;
+  },
+  async send(name) {
+    const r = await sky.clips.read(name); if (!r || !r.ok) return toast("Couldn't open that clip", true);
+    const type = /\.mp4$/i.test(name) ? "video/mp4" : "video/webm";
+    const { shareImage } = await import("./social/share.js");
+    shareImage({ title: "Send a clip", blob: new Blob([r.data], { type }), name, text: "" });
+  },
+  init() {
+    if (!sky || !sky.clips) return;
+    document.addEventListener("change", async e => {
+      const t = e.target.closest("[data-clip]"); if (!t || !t.closest("#gClips")) return;
+      const k = t.dataset.clip, v = t.type === "checkbox" ? t.checked : t.value;
+      const r = await sky.clips.set({ [k]: v }); if (r && r.ok) { if (k === "on") toast(v ? "🎬 Clip saver on: it records while you play" : "Clip saver off"); this.render(); }
+    });
+    document.addEventListener("click", async e => {
+      const b = e.target.closest("[data-clipsend], [data-clipshow], [data-clipdel], [data-clipopen]"); if (!b || !b.closest("#gClips, #toast, .clip-toast")) return;
+      if (b.dataset.clipsend) return this.send(b.dataset.clipsend);
+      if (b.dataset.clipshow) return sky.clips.open(b.dataset.clipshow);
+      if (b.hasAttribute("data-clipopen")) return sky.clips.open();
+      if (b.dataset.clipdel && await dialog({ title: "Delete this clip?", text: "It goes to the Recycle Bin.", ok: "Delete", danger: true })) { await sky.clips.del(b.dataset.clipdel); this.render(); }
+    });
+    sky.clips.onStatus(() => { if ($("#gClips") && !$("#view-games").classList.contains("hidden")) this.render(); });
+    sky.clips.onSaved(c => { this.render(); toast(`🎬 Clip saved${c.game ? " · " + c.game : ""}`); });
+  },
+};
+ClipsUI.init();
 
 /* ================= backup & restore (Settings › App) ================= */
 const Backup = {
@@ -237,6 +322,7 @@ export const Extras = {
   },
   onView(v) {
     PlayTime.show(v === "games");
+    if (v === "games") ClipsUI.render();
     if (v === "home") Briefing.show(false);
   },
 };

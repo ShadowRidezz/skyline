@@ -69,3 +69,67 @@
 @media (prefers-reduced-motion: reduce) { .sx-msg, .sx-msg-av .sx-av, .sx-send, .sx-compose-box { transition: none; } }
 /* the box inside the bar has no frame of its own (the bar is the frame) */
 .sx-compose textarea, .sx-compose textarea:focus, .sx-compose textarea:focus-visible { border: 0 !important; outline: none !important; box-shadow: none !important; background: transparent !important; }
+
+/* someone's typing: a soft line just above the box */
+.sx-typing { height: 0; overflow: hidden; display: flex; align-items: center; gap: 8px; padding: 0 30px; font-size: 12.5px; color: var(--muted); transition: height .15s; flex: none; }
+.sx-typing.on { height: 22px; }
+.sx-typing b { color: var(--text); font-weight: 650; }
+.sx-typing-dots { display: inline-flex; gap: 3px; }
+.sx-typing-dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--muted); animation: sxTypeDot 1.2s infinite ease-in-out; }
+.sx-typing-dots i:nth-child(2) { animation-delay: .15s; } .sx-typing-dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes sxTypeDot { 0%, 60%, 100% { transform: translateY(0); opacity: .45; } 30% { transform: translateY(-3px); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .sx-typing-dots i { animation: none; } }
+.sx-playing { color: #3dd68c; }
+.sx-stk-menu { z-index: 170; min-width: 190px; }
+/* GIFs: the button, the picker, a GIF in a message */
+.sx-gif-btn { width: auto !important; padding: 0 7px; font: 800 11px/1 var(--font) !important; letter-spacing: .04em; }
+.sx-gif-btn::before { content: ""; } 
+.sx-gifs { width: 420px; height: 460px; }
+.sx-gif-grid { flex: 1; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 8px 10px; align-items: start; }
+.sx-gif-grid .sx-none { grid-column: 1 / -1; }
+.sx-gif-col { display: grid; gap: 6px; }
+.sx-gif-col .sx-skel { height: 110px; border-radius: 10px; display: block; }
+.sx-gif-pick { display: block; width: 100%; padding: 0; border: 0; border-radius: 10px; overflow: hidden; background: rgba(255,255,255,.05); cursor: pointer; }
+.sx-gif-pick img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sx-gif-pick:hover, .sx-gif-pick:focus-visible { outline: 2px solid var(--a1); outline-offset: -2px; }
+.sx-gif-foot { padding: 6px 12px 9px; font: 700 10.5px/1 var(--font); letter-spacing: .06em; color: var(--faint); text-align: right; }
+.sx-gif { width: min(300px, 100%); margin-top: 4px; border-radius: 12px; overflow: hidden; background: rgba(255,255,255,.04); }
+.sx-gif img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* together in a call: the shared video, and the bar saying what's shared */
+.sx-stage-slot.watch .sx-stage { height: 62vh; }
+.sx-watch { width: 100%; height: 100%; border-radius: 12px; overflow: hidden; background: #000; }
+.sx-watch iframe { width: 100%; height: 100%; border: 0; display: block; }
+.sx-together-bar { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); display: grid; gap: 6px; z-index: 3; width: min(460px, calc(100% - 140px)); }
+.sx-together-bar:empty { display: none; }
+.sx-together { display: flex; align-items: center; gap: 10px; padding: 7px 8px 7px 8px; border-radius: 12px; background: rgba(10,9,18,.82); border: 1px solid var(--line2); backdrop-filter: blur(10px); }
+.sx-together img, .sx-tg-ic { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; flex: none; display: grid; place-items: center; background: rgba(255,255,255,.08); }
+.sx-tg-ic .ic { width: 18px; height: 18px; } .sx-together.sp .sx-tg-ic, .sx-together.sp img { box-shadow: 0 0 0 1px rgba(30,215,96,.4); }
+.sx-tg-t { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.sx-tg-t small { font-size: 10.5px; color: var(--faint); } .sx-tg-t b { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sx-tg-t em { font-style: normal; font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sx-wt-menu { z-index: 150; }
+.sx-share-dlg { width: min(520px, 100%); display: grid; gap: 12px; }
+.sx-share-prev { width: 100%; border-radius: 12px; border: 1px solid var(--line2); }
+.sx-share-list { max-height: 260px; overflow-y: auto; display: grid; gap: 2px; }
+.sx-share-hash { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.07); color: var(--muted); flex: none; } .sx-share-hash .ic { width: 16px; height: 16px; }
+
+/* voice channels in the sidebar, and the "Voice connected" panel */
+.sx-vchans { display: grid; gap: 1px; padding: 0 8px 8px; }
+.sx-chan.voice em { font-style: normal; font-size: 11px; color: var(--faint); margin-left: auto; }
+.sx-chan.voice.on { color: #6ee7b7; }
+.sx-vmems { display: grid; gap: 1px; padding: 0 0 4px 30px; }
+.sx-vmem { display: flex; align-items: center; gap: 8px; height: 28px; padding: 0 6px; border-radius: 7px; font-size: 13px; color: var(--muted); }
+.sx-vmem > .ic { width: 14px; height: 14px; margin-left: auto; color: #ff8a8d; }
+.sx-vmem .sx-av { transition: box-shadow .12s; }
+.sx-vmem.speaking .sx-av { box-shadow: 0 0 0 2px #3ecf8e, 0 0 8px rgba(62,207,142,.6); }
+.sx-vmem.speaking { color: var(--text); }
+.sx-voiceslot:empty { display: none; }
+.sx-voiceslot { padding: 0 8px 8px; flex: none; }
+.sx-vpanel { display: grid; gap: 8px; padding: 10px; border-radius: 12px; background: color-mix(in srgb, #3ecf8e 8%, rgba(0,0,0,.3)); border: 1px solid color-mix(in srgb, #3ecf8e 28%, transparent); }
+.sx-vpanel-t { display: grid; gap: 2px; min-width: 0; }
+.sx-vpanel-t b { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #6ee7b7; }
+.sx-vpanel-t small { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sx-vpanel-t small.bad { color: #ff8a8d; }
+.sx-vpanel-b { display: flex; gap: 6px; }
+.sx-vpanel-b .sx-cbtn { flex: 1; border-radius: 10px; }
+.sx-chkind label b { display: flex; align-items: center; gap: 6px; } .sx-chkind .ic { width: 16px; height: 16px; }

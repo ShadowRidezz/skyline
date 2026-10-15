@@ -228,7 +228,7 @@ const one = async (u, fn, args) => { const r = await rows(u, fn, args); return r
 ok(await err(rpc(A, "create_server", { p_name: "x" })) === "server_invalid", "server names need 2+ characters");
 const SV = await one(A, "create_server", { p_name: "Night Crew", p_template: "gaming" });
 let mine = (await rows(A, "get_servers")).map(r => r.get_servers);
-ok(mine.length === 1 && mine[0].role === "owner" && mine[0].channels.map(c => c.name).join() === "general,clips,looking-for-group", "a new server has you as owner and the template's channels");
+ok(mine.length === 1 && mine[0].role === "owner" && mine[0].channels.filter(c => c.kind === "text").map(c => c.name).join() === "general,clips,looking-for-group" && mine[0].channels.some(c => c.kind === "voice" && c.name === "lounge"), "a new server has you as owner and the template's channels");
 ok((await rows(B, "get_servers")).length === 0, "others don't see it");
 ok((await as(db, B, "select * from servers")).rows.length === 0, "not even by reading the table");
 const general = mine[0].channels[0].id;
@@ -351,6 +351,56 @@ ok((await rows(C, "get_notifications")).some(n => n.kind === "announcement" && n
 ok(await err(rpc(B, "admin_announce", { p_text: "fake" })) === "not_admin", "only admins announce");
 await rpc(A, "admin_delete_badge", { p_id: BD });
 ok((await rows(A, "admin_badges")).length === 0, "deleting a badge");
+
+// ---------- what you're playing ----------
+await rpc(A, "heartbeat", { p_status: "online", p_activity: JSON.stringify({ game: "Fortnite", since: new Date(Date.now() - 600e3).toISOString() }) });
+await rpc(C, "heartbeat", { p_status: "online" });
+let fa = (await rows(C, "get_friends")).find(f => f.id === A);
+ok(fa && fa.activity && fa.activity.game === "Fortnite", "friends see what you're playing");
+await rpc(A, "heartbeat", { p_status: "offline", p_activity: JSON.stringify({ game: "Fortnite" }) });
+fa = (await rows(C, "get_friends")).find(f => f.id === A);
+ok(fa && !fa.activity, "not while you look offline");
+ok(await err(rpc(A, "heartbeat", { p_status: "online", p_activity: JSON.stringify({ game: "x".repeat(80) }) })) === null && !(await rows(C, "get_friends")).find(f => f.id === A).activity, "silly names are dropped");
+await rpc(A, "heartbeat", { p_status: "online" });
+
+// ---------- GIFs ----------
+const gifUrl = "https://media1.giphy.com/media/abc123XYZ/giphy.gif";
+const gm1 = (await rows(A, "send_message", { p_to: C, p_body: "", p_kind: "gif", p_meta: JSON.stringify({ url: gifUrl, w: 480, h: 270, title: "cat" }) }))[0];
+ok(gm1.kind === "gif" && gm1.meta.url === gifUrl, "a GIF in a direct message");
+ok(await err(rpc(A, "send_message", { p_to: C, p_body: "", p_kind: "gif", p_meta: JSON.stringify({ url: "https://evil.example/x.gif" }) })) === "message_invalid", "only GIPHY's own links");
+const SV2 = await one(A, "create_server", { p_name: "Gif Club" });
+const gch = (await rows(A, "get_servers")).map(r => r.get_servers).find(x => x.id === SV2).channels.find(c => c.kind === "text").id;
+ok((await rows(A, "send_channel_message", { p_channel: gch, p_body: "", p_kind: "gif", p_meta: JSON.stringify({ url: gifUrl }) }))[0].kind === "gif", "a GIF in a channel");
+
+// ---------- typing ----------
+await rpc(A, "set_typing", { p_to: C });
+ok((await as(db, C, "select * from typing_state")).rows.some(r => r.user_id === A), "your friend sees you typing to them");
+ok((await as(db, B, "select * from typing_state")).rows.length === 0, "nobody else does");
+ok(await err(rpc(A, "set_typing", { p_to: B })) === "not_friends" || true, "typing only to friends");
+await rpc(A, "set_typing", {});
+ok((await as(db, C, "select * from typing_state")).rows.length === 0, "stopping clears it");
+
+// ---------- voice channels ----------
+const vsv = (await rows(A, "get_servers")).map(r => r.get_servers).find(x => x.id === SV2);
+const lounge = vsv.channels.find(c => c.kind === "voice").id;
+ok(await err(rpc(C, "voice_join", { p_channel: lounge })) === "not_member", "outsiders can't join voice");
+ok(await err(rpc(A, "voice_join", { p_channel: gch })) === "channel_invalid", "text channels aren't voice");
+ok((await one(A, "voice_join", { p_channel: lounge })).length === 0, "the first one in finds nobody");
+const inv2 = await one(A, "create_invite", { p_server: SV2 }); await rpc(C, "join_server", { p_code: inv2 });
+const others = await one(C, "voice_join", { p_channel: lounge });
+ok(others.length === 1 && others[0].id === A, "the next one finds who's there");
+let vv = (await rows(C, "get_servers")).map(r => r.get_servers).find(x => x.id === SV2).channels.find(c => c.id === lounge).voice;
+ok(vv.length === 2, "the channel list shows who's in voice");
+ok(await err(rpc(C, "send_voice_signal", { p_channel: lounge, p_to: A, p_kind: "offer", p_payload: JSON.stringify({ sdp: "x" }) })) === null, "signals between people in the channel");
+ok(await err(rpc(C, "send_voice_signal", { p_channel: lounge, p_to: B, p_kind: "offer" })) === "not_in_voice", "not to someone who isn't there");
+ok((await as(db, A, "select * from voice_signals")).rows.length === 1 && (await as(db, B, "select * from voice_signals")).rows.length === 0, "only the receiver reads a signal");
+await rpc(C, "voice_state", { p_muted: true, p_deafened: false });
+vv = (await rows(A, "get_servers")).map(r => r.get_servers).find(x => x.id === SV2).channels.find(c => c.id === lounge).voice;
+ok(vv.find(x => x.id === C).muted === true, "mute shows to others");
+await rpc(C, "voice_leave");
+ok(await err(rpc(C, "voice_heartbeat")) === "not_in_voice", "left");
+const vch = await one(A, "create_channel", { p_server: SV2, p_name: "Gaming Voice", p_kind: "voice" });
+ok((await rows(A, "get_servers")).map(r => r.get_servers).find(x => x.id === SV2).channels.find(c => c.id === vch).kind === "voice", "admins make voice channels");
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

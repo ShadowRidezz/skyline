@@ -10,6 +10,7 @@ import { SocialSettings, applyAppearance } from "./settings.js";
 import { profileCard, statusDialog, applyMotion } from "./profile.js";
 import { Servers, mentionTotal } from "./servers.js";
 import { Admin } from "./admin.js";
+import { VoiceChat } from "./vchat.js";
 
 let root = null, visible = false, hbTimer = 0, friendsTimer = 0, menuEl = null;
 
@@ -34,6 +35,8 @@ async function init() {
     if (what === "friends" || what === "requests" || what === "notes") { renderSide(); railBadge(); if (["friends", "requests", "activity"].includes(S.view.kind)) renderMain(); if (S.panel) renderPanel(); }
     if (what === "servers") { Servers.renderRail(); railBadge(); if (S.view.kind === "channel") { renderSide(); if (!Servers.channel(S.view.id)) renderMain(); } }
     if (what === "members" && S.panel && S.panel.kind === "members") renderPanel();
+    if (what === "voice") { const vs = $("#sxVoiceSlot"); if (vs) vs.innerHTML = Servers.voicePanel(); if (S.view.kind === "channel") renderSide(); }
+    if (what === "voicelist") Servers.load();
   });
   CallUI.init(); Chat.init(); SocialSettings.init({ open, render: renderAll, reloadMe });
   try { const st = await api.state(); S.configured = st.configured; S.user = st.user; S.ice = st.ice; S.test = st.test; } catch (e) { S.configured = false; }
@@ -78,13 +81,24 @@ async function refreshAll(first) {
   if (!first) Chat.catchUp();
 }
 
+// what you're playing (Skyline already sees your games), unless you turned that off; "since" stays while it's the same game
+let playingNow = null;
+async function playing() {
+  if (S.settings.shareGame === false || !sky.playtime) return (playingNow = null);
+  let g = null; try { g = ((await sky.playtime.stats()) || {}).now?.[0] || null; } catch (e) {}
+  if (!g) return (playingNow = null);
+  if (!playingNow || playingNow.game !== g) playingNow = { game: g, since: new Date().toISOString() };
+  return playingNow;
+}
 // you're here: tell your friends (every 20 s), and go Away by yourself after 10 minutes without touching the PC
 async function heartbeat() {
   if (!S.me) return;
   let st = myStatus();
   if (st === "online" && S.settings.autoAway !== false) { try { if (await api.idle() > 600) st = "away"; } catch (e) {} }
   S.shown = st;
-  api.rpc("heartbeat", { p_status: st }).catch(() => {});
+  const act = st === "offline" ? null : await playing();
+  // (a server that hasn't been updated yet doesn't know "what you're playing": still say you're here)
+  api.rpc("heartbeat", act ? { p_status: st, p_activity: act } : { p_status: st }).catch(() => act && api.rpc("heartbeat", { p_status: st }).catch(() => {}));
   renderMe();
 }
 
@@ -94,9 +108,13 @@ function change(c) {
   const r = c.row || {};
   if (c.table === "messages" || c.table === "message_reactions" || c.table === "channel_messages" || c.table === "channel_reactions") return Chat.onMessage(c);
   if (c.table === "servers" || c.table === "server_members" || c.table === "channels") return Servers.onChange(c);
+  if (c.table === "typing_state") return Chat.onTyping(c);
+  if (c.table === "voice_signals") return VoiceChat.onSignal(r);
+  if (c.table === "voice_members") return Servers.loadSoon();
   if (c.table === "presence") {
     const f = friend(r.user_id); if (!f) return;
     f.status = new Date(r.last_seen).getTime() > Date.now() - 60000 ? r.status : "offline"; f.last_seen = r.last_seen;
+    f.activity = f.status !== "offline" ? r.activity || null : null;
     return emit("friends");
   }
   if (c.table === "friendships" || c.table === "friend_requests") { loadFriends(); loadRequests(); return; }
@@ -256,6 +274,7 @@ function renderSide() {
       const st = statusOf(f), on_ = v.kind === "chat" && v.id === f.id;
       return `<button class="sx-dm${on_ ? " on" : ""}${f.unread ? " unread" : ""}${st === "offline" ? " off" : ""}" data-sx="chat:${f.id}" data-fid="${f.id}">${avatar(f, 32, st)}<span class="sx-dm-t"><b>${esc(f.display_name)}</b><small>${S.call && S.call.peer.id === f.id && S.call.state !== "ended" ? "In a call" : esc(subline(f))}</small></span>${f.unread ? `<b class="sx-pill">${f.unread > 99 ? "99+" : f.unread}</b>` : f.last_message_at ? `<time class="sx-dm-time" title="Last message ${esc(new Date(f.last_message_at).toLocaleString())}">${shortAgo(f.last_message_at)}</time>` : ""}</button>`;
     }).join("") : `<p class="sx-side-empty">Friends you add show up here.</p>`}</div>
+    <div class="sx-voiceslot" id="sxVoiceSlot">${Servers.voicePanel()}</div>
     <div class="sx-callslot" id="sxCallSlot"></div>
     <div class="sx-me" id="sxMe"></div>`;
   renderMe(); CallUI.renderSlot();
@@ -517,6 +536,11 @@ async function click(e) {
     case "newserver": return Servers.addServer();
     case "srvmenu": return Servers.serverMenu(x, b, menu);
     case "newchannel": return Servers.channelDialog(x);
+    case "newvoice": return Servers.channelDialog(x, null, "voice");
+    case "vjoin": { const c = Servers.channel(x); if (c) await VoiceChat.join(c.id, c.server_id); return; }
+    case "vmute": return VoiceChat.mute();
+    case "vdeafen": return VoiceChat.deafen();
+    case "vleave": return VoiceChat.leave();
     case "editchannel": { const c = Servers.channel(x); if (c) Servers.channelDialog(c.server_id, c.id); return; }
     case "invite": return Servers.inviteDialog(x);
     case "joininv": b.disabled = true; await Servers.join(x); return;
