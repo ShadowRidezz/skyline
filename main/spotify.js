@@ -318,6 +318,8 @@ class Spotify {
     h("sp:search", q => this.search(q));
     h("sp:play", item => { if (!item || !/^spotify:(track|album|artist|playlist):[A-Za-z0-9]+$/.test(item.uri || "")) throw new Error("Not a Spotify link"); return this.play(item); });
     h("sp:upNext", () => this.upNext());
+    // a song straight in the Spotify app, from a moment in it: no Spotify login and no Premium needed (free accounts too)
+    h("sp:open", item => { if (!item || !/^spotify:track:[A-Za-z0-9]+$/.test(item.uri || "")) throw new Error("Not a song"); return this.status().connected && (this.conf().user || {}).premium ? this.play({ ...item, solo: true }) : this.openDirect(item); });
     // what your Spotify is playing right now (for listening along in a call)
     h("sp:current", async () => {
       if (!this.status().connected) return null;

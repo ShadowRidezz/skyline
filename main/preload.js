@@ -105,6 +105,7 @@ contextBridge.exposeInMainWorld("sky", {
     search: q => ipcRenderer.invoke("sp:search", q),
     play: item => ipcRenderer.invoke("sp:play", item),
     current: () => ipcRenderer.invoke("sp:current"),
+    open: item => ipcRenderer.invoke("sp:open", item),
     queue: uri => ipcRenderer.invoke("sp:queue", uri),
     upNext: () => ipcRenderer.invoke("sp:upNext"),
     skipTo: n => ipcRenderer.invoke("sp:skipTo", n),

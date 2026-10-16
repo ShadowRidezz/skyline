@@ -66,7 +66,8 @@ async function shareSong() {
 async function follow() {   // play what they're playing, from the same moment
   const s = W.sp; if (!s || s.mine || !s.playing) return;
   const pos = s.pos + (Date.now() - s.got) / 1000 + .4;
-  try { await sky.spotify.play({ uri: s.uri, title: s.title, solo: true, position: pos }); } catch (e) { toast(e.message || "Couldn't play it on your Spotify.", true); }
+  // (Premium plays it through Spotify's API; anyone else, straight in the Spotify app)
+  try { await sky.spotify.open({ uri: s.uri, title: s.title, position: pos }); } catch (e) { toast(e.message || "Couldn't play it on your Spotify.", true); }
 }
 function applySp(m) {
   const prev = W.sp;
@@ -121,7 +122,7 @@ export const Watch = {
     if (a === "together") return menu(b);
     if (a === "stopyt") { W.yt = null; W.iframe = null; send({ kind: "stopyt" }); return rerender(); }
     if (a === "stopsp") { W.sp = null; clearInterval(W.spTimer); send({ kind: "stopsp" }); return rerender(); }
-    if (a === "follow") { if (!(await sky.spotify.status().catch(() => null) || {}).connected) return toast("Link your Spotify first (Settings › Music).", true); W.along = true; rerender(); return follow(); }
+    if (a === "follow") { W.along = true; rerender(); return follow(); }   // no Spotify link or Premium needed to listen along
     if (a === "unfollow") { W.along = false; return rerender(); }
   },
 };
