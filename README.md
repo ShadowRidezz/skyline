@@ -1,126 +1,87 @@
 # Skyline
 
-A living night-city dashboard for Windows. Your desktop becomes a skyline at 2 AM. Your music
-floats above it, and the city's lights move with the beat.
+A living night-city dashboard for Windows, with your music, your friends, your games and your school in one place.
+Your desktop becomes a city at night, and its lights move with whatever you're listening to.
 
-## Install
+<!-- version -->**Latest version: 1.26.0**<!-- /version -->
 
-Run **`dist\Skyline Setup 1.0.0.exe`**. It installs for your user only (no admin needed), adds
-Skyline to the Start menu and the desktop, and opens it. To uninstall, go to
-Settings › Apps › Installed apps › Skyline.
+## Get it
+
+- **Windows:** download `Skyline-Setup-<version>.exe` from the
+  [releases page](https://github.com/ShadowRidezz/skyline-releases/releases/latest) and run it. It installs for your
+  user only (no admin needed). After that Skyline **updates itself**: new versions download in the background and
+  install the next time it restarts.
+- **iPhone and Android:** open **https://shadowridezz.github.io/skyline/** on your phone.
+  - iPhone: Safari › Share › **Add to Home Screen**.
+  - Android: Chrome › ⋮ › **Install app**.
+
+  It opens like a normal app and is always the newest version. On the phone you get Social (messages, friends,
+  servers, GIFs) and School (your grades and homework, sent there by your PC's Skyline).
 
 ## What's in it
 
-**Live photos:** real photos of cities at night that come alive. Skyline finds each photo's own
-lights, then makes them twinkle and pulse with your music, and the bright parts of the city breathe with the bass.
-- The photos: The View (your blue-hour picture through the window), Kanda Night, Akihabara Overhead, Midnight Avenue,
-  Behind the Glass, Osaka Blue Hour, Shinjuku Deck, Seoul From the Top and Tokyo Night Flight.
-- In Theme Studio you can tune brightness, colour grade, twinkle, glow, drift and framing, and add rain, snow or comets on top.
-- "Use my own photo…" turns any picture into a live photo.
-- The photos come from Wikimedia Commons; credits are in `renderer/img/photos/CREDITS.txt` and in Theme Studio.
-
-**Minimal:** a clean black-and-grey look with almost no motion.
+**Home:** clock, greeting and a daily briefing; weather with hourly and 5-day forecasts; CPU, memory, disk and
+network graphs; a calendar, countdown, focus timer, tasks, a notes box, and quick links. Drag widgets by their title
+to reorder them, or turn them off.
 
 **Music:** whatever Windows says is playing (Spotify, a YouTube tab, Apple Music…).
-- Play/pause, skip, seek, shuffle, repeat, system volume, and choosing which app to follow.
-- A real frequency spectrum from your speakers drives the visualisers and the city: the bass
-  makes the city glow breathe, the mids lift the particles, and the beat makes the lights flare.
-- The album cover's colours tint the sky.
-- Synced lyrics (LRCLIB), recently played, and a pop-out mini player.
+- Play/pause, skip, seek, shuffle, repeat, volume, synced lyrics, recently played and a pop-out mini player.
+- A real frequency spectrum from your speakers drives the visualisers and the city lights.
+- **Your own songs:** drop in MP3, M4A, FLAC, WAV, OGG or Opus files and they play inside Skyline.
+- **Spotify inside Skyline:** search and play every song, artist, album and playlist. It plays directly with
+  Spotify Premium. Without Premium it works through Spicetify, or plays the song on YouTube.
+- Music search remembers your recent searches. You can also share lyric cards and see a Weekly Wrapped.
 
-**Your own songs:** add songs or whole folders on the Music page, or just drop them on the window.
-- MP3, M4A, FLAC, WAV, OGG and Opus play right inside Skyline, with their titles, artists and cover art.
-- They use the same player, lyrics and visualiser; your keyboard's media keys work too.
-- **Spotify inside Skyline** (Music › Find a song): connect your Spotify once, then search every song, artist,
-  album and playlist and play, queue, like or add to your playlists without leaving the app.
-  - Setup: create a free app at developer.spotify.com, add the Redirect URI `http://127.0.0.1:43821/callback`,
-    and paste its Client ID. You sign in on Spotify's own page.
-  - Playing directly needs Spotify Premium; with a free account, songs open in the Spotify app instead.
-  - The assistant plays Spotify too: "play Blinding Lights".
-- Not connected? Find a song still searches the whole catalogue and plays songs on YouTube.
+**Social:** your Skyline account, with friends and messages like Discord.
+- Direct messages with pictures, GIF search (with favorites and recents), stickers, emoji, replies and typing
+  indicators. Right-click a sticker to delete it.
+- **Servers** with text and voice channels, invites, and roles for the owner.
+- Voice and video calls, screen sharing (full screen, high quality), and **Go Live** in voice channels.
+- **Watch together:** watch YouTube or listen along on Spotify with a friend.
+- Profiles with badges, a status, and "Playing Fortnite" style activity.
 
-**Assistant:** the glowing mic in the side bar (Ctrl+Space, or Alt+Shift+A from anywhere).
-- Click it and talk: "open Minecraft", "play Blinding Lights", "pause", "next song", "volume 40",
-  "switch to Tokyo From Above", "set a timer for 25 minutes", "what's the weather?".
-- Right-click it to type instead. It answers out loud (you can choose the voice or turn this off).
-- Speech is understood offline by Windows' own recognizer, using the real names of your apps, games and songs.
-- **Memory:** teach it how you do things. Say "remember that I use Modrinth App for Minecraft", and from
-  then on "open Minecraft" opens Modrinth. Manage memories with the 🧠 button or in Settings › Assistant.
-- With a Claude API key (Settings › AI), anything it doesn't know goes to Claude: questions,
-  "put on something chill", several steps at once. Optional "Hey Skyline" wake word.
+**Games:** your whole library in one place. Steam, Epic, Xbox, browser and local games, with their real cover art.
+- Play time per game (only while the game is in front), and a game stats card.
+- **Clip saver:** while you play, Skyline keeps the last minute in memory. Press the clip key and the last
+  30 to 60 seconds are saved to `Videos\Skyline Clips`. It's off until you turn it on.
+- **Minecraft:** jump straight into your modpacks.
 
-**Games** (left rail, Ctrl+3):
-- **Search:** finds your saved games instantly.
-- **AI Game Builder:** describe a game and pick its type, style and difficulty; Claude writes a real, playable browser game. Keep chatting to change it ("add a boss", "fix the jump"). There's a live preview with Play/Pause/Restart/Expand, "Fix with AI" when the game hits an error, undo for AI changes, regenerate, a code view, and export as a project folder or a single HTML file.
-- **My games:** rename, duplicate, delete, export, and edit with AI.
-- **Library:** browser, local and web games. "Find games on this PC" picks up Steam, Epic and game shortcuts, and they launch through their own launchers.
-- **Real game art:** each game gets its real cover or logo instead of a generic file icon. Fortnite gets its Epic key art, Steam games their store art, Xbox and Store games the logo they ship with, and anything else its sharp 256 px app icon or its Wikipedia cover. "⋯ › Change picture…" lets you pick your own.
-- **Find games:** searches itch.io browser games and FreeToGame. Results open on their own website after a notice; nothing is downloaded.
-- **Setup:** the builder needs your own Anthropic API key (Settings › AI builder). The key is stored encrypted with Windows' protection and is only used by Skyline's background process.
-- **Safety:** built games run in a sandbox with no internet and no access to your files or to Skyline.
+**School:** Google Classroom assignments and grades, a calendar, your class schedule, and study tools (flashcards,
+quizzes, an assignment planner). Grade alerts and spoken homework reminders. Everything also shows on the phone app.
 
-**Home:** clock (4 styles), greeting, weather with hourly and 5-day forecast, CPU, memory,
-disk and network graphs, calendar, focus timer, tasks, notes, and quick links with real site
-icons. Drag widgets by their title to reorder them.
+**Money:** track what comes in and goes out, and save up for goals.
 
-**Theme Studio** (Settings):
-- Hover a theme to see it move. Save, Save As New, Rename, Duplicate, Reset, Delete,
-  Import/Export (.skytheme files), "Surprise me" palettes, and undo/redo (Ctrl+Z / Ctrl+Y).
-- Every colour and effect is adjustable, and you can use your own background picture
-  (blur, brightness, contrast, opacity, overlay).
+**YouTube:** search and watch without leaving Skyline.
 
-**Interface** (Settings):
-- **Motion:** Off, Subtle or Full; startup "lights on" intro; rolling clock digits; 3D tilt.
-- **Look:** fonts (Modern, Tech, Mono, Elegant, Playful), roundness, interface size, and Clear, Frosted or Solid glass. The side bar can show labels.
-- **Accent:** from the theme, from the album art you're listening to, or your own colour.
-- **Home:** layouts (Classic, Centered, Focus) and music player styles (Card, Vinyl, Compact).
-- **Effects:** cursor glow, sparkle trail, and interface sounds.
-- **Interactive sky:** click the background for a shooting star, double-click for fireworks.
+**Sky, the assistant** (the glowing mic, or Ctrl+Space / Alt+Shift+A from anywhere):
+- Talk to it: "open Minecraft", "play Blinding Lights", "volume 40", "set a timer for 25 minutes", "what's due tomorrow?".
+- It answers out loud, with a choice of voices.
+- It remembers how you do things ("remember that I use Modrinth for Minecraft").
+- Questions it can't answer go to Claude or ChatGPT if you've connected one.
 
-**Motion everywhere:** pages drift in, a light indicator glides along the side bar, and cards cascade in and tilt toward the cursor. Glass panels catch a light that follows your mouse, and buttons ripple. Stats count up, themes crossfade, lyrics fill in karaoke-style, the player pulses on the beat, and new games celebrate with confetti.
+**Themes and looks:** live photos of real cities at night whose lights twinkle with your music, plus Theme Studio
+for colours, effects, rain, snow, your own photos, fonts, glass styles and layouts. Themes can change by time of
+day, and live weather appears in the sky.
 
-**Automation:** themes by time of day; live weather in the sky (if it rains outside, it rains in
-Skyline); reduce animations; and a smoothness choice of 24, 30 or 60 fps.
-
-**App:** tray icon with music controls and a theme picker, open at Windows sign-in (optionally
-straight to the tray), close to tray, and a global shortcut (Alt+Shift+S by default). Press
-**?** in Skyline for all keyboard shortcuts.
-
-**Ambient mode** (moon button or A) leaves only the city, the time and your music, with the
-current lyric line floating above the skyline. F11 makes it full screen.
-
-Skyline pauses its animation whenever its window is hidden or minimised, or a full-screen game
-or video is in front. It runs at low priority otherwise.
+**App:** tray icon with music controls, starts with Windows if you want, a command bar (Ctrl+K), a sleep timer,
+backup and restore, and ambient mode (just the city, the time and your music). Press **?** for all shortcuts.
 
 ## Privacy
 
-Everything stays on your PC, in `%APPDATA%\Skyline`. Skyline only goes online for:
-- weather (Open-Meteo: just the city you pick);
-- lyrics (LRCLIB: the song's title and artist);
-- each quick link's own site, to fetch its icon;
-- game covers (Steam's store, Wikipedia: just the game's name);
-- "Find a song" (Apple's iTunes Search: what you type) and YouTube when you play a song there;
-- the assistant's "ask Claude" answers, only when you've added an API key.
-
-Your voice never leaves the PC: speech is recognised by Windows itself.
-
-The visualiser analyses your speakers' sound in memory. Nothing is recorded.
+Skyline's own settings and files stay on your PC, in `%APPDATA%\Skyline`. Social (messages, friends, servers) and
+the school summary for the phone app are stored in Skyline's online database, and only you and the people you
+talk to can read them. API keys and sign-ins are stored encrypted on your PC and never go in backups.
 
 ## Building it yourself
 
 ```
 npm install
-npm start            # run from source
-npm run dist         # build dist\Skyline Setup <version>.exe
-npm run icon         # re-render the icons from renderer/img/icon.svg
+npm start               # run from source
+node mobile/build.mjs   # build the phone app into docs/
+.\release.ps1           # build, publish and update this page (needs GH_TOKEN)
 ```
 
-Testing without a window: `npx electron . --shot=steps.json --out=folder` renders offscreen,
-runs each step's JavaScript and saves screenshots.
-
-- `main/`: the app shell (window, tray, sign-in, shortcut, mini player, lyrics, site icons) and
-  `helper.ps1`, the Windows helper for media, volume, the speaker level, network and
-  full-screen detection.
-- `renderer/`: the interface. `js/scene/engine.js` draws the scenes, in a worker for the live
-  background; `studio.js` is Theme Studio, `music.js` the player and audio analysis, and
-  `widgets.js` the home screen.
+- `main/`: the app shell (window, tray, updates, Social link, voice, Spotify, clips, school).
+- `renderer/`: the interface; `renderer/js/social/` is Social, shared with the phone app.
+- `mobile/`: the phone app's own shell; `docs/` is the built phone app that GitHub Pages serves.
+- `supabase/social.sql`: the Social database. Skyline applies changes to it by itself.

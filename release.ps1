@@ -25,3 +25,12 @@ foreach ($f in @($exe, "$exe.blockmap", "dist\latest.yml")) {
   "uploaded $name"
 }
 "Published Skyline ${ver}: https://github.com/ShadowRidezz/skyline-releases/releases/tag/v$ver"
+
+# keep the GitHub page current: the version on the README, then push the code (and the phone app in docs/)
+$readme = Get-Content README.md -Raw
+$readme = $readme -replace '<!-- version -->.*?<!-- /version -->', "<!-- version -->**Latest version: $ver**<!-- /version -->"
+[IO.File]::WriteAllText("$PSScriptRoot\README.md", $readme)
+git add -A
+git commit -q -m "Skyline $ver"
+git push -q origin HEAD
+"Pushed the code and README for $ver"
