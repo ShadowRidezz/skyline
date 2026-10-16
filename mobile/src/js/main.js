@@ -174,4 +174,9 @@ applyBg();
 show("home");
 Social.init().then(() => { if (current === "home" || current === "settings") show(current); });
 on(what => { if (what === "me" && current === "settings") Settings.render(); });
-if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+  // check for a new version on every open and whenever Skyline comes back to the front; switch to it right away
+  navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(r => { r.update(); document.addEventListener("visibilitychange", () => { if (!document.hidden) r.update().catch(() => {}); }); }).catch(() => {});
+  let had = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener("controllerchange", () => { if (had && !document.body.classList.contains("m-main")) location.reload(); had = true; });
+}
