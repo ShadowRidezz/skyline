@@ -170,3 +170,16 @@ body.m-set .sx-set-body { padding: 8px 16px 30px !important; }
 #view-admin .ad-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 /* the selected tab: just the colour and the bar on top, no box */
 .m-tabs .rbtn.on { background: none; box-shadow: none; }
+/* clock styles (the same four as the PC: Thin, Bold, Digital, Elegant) */
+.m-clock .sec { font-style: normal; font-size: .42em; letter-spacing: 0; opacity: .7; margin-left: 2px; }
+.m-hero[data-style="bold"] .m-clock, .m-cs[data-style="bold"] b { font-weight: 700; letter-spacing: -.03em; }
+.m-hero[data-style="mono"] .m-clock, .m-cs[data-style="mono"] b { font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace; font-weight: 300; letter-spacing: -.02em; }
+.m-hero[data-style="mono"] .m-clock { font-size: 70px; }
+.m-hero[data-style="serif"] .m-clock, .m-cs[data-style="serif"] b { font-family: Georgia, "Times New Roman", serif; font-weight: 400; font-style: italic; letter-spacing: -.02em; }
+.m-styles { display: grid !important; grid-template-columns: repeat(4, 1fr); gap: 8px; cursor: default; }
+.m-cs { display: grid; justify-items: center; gap: 4px; padding: 12px 4px 9px; border-radius: 14px; border: 2px solid transparent; background: rgba(255,255,255,.05); color: var(--text); cursor: pointer; font: inherit; }
+.m-cs b { font: 300 26px/1 var(--display); letter-spacing: -.04em; }
+.m-cs span { font-size: 12px; color: var(--muted); }
+.m-cs.on { border-color: var(--a1); background: color-mix(in srgb, var(--a1) 14%, transparent); }
+.m-li .seg button { padding: 0 12px; height: 32px; }
+label.m-li { cursor: pointer; }
