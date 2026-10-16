@@ -264,10 +264,12 @@ function renderSlot() {
 }
 
 /* ---------- the screen and window picker ---------- */
-async function pickScreen() {
-  if (pickerOpen || !S.call) return; pickerOpen = true; let quality = SHARE_QUALITY[S.settings.shareQuality] ? S.settings.shareQuality : "smooth";
+// onStream(stream, quality): what to do with the picked screen (default: share it in the call). Voice channels use it for Go Live.
+async function pickScreen(onStream, title = "Share your screen") {
+  const use = typeof onStream === "function" ? onStream : (S.call ? (st, q) => S.call.shareScreen(st, q) : null);
+  if (pickerOpen || !use) return; pickerOpen = true; let quality = SHARE_QUALITY[S.settings.shareQuality] ? S.settings.shareQuality : "smooth";
   const m = $("#dlg");
-  m.innerHTML = `<div class="dlg-box sx-picker" role="dialog" aria-modal="true" aria-label="Share your screen"><div class="sx-add-head"><h3>Share your screen</h3><span class="sp"></span><button class="ibtn" data-p="close" aria-label="Close">${icon("x")}</button></div>
+  m.innerHTML = `<div class="dlg-box sx-picker" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="sx-add-head"><h3>${esc(title)}</h3><span class="sp"></span><button class="ibtn" data-p="close" aria-label="Close">${icon("x")}</button></div>
     <div class="seg sm" id="sxPickTabs"><button class="on" data-p="tab:screen">Screens</button><button data-p="tab:window">Windows</button></div>
     <div class="sx-pick-grid" id="sxPickGrid"><div class="sx-skel tile"></div><div class="sx-skel tile"></div></div>
     <div class="sx-pick-q" role="radiogroup" aria-label="Quality">${Object.entries(SHARE_QUALITY).map(([k, q]) => `<button role="radio" data-p="q:${k}" aria-checked="${k === quality}" class="${k === quality ? "on" : ""}"><b>${q.label}</b><small>${q.sub}</small></button>`).join("")}</div>
@@ -295,13 +297,13 @@ async function pickScreen() {
     if (a === "tab") { tab = x; sel = (list.find(s => (tab === "screen") === s.screen) || {}).id || null; return draw(); }
     if (a === "sel") { sel = x; return draw(); }
     if (a === "q") { quality = x; S.settings.shareQuality = x; api.rpc("save_settings", { p_data: S.settings }).catch(() => {}); m.querySelectorAll("[data-p^='q:']").forEach(q => { const on = q.dataset.p === "q:" + x; q.classList.toggle("on", on); q.setAttribute("aria-checked", on); }); return; }
-    if (a === "go" && sel && S.call) {
+    if (a === "go" && sel) {
       b.disabled = true;
       try {
         await api.shareSource(sel);
         const q = SHARE_QUALITY[quality];
         const stream = await navigator.mediaDevices.getDisplayMedia({ video: { width: { max: q.w }, height: { max: q.h }, frameRate: { ideal: q.fps, max: q.fps } }, audio: false });
-        await S.call.shareScreen(stream, quality);
+        await use(stream, quality);
         close();
       } catch (er) { b.disabled = false; toast(er.name === "NotAllowedError" ? "Screen sharing was blocked." : "Couldn't share: " + er.message, true); }
     }

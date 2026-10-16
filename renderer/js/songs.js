@@ -135,6 +135,7 @@ export async function pickSongs(folder) {
   if (added) { await refresh(); afterAdd(added); }
 }
 async function find(q) {
+  if (!SpotifyUI.connected()) await SpotifyUI.status().catch(() => null);   // (the Spicetify helper may have connected since)
   if (SpotifyUI.connected()) { if (q) SpotifyUI.search(q); else SpotifyUI.clear(); return; }
   S.q = q; const fd = $("#sgFound"); if (!q) { S.found = []; return render(); }
   fd.dataset.busy = "1"; fd.innerHTML = `<div class="g-loading"><i></i><i></i><i></i><span>Searching…</span></div>`;

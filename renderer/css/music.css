@@ -109,3 +109,7 @@
 .sp-chip button svg { width: 13px; height: 13px; opacity: .55; }
 .sp-chip button.x { padding: 0 10px 0 4px; color: var(--faint); font-size: 10px; }
 .sp-chip:hover { background: rgba(255,255,255,.1); } .sp-chip button.x:hover { color: var(--text); }
+
+/* Settings › Music: Spotify without Premium (Spicetify) */
+.sp-spice { margin: 10px 0 0; padding: 10px 12px; border-radius: 10px; background: rgba(30,215,96,.06); border: 1px solid rgba(30,215,96,.2); font-size: 13px; color: var(--muted); line-height: 1.5; }
+.sp-spice b { color: var(--text); } .sp-spice .ok { color: #3dd68c; } .sp-spice .btn { margin: 6px 6px 0 0; } .sp-spice small { color: var(--faint); }

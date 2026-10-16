@@ -106,6 +106,7 @@ contextBridge.exposeInMainWorld("sky", {
     play: item => ipcRenderer.invoke("sp:play", item),
     current: () => ipcRenderer.invoke("sp:current"),
     open: item => ipcRenderer.invoke("sp:open", item),
+    spice: () => ipcRenderer.invoke("sp:spice"), spiceInstall: () => ipcRenderer.invoke("sp:spiceInstall"),
     queue: uri => ipcRenderer.invoke("sp:queue", uri),
     upNext: () => ipcRenderer.invoke("sp:upNext"),
     skipTo: n => ipcRenderer.invoke("sp:skipTo", n),

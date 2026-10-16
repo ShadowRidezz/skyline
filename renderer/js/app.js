@@ -139,6 +139,20 @@ async function spotifyAccount() {
   $("#spAcctUnlink").hidden = !on; $("#spAcctLink").hidden = on;
   $("#spAcctUnlink").onclick = async () => { if (await SpotifyUI.unlink()) { SpotifyLib.reset(); spotifyAccount(); Songs.show(); } };
   $("#spAcctLink").onclick = () => { go("music"); Songs.show("lib"); };
+  spiceBox(st);
+}
+// No Premium? With Spicetify, Skyline searches and plays through the Spotify app itself
+async function spiceBox(st) {
+  const box = $("#spSpice"); if (!box || !sky.spotify.spice) return;
+  if (st && st.connected && !st.spicetify && st.user && st.user.premium) { box.hidden = true; return; }   // (Premium linked: the normal connection, nothing to add)
+  const s = await sky.spotify.spice().catch(() => null); if (!s) return;
+  box.hidden = false;
+  box.innerHTML = `<b>No Spotify Premium?</b> ${s.live ? `<span class="ok">✓ Working through Spicetify${s.user ? ` (${esc(s.user.name)})` : ""}: search, play and your library work on the Music page.</span>`
+    : s.installed ? `The Skyline helper is in Spicetify. Open Spotify and it connects by itself.`
+    : s.spicetify ? `Spicetify is installed. Add Skyline's helper to it and Skyline can search, play and show your library without Premium. <button class="btn sm primary" id="spSpiceAdd">Add Skyline to Spicetify</button><small>Spotify restarts once.</small>`
+    : `Skyline can work without Premium through <a href="#" data-link="https://spicetify.app">Spicetify</a> (a free add-on for the Spotify desktop app; using mods is against Spotify's terms, so it's your call). Install it, then come back here.`}`;
+  box.onclick = e => { const l = e.target.closest("[data-link]"); if (l) { e.preventDefault(); sky.openUrl(l.dataset.link); } };
+  const add = $("#spSpiceAdd"); if (add) add.onclick = async () => { add.disabled = true; add.textContent = "Adding… (Spotify restarts)"; try { await sky.spotify.spiceInstall(); toast("Skyline helper added to Spicetify"); } catch (e) { toast(e.message, true); } setTimeout(() => spiceBox(st), 6000); };
 }
 document.addEventListener("sky:spotify", () => { SpotifyLib.reset(); spotifyAccount(); Songs.show(); });
 

@@ -39,7 +39,8 @@ export const SpotifyUI = {
         <li>Create an app. Any name works (e.g. “Skyline”). Under <b>Redirect URIs</b> paste <code class="sp-copy" data-sp="copy" title="Click to copy">${esc(st.redirect || "http://127.0.0.1:43821/callback")}</code>, tick <b>Web API</b>, and save.</li>
         <li>Open the app's <b>Settings</b>, copy the <b>Client ID</b> and paste it here:</li></ol>
       <form class="sp-id" data-sp="form"><input id="spClientId" placeholder="Client ID (32 letters and numbers)" value="${esc(st.clientId || "")}" spellcheck="false" autocomplete="off" maxlength="40"><button class="btn sm primary sp-btn">${SPOT}Connect Spotify</button></form>
-      <small>You sign in on Spotify's own page: Skyline never sees your password. Playing songs straight from Skyline needs Spotify Premium (Spotify's rule); with a free account they open in the Spotify app.</small></div>`;
+      <small>You sign in on Spotify's own page: Skyline never sees your password. Playing songs straight from Skyline needs Spotify Premium (Spotify's rule); with a free account they open in the Spotify app.</small>
+      <small><b>No Premium?</b> Skip this: with <b>Spicetify</b> (a free add-on for the Spotify app), Skyline can search and play through the Spotify app itself. See Settings › Music.</small></div>`;
   },
   headHTML() {
     const u = SP.status.user || {};

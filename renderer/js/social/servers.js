@@ -86,7 +86,7 @@ function voiceList(sv, admin) {
   return `<div class="sx-sec"><span>Voice channels</span><span class="sp"></span>${admin ? `<button class="ibtn xs" data-sx="newvoice:${sv.id}" title="Create voice channel" aria-label="Create voice channel">${icon("plus")}</button>` : ""}</div>
     <div class="sx-vchans">${vs.map(c => { const people = c.voice || [], here = mine === c.id;
       return `<button class="sx-chan voice${here ? " on" : ""}" data-sx="vjoin:${c.id}" data-cid="${c.id}" title="${here ? "You're here" : "Join " + esc(c.name)}">${icon("speaker")}<span>${esc(c.name)}</span>${people.length ? `<em>${people.length}</em>` : ""}${admin ? `<span class="sx-chan-gear" data-sx="editchannel:${c.id}" title="Edit channel" role="button" aria-label="Edit channel">${icon("settings")}</span>` : ""}</button>
-        ${people.length ? `<div class="sx-vmems">${people.map(p => `<div class="sx-vmem" data-vu="${p.id}">${avatar(p, 22)}<span>${esc(p.display_name)}</span>${p.deafened ? icon("headphonesOff") : p.muted ? icon("micOff") : ""}</div>`).join("")}</div>` : ""}`; }).join("")
+        ${people.length ? `<div class="sx-vmems">${people.map(p => `<div class="sx-vmem" data-vu="${p.id}">${avatar(p, 22)}<span>${esc(p.display_name)}</span>${p.live ? (here && p.id !== S.me.id ? `<button class="sx-live-pill" data-sx="vwatch:${p.id}" title="Watch ${esc(p.display_name)}'s screen">LIVE</button>` : `<b class="sx-live-pill" title="${p.id === S.me.id ? "You're live" : "Join the channel to watch"}">LIVE</b>`) : ""}${p.deafened ? icon("headphonesOff") : p.muted ? icon("micOff") : ""}</div>`).join("")}</div>` : ""}`; }).join("")
       || `<p class="sx-side-empty">No voice channels yet.</p>`}</div>`;
 }
 // you're in voice: where, and mute / deafen / leave (shown on every Social page)
@@ -96,7 +96,9 @@ export function voicePanel() {
   return `<div class="sx-vpanel"><div class="sx-vpanel-t"><b><i class="sx-live-dot"></i>Voice connected</b><small>${c ? esc(c.name) : "Voice"} · ${sv ? esc(sv.name) : ""}${all ? ` · ${ok}/${all} connected` : " · just you"}</small>${v.noMic ? `<small class="bad">No microphone: they can't hear you</small>` : ""}</div>
     <div class="sx-vpanel-b"><button class="sx-cbtn sm${v.muted ? " off" : ""}" data-sx="vmute" title="${v.muted ? "Unmute" : "Mute"}" aria-label="${v.muted ? "Unmute" : "Mute"}" aria-pressed="${v.muted}">${icon(v.muted ? "micOff" : "mic")}</button>
       <button class="sx-cbtn sm${v.deafened ? " off" : ""}" data-sx="vdeafen" title="${v.deafened ? "Undeafen" : "Deafen (hear nobody)"}" aria-label="Deafen" aria-pressed="${v.deafened}">${icon(v.deafened ? "headphonesOff" : "headphones")}</button>
-      <button class="sx-cbtn sm end" data-sx="vleave" title="Leave voice" aria-label="Leave voice">${icon("phoneOff")}</button></div></div>`;
+      <button class="sx-cbtn sm${v.live ? " live" : ""}" data-sx="vlive" title="${v.live ? `Stop streaming${v.viewers ? ` (${v.viewers} watching)` : ""}` : "Go Live: share your screen with the channel"}" aria-label="Go Live" aria-pressed="${v.live}">${icon(v.live ? "screenOff" : "screen")}</button>
+      <button class="sx-cbtn sm end" data-sx="vleave" title="Leave voice" aria-label="Leave voice">${icon("phoneOff")}</button></div>
+    ${v.live ? `<small class="sx-vlive-t">🔴 Live${v.viewers ? ` · ${v.viewers} watching` : " · nobody watching yet"}</small>` : ""}</div>`;
 }
 
 /* ================= members (the right-hand panel) ================= */

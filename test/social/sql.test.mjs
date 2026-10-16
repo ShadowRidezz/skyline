@@ -399,6 +399,17 @@ vv = (await rows(A, "get_servers")).map(r => r.get_servers).find(x => x.id === S
 ok(vv.find(x => x.id === C).muted === true, "mute shows to others");
 await rpc(C, "voice_leave");
 ok(await err(rpc(C, "voice_heartbeat")) === "not_in_voice", "left");
+// Go Live
+await rpc(A, "voice_join", { p_channel: lounge }); await rpc(C, "voice_join", { p_channel: lounge });
+await rpc(A, "voice_state", { p_live: true });
+vv = (await rows(C, "get_servers")).map(r => r.get_servers).find(x => x.id === SV2).channels.find(c => c.id === lounge).voice;
+ok(vv.find(x => x.id === A).live === true, "going live shows in the channel list");
+ok(await err(rpc(C, "send_voice_signal", { p_channel: lounge, p_to: A, p_kind: "watch" })) === null, "a viewer asks to watch");
+ok(await err(rpc(C, "send_voice_signal", { p_channel: lounge, p_to: A, p_kind: "rm -rf" })) === "signal_invalid", "only known signals");
+await rpc(A, "voice_join", { p_channel: lounge });
+vv = (await rows(C, "get_servers")).map(r => r.get_servers).find(x => x.id === SV2).channels.find(c => c.id === lounge).voice;
+ok(vv.find(x => x.id === A).live === false, "joining again starts not live");
+await rpc(A, "voice_leave"); await rpc(C, "voice_leave");
 const vch = await one(A, "create_channel", { p_server: SV2, p_name: "Gaming Voice", p_kind: "voice" });
 ok((await rows(A, "get_servers")).map(r => r.get_servers).find(x => x.id === SV2).channels.find(c => c.id === vch).kind === "voice", "admins make voice channels");
 

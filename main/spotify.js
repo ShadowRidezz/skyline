@@ -56,7 +56,7 @@ class Spotify {
     if (!/^[0-9a-f]{32}$/i.test(id)) throw new Error("That doesn't look like a Spotify Client ID (32 letters and numbers, from your app's Settings page)");
     const c = this.conf(); if (c.clientId !== id) { delete c.tok; delete c.user; } c.clientId = id; this.save(c); return this.status();
   }
-  disconnect() { const c = this.conf(); delete c.tok; delete c.user; this.save(c); return this.status(); }
+  disconnect() { const c = this.conf(); if (this.useBridge() && !c.tok) { c.noSpice = true; this.save(c); return this.fullStatus(); } delete c.tok; delete c.user; this.save(c); return this.fullStatus(); }
 
   /* ---------- signing in (in your normal browser, on Spotify's own page) ---------- */
   connect() {
@@ -309,9 +309,26 @@ class Spotify {
   // for the assistant: "play Blinding Lights" -> the top match, played
   async playQuery(q) { const r = await this.search(q), t = r.tracks[0]; if (!t) throw new Error(`Spotify has nothing for “${q}”`); const res = await this.play({ ...t, solo: true }); return { ...res, track: t }; }
 
+  // Spicetify: when your Spotify isn't linked with Premium and the Skyline helper is running inside Spotify,
+  // searching, playing, the queue, likes and your library go through the helper instead (no Premium needed).
+  // A Premium account linked here always keeps the normal connection.
+  useBridge() {
+    const st = this.status();
+    return !!(this.bridge && this.bridge.live() && !this.conf().noSpice && !(st.connected && st.user && st.user.premium));
+  }
+  fullStatus() {
+    const st = this.status();
+    if (!this.useBridge()) return { ...st, spicetify: false };
+    const u = this.bridge.user || {};
+    return { ...st, connected: true, needsReconnect: false, spicetify: true, user: { name: (u.name || "Spotify") + " · Spicetify", premium: !!u.premium, via: "spicetify" } };
+  }
   install() {
-    const h = (ch, fn) => ipcMain.handle(ch, (e, ...a) => fn(...a));
-    h("sp:status", () => this.status());
+    const BRIDGED = { "sp:search": "search", "sp:play": "play", "sp:upNext": "upNext", "sp:open": "open", "sp:current": "current", "sp:skipTo": "skipTo", "sp:queue": "queue",
+      "sp:like": "like", "sp:playlists": "playlists", "sp:library": "library", "sp:tracks": "tracks", "sp:playList": "playList", "sp:addTo": "addTo" };
+    const h = (ch, fn) => ipcMain.handle(ch, (e, ...a) => BRIDGED[ch] && this.useBridge() ? this.bridge.call(BRIDGED[ch], ...a) : fn(...a));
+    h("sp:status", () => this.fullStatus());
+    h("sp:spice", () => this.bridge ? this.bridge.status() : { spicetify: false, installed: false, live: false });
+    h("sp:spiceInstall", async () => { if (!this.bridge) throw new Error("Not available"); const c = this.conf(); delete c.noSpice; this.save(c); return this.bridge.install(); });
     h("sp:setClientId", id => this.setClientId(id));
     h("sp:connect", () => this.connect());
     h("sp:disconnect", () => this.disconnect());

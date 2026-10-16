@@ -9,7 +9,7 @@ import { CallUI } from "./callui.js";
 import { notify } from "./social.js";
 import { pickEmoji, EMOJI_QUICK, closeEmoji } from "./emoji.js";
 import { pickSticker, stickerSrc, stickerName, closeStickers } from "./stickers.js";
-import { pickGif, closeGifs, gifHtml } from "./gifs.js";
+import { pickGif, closeGifs, gifHtml, starFromChat } from "./gifs.js";
 import { Servers } from "./servers.js";
 
 const PAGE = 60, GROUP_MS = 5 * 60e3, MAX_FILES = 6, MAX_FILE = 25 * 1048576;
@@ -417,6 +417,7 @@ function msgClick(e) {
   const j = e.target.closest("[data-jump]"); if (j) return jump(j.dataset.jump);
   const row = e.target.closest(".sx-msg"); if (!row) return;
   const m = msg(row.dataset.mid);
+  const gs = e.target.closest("[data-gfav]"); if (gs) return starFromChat(gs, saveSettings);
   const q = e.target.closest("[data-quick]"); if (q) return react(m, q.dataset.quick);
   const rc = e.target.closest("[data-react]"); if (rc) return react(m, rc.dataset.react);
   const v = e.target.closest("[data-view]"); if (v) return viewer(v.dataset.view, v.dataset.name);
@@ -556,7 +557,7 @@ export const Chat = {
     if (a === "togglepanel") { if (S.panel && S.panel.id === x) { S.panel = null; emit("panel"); } else import("./social.js").then(m => m.Social.showProfile(x, true)); }
     if (a === "callshare") { const f = friend(x); if (f) CallUI.start(f, false, { share: true }); }
     if (a === "emoji") { closeStickers(); closeGifs(); pickEmoji(b, e => { const ta = $("#sxText"), s = ta.selectionStart ?? ta.value.length; ta.value = ta.value.slice(0, s) + e + ta.value.slice(ta.selectionEnd ?? s); ta.focus(); ta.setSelectionRange(s + e.length, s + e.length); ta.dispatchEvent(new Event("input")); }, { save: saveSettings, keepOpen: true }); }
-    if (a === "gifs") { closeEmoji(); closeStickers(); pickGif(b, g => { const rp = reply; reply = null; extra(); send(cur, { kind: "gif", meta: g, reply: rp }); }); }
+    if (a === "gifs") { closeEmoji(); closeStickers(); pickGif(b, g => { const rp = reply; reply = null; extra(); send(cur, { kind: "gif", meta: g, reply: rp }); }, saveSettings); }
     if (a === "stickers") { closeEmoji(); closeGifs(); pickSticker(b, pick => { const rp = reply; reply = null; extra(); send(cur, { kind: "sticker", meta: pick, reply: rp }); }, saveSettings); }
     if (a === "attach") { const inp = document.createElement("input"); inp.type = "file"; inp.multiple = true; inp.onchange = () => addFiles([...inp.files]); inp.click(); }
     if (a === "unfile") { const p = pending.splice(+x, 1)[0]; if (p && p.preview) URL.revokeObjectURL(p.preview); extra(); }

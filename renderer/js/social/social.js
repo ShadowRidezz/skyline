@@ -37,6 +37,7 @@ async function init() {
     if (what === "members" && S.panel && S.panel.kind === "members") renderPanel();
     if (what === "voice") { const vs = $("#sxVoiceSlot"); if (vs) vs.innerHTML = Servers.voicePanel(); if (S.view.kind === "channel") renderSide(); }
     if (what === "voicelist") Servers.load();
+    if (what === "voicelive") liveView();
   });
   CallUI.init(); Chat.init(); SocialSettings.init({ open, render: renderAll, reloadMe });
   try { const st = await api.state(); S.configured = st.configured; S.user = st.user; S.ice = st.ice; S.test = st.test; } catch (e) { S.configured = false; }
@@ -288,6 +289,25 @@ function renderMe() {
     <button class="ibtn" data-sx="copyname" title="Copy your username" aria-label="Copy your username">${icon("copy")}</button>
     <button class="ibtn" data-sx="go:settings" title="Social settings" aria-label="Social settings">${icon("settings")}</button>`;
 }
+// watching someone's stream: their screen over the chat, until you close it (or they stop)
+function liveView() {
+  const v = VoiceChat.state(), main = $("#sxMain"); let el = $("#sxLiveView");
+  if (!v.watching || !main) { if (el) { const vid = el.querySelector("video"); if (vid) vid.srcObject = null; el.remove(); } return; }
+  const who = Servers.member(v.server, v.watching) || { display_name: "Someone" };
+  if (!el) {
+    el = document.createElement("div"); el.id = "sxLiveView"; el.className = "sx-liveview";
+    el.innerHTML = `<div class="sx-lv-top"><span class="sx-live-pill">LIVE</span><b></b><span class="sp"></span><button class="ibtn" data-lv="full" title="Full screen" aria-label="Full screen">${icon("expand")}</button><button class="ibtn" data-lv="close" title="Stop watching" aria-label="Stop watching">${icon("x")}</button></div>
+      <video autoplay playsinline muted></video><p class="sx-lv-wait"><span class="sx-spin"></span>Connecting to the stream…</p>`;
+    el.onclick = e => { const b = e.target.closest("[data-lv]"); if (!b) return; if (b.dataset.lv === "close") VoiceChat.unwatch(); else if (document.fullscreenElement) document.exitFullscreen(); else el.requestFullscreen({ navigationUI: "hide" }).catch(() => {}); };
+    el.ondblclick = e => { if (!e.target.closest("button")) { if (document.fullscreenElement) document.exitFullscreen(); else el.requestFullscreen().catch(() => {}); } };
+    main.appendChild(el);
+  }
+  el.querySelector("b").textContent = `${who.display_name}'s screen`;
+  const vid = el.querySelector("video"), s = VoiceChat.stream(v.watching);
+  if (s && vid.srcObject !== s) vid.srcObject = s;
+  const waiting = () => { const w = el.querySelector(".sx-lv-wait"); if (w) w.classList.toggle("hidden", vid.videoWidth > 0); };
+  vid.onresize = waiting; vid.onloadeddata = waiting; waiting();
+}
 function renderLive() {
   const m = $("#sxMain"); if (!m) return;
   let bar = $("#sxLive");
@@ -313,6 +333,7 @@ function renderMain() {
   else if (v.kind === "settings") SocialSettings.render(el, v.section);
   else { S.view = { kind: "friends", filter: v.filter || "all" }; el.innerHTML = friendsPage(); }
   renderLive();
+  liveView();   // (still watching a stream: it stays over whatever page you open)
 }
 const head = (title, extra = "") => `<header class="sx-head"><h2>${title}</h2><span class="sp"></span>${extra}</header>`;
 
@@ -541,6 +562,8 @@ async function click(e) {
     case "vmute": return VoiceChat.mute();
     case "vdeafen": return VoiceChat.deafen();
     case "vleave": return VoiceChat.leave();
+    case "vlive": return VoiceChat.goLive();
+    case "vwatch": return VoiceChat.watch(x);
     case "editchannel": { const c = Servers.channel(x); if (c) Servers.channelDialog(c.server_id, c.id); return; }
     case "invite": return Servers.inviteDialog(x);
     case "joininv": b.disabled = true; await Servers.join(x); return;

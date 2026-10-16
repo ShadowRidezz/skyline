@@ -518,7 +518,8 @@ app.whenReady().then(async () => {
   // ms: how long to keep it down. A Spotify that's just starting can take 5-10 s to show its window, so that gets longer.
   const tuckSpotify = (ms = 3500) => { if (SHOT) return; media.send("tuck Spotify " + Math.round(ms));
     for (const ms of [120, 400, 900, 1600]) setTimeout(() => { if (win && !win.isDestroyed() && win.isVisible() && !win.isMinimized()) win.moveTop(); }, ms); };
-  const spotify = new Spotify(DATA, { media, tuck: tuckSpotify }); spotify.install(); songs.spotifyApi = spotify; songs.tuck = tuckSpotify;
+  const spotify = new Spotify(DATA, { media, tuck: tuckSpotify }); spotify.install();
+  if (!SHOT || process.env.SKY_SPICE_TEST) { const { SpiceBridge } = require("./spicebridge"); spotify.bridge = new SpiceBridge(); spotify.bridge.start(); }   // Spotify without Premium, via Spicetify songs.spotifyApi = spotify; songs.tuck = tuckSpotify;
   assistant = new Assistant(DATA, { games, songs, spotify, ai: games.ai, media, getWin: () => win, shot: !!SHOT }); assistant.install(!!SHOT);
   new Links({ getSettings: () => settings, assistant }).install();
   const plays = new Plays(DATA, media); plays.install(); app.on("before-quit", () => plays.stop());

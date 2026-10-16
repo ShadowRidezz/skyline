@@ -828,17 +828,21 @@ create table if not exists public.voice_members (
   last_seen timestamptz not null default now()
 );
 create index if not exists voice_members_ch on public.voice_members (channel_id);
+alter table public.voice_members add column if not exists live boolean not null default false;
 -- signals between two people in the same voice channel (offer / answer / ice), like call_signals
 create table if not exists public.voice_signals (
   id bigserial primary key,
   channel_id uuid not null references public.channels (id) on delete cascade,
   from_id uuid not null references public.profiles (id) on delete cascade,
   to_id uuid not null references public.profiles (id) on delete cascade,
-  kind text not null check (kind in ('offer', 'answer', 'ice', 'bye')),
+  kind text not null,
   payload jsonb,
   created_at timestamptz not null default now()
 );
 create index if not exists voice_signals_to on public.voice_signals (to_id, created_at);
+alter table public.voice_signals drop constraint if exists voice_signals_kind_check;
+alter table public.voice_signals drop constraint if exists voice_signals_kind_ok;
+alter table public.voice_signals add constraint voice_signals_kind_ok check (kind in ('offer', 'answer', 'ice', 'bye', 'watch', 'unwatch'));
 -- typing: one row per person, where they're typing (a friend or a channel), refreshed every few seconds
 create table if not exists public.typing_state (
   user_id uuid primary key references public.profiles (id) on delete cascade,
@@ -981,7 +985,7 @@ begin
                     and (position(tag in lower(cm.body)) > 0 or exists (select 1 from channel_messages p where p.id = cm.reply_to and p.sender = u)) limit 100) z),
         'last_at', (select max(cm.created_at) from channel_messages cm where cm.channel_id = c.id),
         'voice', case when c.kind = 'voice' then coalesce((select jsonb_agg(jsonb_build_object('id', p.id, 'display_name', p.display_name, 'username', p.username, 'avatar', p.avatar, 'accent', p.accent,
-            'muted', v.muted, 'deafened', v.deafened) order by v.joined_at) from voice_members v join profiles p on p.id = v.user_id
+            'muted', v.muted, 'deafened', v.deafened, 'live', v.live) order by v.joined_at) from voice_members v join profiles p on p.id = v.user_id
             where v.channel_id = c.id and v.last_seen > now() - interval '45 seconds'), '[]'::jsonb) end) order by c.position, c.created_at)
       from channels c left join channel_reads r on r.channel_id = c.id and r.user_id = u where c.server_id = s.id), '[]'::jsonb))
   from server_members m join servers s on s.id = m.server_id where m.user_id = u order by m.joined_at;
@@ -1559,7 +1563,7 @@ begin
   delete from voice_members where last_seen < now() - interval '45 seconds';
   if (select count(*) from voice_members where channel_id = p_channel and user_id <> u) >= 10 then raise exception 'voice_full'; end if;
   insert into voice_members (user_id, channel_id, server_id) values (u, p_channel, c.server_id)
-    on conflict (user_id) do update set channel_id = excluded.channel_id, server_id = excluded.server_id, muted = false, deafened = false, joined_at = now(), last_seen = now();
+    on conflict (user_id) do update set channel_id = excluded.channel_id, server_id = excluded.server_id, muted = false, deafened = false, live = false, joined_at = now(), last_seen = now();
   -- the people already there (you connect to each of them)
   return coalesce((select jsonb_agg(jsonb_build_object('id', v.user_id, 'muted', v.muted, 'deafened', v.deafened)) from voice_members v where v.channel_id = p_channel and v.user_id <> u), '[]'::jsonb);
 end $$;
@@ -1570,11 +1574,12 @@ begin
   delete from voice_members where user_id = u;
   delete from voice_signals where (from_id = u or to_id = u) and created_at < now() - interval '1 minute';
 end $$;
-create or replace function public.voice_state(p_muted boolean, p_deafened boolean) returns void
+drop function if exists public.voice_state(boolean, boolean);
+create or replace function public.voice_state(p_muted boolean default null, p_deafened boolean default null, p_live boolean default null) returns void
 language plpgsql security definer set search_path = public as $$
 declare u uuid := public.require_profile();
 begin
-  update voice_members set muted = coalesce(p_muted, muted), deafened = coalesce(p_deafened, deafened), last_seen = now() where user_id = u;
+  update voice_members set muted = coalesce(p_muted, muted), deafened = coalesce(p_deafened, deafened), live = coalesce(p_live, live), last_seen = now() where user_id = u;
   if not found then raise exception 'not_in_voice'; end if;
 end $$;
 create or replace function public.voice_heartbeat() returns void
@@ -1588,7 +1593,7 @@ create or replace function public.send_voice_signal(p_channel uuid, p_to uuid, p
 language plpgsql security definer set search_path = public as $$
 declare u uuid := public.require_profile();
 begin
-  if p_kind not in ('offer', 'answer', 'ice', 'bye') then raise exception 'signal_invalid'; end if;
+  if p_kind not in ('offer', 'answer', 'ice', 'bye', 'watch', 'unwatch') then raise exception 'signal_invalid'; end if;
   if p_payload is not null and pg_column_size(p_payload) > 16000 then raise exception 'signal_invalid'; end if;
   if not exists (select 1 from voice_members where user_id = u and channel_id = p_channel)
      or not exists (select 1 from voice_members where user_id = p_to and channel_id = p_channel and last_seen > now() - interval '45 seconds') then raise exception 'not_in_voice'; end if;

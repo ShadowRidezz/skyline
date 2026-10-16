@@ -215,12 +215,13 @@ export const SHARE_QUALITY = {
 };
 // the shared screen starts sharp: a call normally starts at a low bitrate and climbs slowly, so a shared screen
 // looked blurry for the first seconds. The screen lane (the third one) is told to start high and never drop below a floor.
-function boostScreen(desc) {
+// (lane: which media section carries the screen: 3 in a call, 2 in a voice channel)
+export function boostScreen(desc, lane = 3) {
   try {
     if (!desc || !desc.sdp) return desc;
     const parts = desc.sdp.split(/\r\n(?=m=)/);   // [session, m=audio, m=video (camera), m=video (screen)]
-    if (parts.length < 4 || !/^m=video/.test(parts[3])) return desc;
-    let sec = parts[3];
+    if (parts.length <= lane || !/^m=video/.test(parts[lane])) return desc;
+    let sec = parts[lane];
     const pts = (/^m=video \d+ [A-Z/]+ ([\d ]+)/.exec(sec) || [, ""])[1].trim().split(/\s+/).filter(Boolean);
     const want = "x-google-start-bitrate=6000;x-google-min-bitrate=1500;x-google-max-bitrate=16000";
     for (const pt of pts) {
@@ -231,7 +232,7 @@ function boostScreen(desc) {
       else sec = sec.replace(new RegExp("(a=rtpmap:" + pt + " [^\r\n]*)"), "$1\r\na=fmtp:" + pt + " " + want);
     }
     if (!/\r\nb=AS:/.test(sec)) sec = sec.replace(/(\r\nc=[^\r\n]*)/, "$1\r\nb=AS:16000");
-    parts[3] = sec;
+    parts[lane] = sec;
     return { type: desc.type, sdp: parts.join("\r\n") };
   } catch (e) { return desc; }
 }

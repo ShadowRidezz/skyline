@@ -133,3 +133,27 @@
 .sx-vpanel-b { display: flex; gap: 6px; }
 .sx-vpanel-b .sx-cbtn { flex: 1; border-radius: 10px; }
 .sx-chkind label b { display: flex; align-items: center; gap: 6px; } .sx-chkind .ic { width: 16px; height: 16px; }
+
+/* Go Live: the LIVE pill, the voice panel while streaming, and the viewer over the chat */
+.sx-live-pill { flex: none; margin-left: auto; padding: 1px 6px; border: 0; border-radius: 5px; background: #e5484d; color: #fff; font: 800 9.5px/1.5 var(--font); letter-spacing: .06em; cursor: pointer; }
+button.sx-live-pill:hover { background: #ff5c62; box-shadow: 0 0 0 2px rgba(229,72,77,.35); }
+b.sx-live-pill { cursor: default; }
+.sx-vmem .sx-live-pill + .ic { margin-left: 4px; }
+.sx-cbtn.live { background: #e5484d; color: #fff; }
+.sx-vlive-t { font-size: 11.5px; color: #ff8a8d; }
+.sx-liveview { position: absolute; inset: 54px 0 0 0; z-index: 8; display: flex; flex-direction: column; background: #050508; }
+.sx-liveview:fullscreen { inset: 0; }
+.sx-lv-top { display: flex; align-items: center; gap: 10px; height: 46px; padding: 0 10px 0 14px; background: rgba(0,0,0,.6); flex: none; }
+.sx-lv-top b { font-size: 14px; } .sx-lv-top .sp { flex: 1; } .sx-lv-top .sx-live-pill { margin: 0; }
+.sx-liveview video { flex: 1; min-height: 0; width: 100%; object-fit: contain; background: #000; }
+.sx-lv-wait { position: absolute; left: 0; right: 0; top: 50%; display: flex; justify-content: center; align-items: center; gap: 10px; color: var(--muted); margin: 0; }
+
+/* GIF tabs, and the star to keep a GIF */
+.sx-gif-tabs { display: flex; gap: 4px; padding: 0 10px 4px; }
+.sx-gif-tabs button { flex: 1; height: 30px; border: 0; border-radius: 8px; background: rgba(255,255,255,.04); color: var(--muted); font: 600 12px var(--font); cursor: pointer; }
+.sx-gif-tabs button:hover { color: var(--text); } .sx-gif-tabs button.on { background: color-mix(in srgb, var(--a1) 22%, transparent); color: var(--text); }
+.sx-gif-item, .sx-gif { position: relative; }
+.sx-gif-star { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border: 0; border-radius: 8px; display: grid; place-items: center; background: rgba(0,0,0,.6); color: #fff; cursor: pointer; opacity: 0; transition: opacity .12s; }
+.sx-gif-star .ic { width: 15px; height: 15px; }
+.sx-gif-item:hover .sx-gif-star, .sx-gif:hover .sx-gif-star, .sx-gif-star:focus-visible { opacity: 1; }
+.sx-gif-star.on { opacity: 1; color: #facc15; } .sx-gif-star.on .ic { fill: #facc15; }
