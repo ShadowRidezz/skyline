@@ -8,6 +8,8 @@ $ver = (Get-Content package.json -Raw | ConvertFrom-Json).version
 $H = @{ Authorization = "Bearer $token"; "User-Agent" = "skyline-release" }
 $api = "https://api.github.com/repos/ShadowRidezz/skyline-releases"
 
+node mobile/build.mjs   # (the phone app in docs/, same version; it goes live when the code is pushed)
+if ($LASTEXITCODE) { throw "Phone app build failed" }
 npx electron-builder --win nsis --publish never
 if ($LASTEXITCODE) { throw "Build failed" }
 
