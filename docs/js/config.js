@@ -1,0 +1,1 @@
+window.SKY_CONFIG = {"url":"https://arjpxyjesczwepbymwry.supabase.co","anonKey":"sb_publishable_aVFd-31e1ur90-Nm7FWB0Q_Kk1ACKri","gifKey":"8LDpUltBOY8FfO0uARzd4Adzqhoc92Y5","ice":[],"version":"1.26.0"};

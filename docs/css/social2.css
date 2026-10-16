@@ -1,0 +1,159 @@
+/* ================= Social, polished: the conversation, the composer, the sidebar ================= */
+
+/* ---------- the header: a quiet bar that the messages slide under ---------- */
+.sx-chat-head { position: relative; z-index: 4; background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 70%, transparent), color-mix(in srgb, var(--bg) 40%, transparent)); backdrop-filter: blur(14px); }
+.sx-chat-head .sx-chat-who b { font-size: 15px; letter-spacing: -.005em; }
+.sx-chat-head .ibtn { width: 34px; height: 34px; border-radius: 10px; color: var(--muted); }
+.sx-chat-head .ibtn:hover { color: var(--text); background: rgba(255,255,255,.07); }
+.sx-chat-head .ibtn.on { color: var(--text); background: color-mix(in srgb, var(--a1) 22%, transparent); }
+
+/* ---------- messages ---------- */
+.sx-msgs { padding: 6px 0 18px; scroll-padding-bottom: 20px; }
+.sx-msg { margin: 16px 10px 0; padding: 5px 14px 5px 12px; border-radius: 12px; transition: background .12s; }
+.sx-msg.cont { margin-top: 1px; }
+.sx-msg:hover, .sx-msg:focus-within { background: rgba(255,255,255,.04); }
+.sx-msg-h b { font-size: 14.5px; }
+.sx-msg-h time { font-size: 11px; letter-spacing: .01em; }
+.sx-msg-t { font-size: 15px; line-height: 1.55; }
+.sx-msg.mention { border-radius: 12px; }
+.sx-msg.pinned { box-shadow: inset 2px 0 0 #facc15; }
+.sx-tools { right: 10px; top: -18px; border-radius: 12px; padding: 3px; backdrop-filter: blur(10px); background: color-mix(in srgb, var(--sheet) 92%, transparent); }
+.sx-msg-av .sx-av { transition: transform .15s; } .sx-msg-av:hover .sx-av { transform: scale(1.06); }
+
+/* the day between messages: a small centred label on a hairline */
+.sx-day { display: flex; align-items: center; gap: 12px; margin: 22px 24px 8px; }
+.sx-day::before, .sx-day::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--line2), transparent); }
+.sx-day span { padding: 3px 10px; border-radius: 10px; background: rgba(255,255,255,.05); font: 600 11px/1.3 var(--font); color: var(--muted); letter-spacing: .02em; }
+.sx-new { display: flex; align-items: center; gap: 10px; margin: 12px 24px 4px; }
+.sx-new::before { content: ""; flex: 1; height: 1px; background: #e5484d; opacity: .7; }
+.sx-new span { font: 700 10.5px/1 var(--font); letter-spacing: .08em; color: #ff6b70; text-transform: uppercase; }
+
+/* the start of a conversation: the person, big */
+.sx-chat-start { padding: 40px 24px 22px 22px; }
+.sx-chat-start > .sx-av { --s: 88px !important; box-shadow: 0 0 0 4px rgba(255,255,255,.04), 0 16px 40px -14px color-mix(in srgb, var(--c, #6d7cff) 70%, transparent); }
+.sx-chat-start h3 { font-size: 30px; }
+
+/* reactions: rounder chips */
+.sx-react { height: 28px; border-radius: 14px; padding: 0 10px; }
+
+/* ---------- the composer: one floating bar ---------- */
+.sx-compose { padding: 6px 18px 16px; }
+.sx-compose-box { padding: 6px; border-radius: 16px; background: color-mix(in srgb, var(--sheet, #14121f) 88%, transparent); border: 1px solid var(--line2);
+  box-shadow: 0 14px 34px -18px rgba(0,0,0,.85); transition: border-color .15s, box-shadow .15s; }
+.sx-compose-box:focus-within { border-color: color-mix(in srgb, var(--a1) 55%, transparent); box-shadow: 0 14px 34px -18px rgba(0,0,0,.85), 0 0 0 3px color-mix(in srgb, var(--a1) 14%, transparent); }
+.sx-compose textarea { font-size: 15px; padding: 8px 8px; line-height: 1.45; }
+.sx-cmp-btn { width: 38px; height: 38px; border-radius: 11px; }
+.sx-send { width: 38px; height: 38px; border-radius: 11px; border: 0; display: grid; place-items: center; background: var(--grad); color: #fff; cursor: pointer; transition: opacity .15s, transform .12s, filter .15s; }
+.sx-send:disabled { opacity: 1; background: rgba(255,255,255,.06); color: var(--faint); cursor: default; }
+.sx-send:not(:disabled):hover { filter: brightness(1.12); } .sx-send:not(:disabled):active { transform: scale(.94); }
+.sx-send svg { width: 18px; height: 18px; }
+.sx-compose-hint { display: none; }
+.sx-jump { border-radius: 16px; box-shadow: 0 10px 26px -10px #000; }
+
+/* ---------- the sidebar ---------- */
+.sx-side-head .sx-h { font-size: 14px; }
+.sx-nav-i { height: 38px; border-radius: 10px; }
+.sx-dms { gap: 2px; }
+.sx-dm { position: relative; height: 52px; border-radius: 10px; padding: 0 10px 0 8px; }
+.sx-dm.on::before { content: ""; position: absolute; left: -8px; top: 12px; bottom: 12px; width: 3px; border-radius: 0 3px 3px 0; background: var(--grad); }
+.sx-dm-t b { font-size: 14px; }
+.sx-dm-time { flex: none; font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
+.sx-dm .sx-pill { box-shadow: 0 0 0 2px rgba(0,0,0,.25); }
+.sx-me { padding: 10px 8px; }
+
+/* ---------- friends list: each person a calm row with clear actions ---------- */
+.sx-row { min-height: 62px; padding: 10px 12px; border-radius: 12px; }
+.sx-row:hover { background: rgba(255,255,255,.05); }
+.sx-act { width: 36px; height: 36px; }
+
+@media (prefers-reduced-motion: reduce) { .sx-msg, .sx-msg-av .sx-av, .sx-send, .sx-compose-box { transition: none; } }
+/* the box inside the bar has no frame of its own (the bar is the frame) */
+.sx-compose textarea, .sx-compose textarea:focus, .sx-compose textarea:focus-visible { border: 0 !important; outline: none !important; box-shadow: none !important; background: transparent !important; }
+
+/* someone's typing: a soft line just above the box */
+.sx-typing { height: 0; overflow: hidden; display: flex; align-items: center; gap: 8px; padding: 0 30px; font-size: 12.5px; color: var(--muted); transition: height .15s; flex: none; }
+.sx-typing.on { height: 22px; }
+.sx-typing b { color: var(--text); font-weight: 650; }
+.sx-typing-dots { display: inline-flex; gap: 3px; }
+.sx-typing-dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--muted); animation: sxTypeDot 1.2s infinite ease-in-out; }
+.sx-typing-dots i:nth-child(2) { animation-delay: .15s; } .sx-typing-dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes sxTypeDot { 0%, 60%, 100% { transform: translateY(0); opacity: .45; } 30% { transform: translateY(-3px); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .sx-typing-dots i { animation: none; } }
+.sx-playing { color: #3dd68c; }
+.sx-stk-menu { z-index: 170; min-width: 190px; }
+/* GIFs: the button, the picker, a GIF in a message */
+.sx-gif-btn { width: auto !important; padding: 0 7px; font: 800 11px/1 var(--font) !important; letter-spacing: .04em; }
+.sx-gif-btn::before { content: ""; } 
+.sx-gifs { width: 420px; height: 460px; }
+.sx-gif-grid { flex: 1; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 8px 10px; align-items: start; }
+.sx-gif-grid .sx-none { grid-column: 1 / -1; }
+.sx-gif-col { display: grid; gap: 6px; }
+.sx-gif-col .sx-skel { height: 110px; border-radius: 10px; display: block; }
+.sx-gif-pick { display: block; width: 100%; padding: 0; border: 0; border-radius: 10px; overflow: hidden; background: rgba(255,255,255,.05); cursor: pointer; }
+.sx-gif-pick img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sx-gif-pick:hover, .sx-gif-pick:focus-visible { outline: 2px solid var(--a1); outline-offset: -2px; }
+.sx-gif-foot { padding: 6px 12px 9px; font: 700 10.5px/1 var(--font); letter-spacing: .06em; color: var(--faint); text-align: right; }
+.sx-gif { width: min(300px, 100%); margin-top: 4px; border-radius: 12px; overflow: hidden; background: rgba(255,255,255,.04); }
+.sx-gif img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* together in a call: the shared video, and the bar saying what's shared */
+.sx-stage-slot.watch .sx-stage { height: 62vh; }
+.sx-watch { width: 100%; height: 100%; border-radius: 12px; overflow: hidden; background: #000; }
+.sx-watch iframe { width: 100%; height: 100%; border: 0; display: block; }
+.sx-together-bar { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); display: grid; gap: 6px; z-index: 3; width: min(460px, calc(100% - 140px)); }
+.sx-together-bar:empty { display: none; }
+.sx-together { display: flex; align-items: center; gap: 10px; padding: 7px 8px 7px 8px; border-radius: 12px; background: rgba(10,9,18,.82); border: 1px solid var(--line2); backdrop-filter: blur(10px); }
+.sx-together img, .sx-tg-ic { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; flex: none; display: grid; place-items: center; background: rgba(255,255,255,.08); }
+.sx-tg-ic .ic { width: 18px; height: 18px; } .sx-together.sp .sx-tg-ic, .sx-together.sp img { box-shadow: 0 0 0 1px rgba(30,215,96,.4); }
+.sx-tg-t { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.sx-tg-t small { font-size: 10.5px; color: var(--faint); } .sx-tg-t b { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sx-tg-t em { font-style: normal; font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sx-wt-menu { z-index: 150; }
+.sx-share-dlg { width: min(520px, 100%); display: grid; gap: 12px; }
+.sx-share-prev { width: 100%; border-radius: 12px; border: 1px solid var(--line2); }
+.sx-share-list { max-height: 260px; overflow-y: auto; display: grid; gap: 2px; }
+.sx-share-hash { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.07); color: var(--muted); flex: none; } .sx-share-hash .ic { width: 16px; height: 16px; }
+
+/* voice channels in the sidebar, and the "Voice connected" panel */
+.sx-vchans { display: grid; gap: 1px; padding: 0 8px 8px; }
+.sx-chan.voice em { font-style: normal; font-size: 11px; color: var(--faint); margin-left: auto; }
+.sx-chan.voice.on { color: #6ee7b7; }
+.sx-vmems { display: grid; gap: 1px; padding: 0 0 4px 30px; }
+.sx-vmem { display: flex; align-items: center; gap: 8px; height: 28px; padding: 0 6px; border-radius: 7px; font-size: 13px; color: var(--muted); }
+.sx-vmem > .ic { width: 14px; height: 14px; margin-left: auto; color: #ff8a8d; }
+.sx-vmem .sx-av { transition: box-shadow .12s; }
+.sx-vmem.speaking .sx-av { box-shadow: 0 0 0 2px #3ecf8e, 0 0 8px rgba(62,207,142,.6); }
+.sx-vmem.speaking { color: var(--text); }
+.sx-voiceslot:empty { display: none; }
+.sx-voiceslot { padding: 0 8px 8px; flex: none; }
+.sx-vpanel { display: grid; gap: 8px; padding: 10px; border-radius: 12px; background: color-mix(in srgb, #3ecf8e 8%, rgba(0,0,0,.3)); border: 1px solid color-mix(in srgb, #3ecf8e 28%, transparent); }
+.sx-vpanel-t { display: grid; gap: 2px; min-width: 0; }
+.sx-vpanel-t b { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #6ee7b7; }
+.sx-vpanel-t small { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sx-vpanel-t small.bad { color: #ff8a8d; }
+.sx-vpanel-b { display: flex; gap: 6px; }
+.sx-vpanel-b .sx-cbtn { flex: 1; border-radius: 10px; }
+.sx-chkind label b { display: flex; align-items: center; gap: 6px; } .sx-chkind .ic { width: 16px; height: 16px; }
+
+/* Go Live: the LIVE pill, the voice panel while streaming, and the viewer over the chat */
+.sx-live-pill { flex: none; margin-left: auto; padding: 1px 6px; border: 0; border-radius: 5px; background: #e5484d; color: #fff; font: 800 9.5px/1.5 var(--font); letter-spacing: .06em; cursor: pointer; }
+button.sx-live-pill:hover { background: #ff5c62; box-shadow: 0 0 0 2px rgba(229,72,77,.35); }
+b.sx-live-pill { cursor: default; }
+.sx-vmem .sx-live-pill + .ic { margin-left: 4px; }
+.sx-cbtn.live { background: #e5484d; color: #fff; }
+.sx-vlive-t { font-size: 11.5px; color: #ff8a8d; }
+.sx-liveview { position: absolute; inset: 54px 0 0 0; z-index: 8; display: flex; flex-direction: column; background: #050508; }
+.sx-liveview:fullscreen { inset: 0; }
+.sx-lv-top { display: flex; align-items: center; gap: 10px; height: 46px; padding: 0 10px 0 14px; background: rgba(0,0,0,.6); flex: none; }
+.sx-lv-top b { font-size: 14px; } .sx-lv-top .sp { flex: 1; } .sx-lv-top .sx-live-pill { margin: 0; }
+.sx-liveview video { flex: 1; min-height: 0; width: 100%; object-fit: contain; background: #000; }
+.sx-lv-wait { position: absolute; left: 0; right: 0; top: 50%; display: flex; justify-content: center; align-items: center; gap: 10px; color: var(--muted); margin: 0; }
+
+/* GIF tabs, and the star to keep a GIF */
+.sx-gif-tabs { display: flex; gap: 4px; padding: 0 10px 4px; }
+.sx-gif-tabs button { flex: 1; height: 30px; border: 0; border-radius: 8px; background: rgba(255,255,255,.04); color: var(--muted); font: 600 12px var(--font); cursor: pointer; }
+.sx-gif-tabs button:hover { color: var(--text); } .sx-gif-tabs button.on { background: color-mix(in srgb, var(--a1) 22%, transparent); color: var(--text); }
+.sx-gif-item, .sx-gif { position: relative; }
+.sx-gif-star { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border: 0; border-radius: 8px; display: grid; place-items: center; background: rgba(0,0,0,.6); color: #fff; cursor: pointer; opacity: 0; transition: opacity .12s; }
+.sx-gif-star .ic { width: 15px; height: 15px; }
+.sx-gif-item:hover .sx-gif-star, .sx-gif:hover .sx-gif-star, .sx-gif-star:focus-visible { opacity: 1; }
+.sx-gif-star.on { opacity: 1; color: #facc15; } .sx-gif-star.on .ic { fill: #facc15; }

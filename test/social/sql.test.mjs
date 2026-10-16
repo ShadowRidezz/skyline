@@ -413,5 +413,12 @@ await rpc(A, "voice_leave"); await rpc(C, "voice_leave");
 const vch = await one(A, "create_channel", { p_server: SV2, p_name: "Gaming Voice", p_kind: "voice" });
 ok((await rows(A, "get_servers")).map(r => r.get_servers).find(x => x.id === SV2).channels.find(c => c.id === vch).kind === "voice", "admins make voice channels");
 
+// ---------- school, for the phone ----------
+await rpc(A, "save_school", { p_data: JSON.stringify({ classes: [{ name: "Religion", avg: 100 }], due: [] }) });
+ok((await one(A, "get_school")).data.classes[0].name === "Religion", "your school summary is saved");
+ok((await one(B, "get_school")) === null, "nobody else can read it");
+ok((await as(db, B, "select * from school_snapshot")).rows.length === 0, "not even from the table");
+ok(await err(rpc(A, "save_school", { p_data: JSON.stringify([1, 2]) })) === "school_invalid", "it must be a summary object");
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

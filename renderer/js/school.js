@@ -28,7 +28,26 @@ const fromMin = n => `${String(Math.floor(n / 60) % 24).padStart(2, "0")}:${Stri
 const clock = s => { const d = new Date(); d.setHours(0, toMin(s), 0, 0); return hm(d); };
 
 let D = null;   // the saved School data
-const save = () => store.write("school", D);
+const save = () => { store.write("school", D); phoneSoon(); };
+// your phone's Skyline shows a summary of this (classes and averages, what's due, recent grades): kept on your
+// Social account (only you can read it), refreshed a little after anything changes
+let phoneT = 0;
+function phoneSoon(ms = 20000) { clearTimeout(phoneT); phoneT = setTimeout(pushPhone, ms); }
+async function pushPhone() {
+  try {
+    const [{ S: SS }, { api }] = await Promise.all([import("./social/state.js"), import("./social/api.js")]);
+    if (!SS.me || !D) return;
+    const now = Date.now(), soon = now + 21 * 864e5;
+    const classes = D.classes.map(c => { const a = classAvg(c); return { name: c.name, color: c.color, avg: a == null ? null : Math.round(a * 10) / 10, letter: a == null ? "" : letter(a)[1], n: gradesOf(c.id).length }; });
+    const graded = classes.filter(c => c.avg != null);
+    const due = items().filter(i => !i.done && i.when && (i.when < soon)).sort((a, b) => a.when - b.when).slice(0, 60)
+      .map(i => ({ title: String(i.title || "").slice(0, 120), cls: clsName(i.classId), color: clsColor(i.classId), when: i.when, timed: !!i.hasTime, kind: i.kind || "hw", late: late(i) }));
+    const grades = crGrades().concat(D.grades.map(g => ({ ...g, seen: g.at }))).filter(g => g.outOf > 0).sort((a, b) => (b.seen || 0) - (a.seen || 0)).slice(0, 40)
+      .map(g => ({ name: String(g.name || "Grade").slice(0, 100), cls: clsName(g.classId), color: clsColor(g.classId), score: g.score, outOf: g.outOf, pct: Math.round(pct(g) * 10) / 10, at: g.at || g.seen || null, late: !!g.late }));
+    await api.rpc("save_school", { p_data: { at: now, classes, overall: graded.length ? Math.round(graded.reduce((a, c) => a + c.avg, 0) / graded.length * 10) / 10 : null,
+      gpa: graded.length ? Math.round(graded.reduce((a, c) => a + letter(c.avg)[2], 0) / graded.length * 100) / 100 : null, due, grades } });
+  } catch (e) {}
+}
 const S = { tab: store.local("sc-tab") || "agenda", filter: "all", open: null, calOff: 0, calDay: null, schedDay: null, gradeCls: null, deck: null, sess: null, quiz: null, busy: {}, help: { q: "", a: "", cls: "" } };
 
 /* ---------- reading dates ---------- */
@@ -91,7 +110,7 @@ const Classroom = {
     if (!sky || !sky.classroom) return;
     this.st = await sky.classroom.status().catch(() => this.st);
     linkCourses();
-    sky.classroom.onStatus(s => { const was = this.st; this.st = s; linkCourses(); newWork(s, was); newGrades(s, was); if (School.visible()) School.render(); });
+    sky.classroom.onStatus(s => { const was = this.st; this.st = s; linkCourses(); newWork(s, was); newGrades(s, was); if (School.visible()) School.render(); phoneSoon(); });
   },
   shown() { if (this.st.connected && !this.st.expired && !this.st.syncing && Date.now() - (this.st.at || 0) > 15 * 60e3) sky.classroom.sync().catch(() => {}); },   // fresh when you look
 };
@@ -282,6 +301,7 @@ export const School = {
     addEventListener("keydown", e => this.key(e), true);   // study sessions take the keyboard first
     setInterval(() => { if (this.visible()) this.tick(); remind(); }, 20e3);
     setTimeout(remind, 30e3);
+    phoneSoon(60000);   // (your phone gets today's summary a minute after Skyline starts)
   },
   visible() { return !!$("#view-school:not(.hidden)"); },
   show() { this.render(); Classroom.shown(); },

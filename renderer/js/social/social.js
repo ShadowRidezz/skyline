@@ -322,6 +322,7 @@ export function open(v) {
   if (v.kind !== "chat" && S.panel && S.panel.auto) S.panel = null;
   if (S.panel && S.panel.kind === "members" && (v.kind !== "channel" || v.server !== S.panel.server)) S.panel = v.kind === "channel" ? { kind: "members", server: v.server } : null;
   renderSide(); renderMain(); renderPanel();
+  emit("view", v);   // (the phone app switches from the list to the conversation)
 }
 function renderMain() {
   const el = $("#sxMain"); if (!el || !S.me) return;

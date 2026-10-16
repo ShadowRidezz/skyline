@@ -1632,6 +1632,33 @@ create policy typing_read on public.typing_state for select to authenticated
 revoke all on public.voice_members, public.voice_signals, public.typing_state from anon, authenticated;
 grant select on public.voice_members, public.voice_signals, public.typing_state to authenticated;
 
+-- ---------- your school, for your phone ----------
+-- Your PC's Skyline keeps a short summary here (classes and averages, what's due, recent grades) so the phone
+-- app can show it. Only you can read or write yours.
+create table if not exists public.school_snapshot (
+  user_id uuid primary key references public.profiles (id) on delete cascade,
+  data jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now(),
+  constraint school_size check (jsonb_typeof(data) = 'object' and pg_column_size(data) <= 100000)
+);
+alter table public.school_snapshot enable row level security;
+drop policy if exists school_read on public.school_snapshot;
+create policy school_read on public.school_snapshot for select to authenticated using (user_id = auth.uid());
+revoke all on public.school_snapshot from anon, authenticated;
+grant select on public.school_snapshot to authenticated;
+create or replace function public.save_school(p_data jsonb) returns void
+language plpgsql security definer set search_path = public as $$
+declare u uuid := public.require_profile();
+begin
+  if p_data is null or jsonb_typeof(p_data) <> 'object' or pg_column_size(p_data) > 100000 then raise exception 'school_invalid'; end if;
+  insert into school_snapshot (user_id, data, updated_at) values (u, p_data, now())
+    on conflict (user_id) do update set data = excluded.data, updated_at = now();
+end $$;
+create or replace function public.get_school() returns jsonb
+language sql stable security definer set search_path = public as $$
+  select jsonb_build_object('data', data, 'updated_at', updated_at) from school_snapshot where user_id = auth.uid();
+$$;
+
 -- only signed-in users can call any of this
 do $$ declare f record; begin
   for f in select p.oid::regprocedure as sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
@@ -1644,7 +1671,7 @@ do $$ declare f record; begin
              'cm_pin','get_channel_messages','get_channel_message','search_channel','get_channel_pins','mark_channel_read','is_member','server_role','require_member','require_admin',
              'channel_name','attach_ok','is_admin','require_admin_user','my_badges','show_badge','admin_badges','admin_save_badge','admin_delete_badge','admin_give_badge',
              'admin_take_badge','admin_badge_holders','admin_users','admin_suspend','admin_stats','admin_announce',
-             'shown_activity','voice_join','voice_leave','voice_state','voice_heartbeat','send_voice_signal','set_typing')
+             'shown_activity','voice_join','voice_leave','voice_state','voice_heartbeat','send_voice_signal','set_typing','save_school','get_school')
   loop
     execute format('revoke all on function %s from public, anon', f.sig);
     execute format('grant execute on function %s to authenticated', f.sig);

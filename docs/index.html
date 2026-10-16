@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: mediastream: data: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.giphy.com http://127.0.0.1:*; frame-src https://www.youtube-nocookie.com; worker-src 'self'; manifest-src 'self'">
+<meta name="theme-color" content="#07060f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Skyline">
+<title>Skyline</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/social.css">
+<link rel="stylesheet" href="css/chat.css">
+<link rel="stylesheet" href="css/profile.css">
+<link rel="stylesheet" href="css/servers.css">
+<link rel="stylesheet" href="css/social2.css">
+<link rel="stylesheet" href="css/mobile.css">
+</head>
+<body class="phone">
+<div class="m-sky" aria-hidden="true"></div>
+<main class="m-app">
+  <section class="view" id="view-social"><div class="sx" id="sx"></div></section>
+  <section class="view hidden" id="view-school"><div class="m-school" id="mSchool"></div></section>
+</main>
+<nav class="m-tabs" aria-label="Skyline">
+  <button class="rbtn on" data-view="social" aria-label="Social"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 18.5V20"/><circle cx="10" cy="8" r="3.5"/><path d="M20 20v-1.4a3.4 3.4 0 0 0-2.5-3.3M15.5 4.6a3.5 3.5 0 0 1 0 6.8"/></svg><span>Social</span></button>
+  <button class="rbtn" data-view="school" aria-label="School"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 9.5 12 5l9.5 4.5L12 14z"/><path d="M6.5 11.5v4.3c0 1.2 2.5 2.7 5.5 2.7s5.5-1.5 5.5-2.7v-4.3M21.5 9.5V15"/></svg><span>School</span></button>
+</nav>
+<div class="dlg hidden" id="dlg"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="js/config.js"></script>
+<script src="js/supabase.js"></script>
+<script src="js/sky-web.js"></script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

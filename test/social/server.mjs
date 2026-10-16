@@ -49,10 +49,13 @@ await db.listen("changes", payload => {
 });
 
 const body = req => new Promise(res => { let d = ""; req.on("data", x => d += x); req.on("end", () => { try { res(JSON.parse(d || "{}")); } catch (e) { res({}); } }); });
-const send = (res, code, obj) => { res.writeHead(code, { "Content-Type": "application/json" }); res.end(JSON.stringify(obj)); };
+// (the phone web app talks to this from a browser page, so it answers cross-origin requests too)
+const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Authorization, Content-Type", "Access-Control-Allow-Methods": "GET, POST, OPTIONS" };
+const send = (res, code, obj) => { res.writeHead(code, { "Content-Type": "application/json", ...CORS }); res.end(JSON.stringify(obj)); };
 
 http.createServer(async (req, res) => {
   try {
+    if (req.method === "OPTIONS") { res.writeHead(204, CORS); return res.end(); }
     const url = new URL(req.url, "http://x");
     if (req.method === "POST" && url.pathname === "/auth/signup") {
       const { email, password } = await body(req);
@@ -94,7 +97,7 @@ http.createServer(async (req, res) => {
     }
     if (url.pathname === "/events") {
       if (!uid) return send(res, 401, { error: "signed_out" });
-      res.writeHead(200, { "Content-Type": "application/x-ndjson", "Cache-Control": "no-cache" });
+      res.writeHead(200, { "Content-Type": "application/x-ndjson", "Cache-Control": "no-cache", ...CORS });
       res.write("\n");
       const cl = { uid, res }; clients.add(cl); req.on("close", () => clients.delete(cl));
       return;
