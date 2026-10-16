@@ -5,6 +5,7 @@ import { $, $$, esc, toast } from "./util.js";
 import { Social } from "./social/social.js";
 import { S, on, avatar, statusOf, subline } from "./social/state.js";
 import { api } from "./social/api.js";
+import { Music } from "./music.js";
 
 const store = { get(k, d) { try { const v = localStorage.getItem("sky-" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem("sky-" + k, JSON.stringify(v)); } catch (e) {} } };
@@ -97,6 +98,7 @@ function show(view) {
   $$(".m-app > .view").forEach(s => s.classList.toggle("hidden", s.id !== "view-" + view));
   Social.show(view === "social");
   if (view === "home") Home.render();
+  if (view === "home") Music.start(); else Music.stop();   // (only asks Spotify while Home is on screen)
   if (view === "school") School.render();
   if (view === "settings") Settings.render();
   if (view === "admin") Social.showAdmin();
@@ -159,9 +161,11 @@ const Home = {
       const unreadChats = S.friends.filter(f => f.unread > 0).sort((a, b) => new Date(b.last_message_at || 0) - new Date(a.last_message_at || 0)).slice(0, 4);
       if (c.messages && unreadChats.length) cards += `<section class="m-card"><header><h2>New messages</h2></header>
         ${unreadChats.map(f => `<button class="m-row unread" data-chat="${esc(f.id)}">${avatar(f, 38, statusOf(f))}<span class="t"><b>${esc(f.display_name)}</b><small>${f.unread === 1 ? "1 new message" : f.unread + " new messages"}</small></span><b class="sx-pill">${f.unread}</b></button>`).join("")}</section>`;
-      const d = School.data && School.data.data;
-      if (c.due && d && (d.due || []).length) cards += `<section class="m-card"><header><h2>Up next</h2><button class="link" data-m="school">See all</button></header><div class="m-s-list">${d.due.slice(0, 3).map(dueRow).join("")}</div></section>`;
+      // Up next: your next homework; the X hides what's there now (new homework brings it back)
+      const d = School.data && School.data.data, hidden = new Set(store.get("dueHide", [])), next = d ? (d.due || []).filter(x => !hidden.has(dueKey(x))).slice(0, 3) : [];
+      if (c.due && next.length) cards += `<section class="m-card"><header><h2>Up next</h2><button class="link" data-m="school">See all</button><button class="m-x" data-m="hidedue" aria-label="Hide">${X}</button></header><div class="m-s-list">${next.map(dueRow).join("")}</div></section>`;
     }
+    cards = playerCard() + cards;
     el.innerHTML = `<div class="m-hero" data-style="${esc(c.style)}">${c.date ? `<small>${esc(now.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }))}</small>` : ""}
       <div class="m-clock">${time}${ampm ? `<span>${ampm}</span>` : ""}</div>${c.greeting ? `<p>${esc(hi)}${name ? ", " + esc(name) : ""}</p>` : ""}</div><div class="m-cards">${cards}</div>`;
     if (S.me && (!School.data || Date.now() - School.at > 60000)) School.load().then(() => { if (current === "home") this.paint(); }).catch(() => {});
@@ -169,9 +173,43 @@ const Home = {
   },
   paint() { if (current === "home") this.render(); },
 };
+const X = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>`;
+const dueKey = x => `${x.title}|${x.when}`;
+
+/* the music player: what's on Spotify right now (on any device) */
+const ICON = { prev: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14L9.5 12z"/></svg>`, next: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5v14l10.5-7z"/></svg>`,
+  play: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`, pause: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>` };
+const mmss = ms => { const s = Math.floor(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
+function playerCard() {
+  if (!Music.available()) return "";
+  if (!Music.connected()) return store.get("spHide", false) ? "" : `<section class="m-card m-spconnect"><header><h2>Your music, here</h2><button class="m-x" data-m="hidesp" aria-label="Hide">${X}</button></header>
+    <p class="m-muted">Connect Spotify to see what's playing on your phone or PC, and play, pause or skip from Home.</p><button class="btn primary" data-m="spconnect">Connect Spotify</button></section>`;
+  const n = Music.now; if (!n) return "";
+  const pct = n.dur ? Math.min(100, Music.position() / n.dur * 100) : 0;
+  return `<section class="m-card m-player${n.playing ? " on" : ""}">
+    <div class="m-pl-top">${n.art ? `<img class="m-pl-art" src="${esc(n.art)}" alt="">` : `<span class="m-pl-art"></span>`}<span class="t"><b>${esc(n.title)}</b><small>${esc(n.artist)}</small>${n.device ? `<em>On ${esc(n.device)}</em>` : ""}</span></div>
+    <div class="m-pl-bar"><i style="width:${pct.toFixed(2)}%"></i></div><div class="m-pl-time"><span id="mPlPos">${mmss(Music.position())}</span><span>${mmss(n.dur)}</span></div>
+    <div class="m-pl-ctl"><button data-pl="prev" aria-label="Previous">${ICON.prev}</button><button class="big" data-pl="toggle" aria-label="${n.playing ? "Pause" : "Play"}">${n.playing ? ICON.pause : ICON.play}</button><button data-pl="next" aria-label="Next">${ICON.next}</button></div></section>`;
+}
+let lastSong = "";
+Music.onChange = n => {   // redraw only when the song, play/pause or device changed (the bar moves by itself)
+  const k = n ? [n.title, n.artist, n.playing, n.device, n.art, Math.round(n.pos / 5000)].join("|") : "";
+  if (k !== lastSong || !n || Math.abs(Music.position() - n.pos) > 3000) { lastSong = k; Home.paint(); }
+};
+setInterval(() => {   // the progress bar moves between Spotify checks
+  if (current !== "home" || !Music.now || !Music.now.playing) return;
+  const bar = document.querySelector(".m-pl-bar i"), pos = document.getElementById("mPlPos"); if (!bar) return;
+  bar.style.width = (Music.now.dur ? Math.min(100, Music.position() / Music.now.dur * 100) : 0).toFixed(2) + "%"; pos.textContent = mmss(Music.position());
+}, 1000);
+
 $("#mHome").addEventListener("click", e => {
   const c = e.target.closest("[data-chat]"); if (c) return openSocial({ kind: "chat", id: c.dataset.chat }, "home");
-  if (e.target.closest('[data-m="school"]')) show("school");
+  const pl = e.target.closest("[data-pl]"); if (pl) return Music.control(pl.dataset.pl);
+  const m = (e.target.closest("[data-m]") || {}).dataset?.m;
+  if (m === "school") show("school");
+  if (m === "hidedue") { const d = School.data && School.data.data; store.set("dueHide", [...new Set([...store.get("dueHide", []), ...((d && d.due) || []).map(dueKey)])].slice(-200)); Home.paint(); }
+  if (m === "hidesp") { store.set("spHide", true); Home.paint(); }
+  if (m === "spconnect") Music.connect();
 });
 let homeT = 0;
 on(what => { if (["friends", "requests", "notes", "me"].includes(what) || what === "msg") { clearTimeout(homeT); homeT = setTimeout(() => Home.paint(), 150); } });
@@ -195,6 +233,9 @@ const Settings = {
       </div>
       <h3 class="m-h3">On Home</h3>
       <div class="m-list">${[["messages", "New messages", "Chats with messages you haven't read"], ["due", "Up next", "Your next homework, from School"]].map(([k, l, s]) => `<label class="m-li"><span class="t"><b>${l}</b><small>${s}</small></span><span class="toggle"><input type="checkbox" data-clockt="${k}" ${ck[k] ? "checked" : ""}><span class="sw"></span></span></label>`).join("")}</div>
+      ${Music.available() ? `<h3 class="m-h3">Music</h3><div class="m-list">${Music.connected()
+        ? `<div class="m-li"><span class="t"><b>Spotify</b><small>Connected: what you play shows on Home</small></span><button class="btn sm" data-m="spoff">Disconnect</button></div>`
+        : `<div class="m-li"><span class="t"><b>Spotify</b><small>See what's playing and control it from Home</small></span><button class="btn sm primary" data-m="spconnect">Connect</button></div>`}</div>` : ""}
       <h3 class="m-h3">Background</h3>
       <div class="m-bgs">${PHOTOS.map(([k, n]) => `<button class="m-bg${b === k ? " on" : ""}" data-bg="${k}" aria-label="${esc(n)}"><img src="img/bg/${k}-s.jpg" alt=""><span>${esc(n)}</span></button>`).join("")}
         <button class="m-bg plain${b === "none" ? " on" : ""}" data-bg="none" aria-label="Plain"><i></i><span>Plain</span></button></div>
@@ -212,6 +253,8 @@ $("#mSettings").addEventListener("click", async e => {
   if (t.dataset.bg) { store.set("bg", t.dataset.bg); applyBg(); return Settings.render(); }
   if (t.dataset.set) return openSocial({ kind: "settings", section: t.dataset.set }, "settings");
   const m = t.dataset.m;
+  if (m === "spconnect") return Music.connect();
+  if (m === "spoff") { Music.disconnect(); return Settings.render(); }
   if (m === "notify") { await Notification.requestPermission().catch(() => {}); Settings.render(); }
   if (m === "refresh") { try { const r = await navigator.serviceWorker?.getRegistration(); if (r) await r.update(); } catch (e) {} location.reload(); }
   if (m === "signout") { await sky.social.signOut(); location.reload(); }
@@ -221,6 +264,7 @@ $("#mSettings").addEventListener("change", e => { const k = e.target.dataset && 
 
 /* ---------- start ---------- */
 applyBg();
+Music.finishSignIn().then(r => { if (!r) return; if (r === "ok") { toast("Spotify connected"); store.set("spHide", false); Music.start(); } else if (r !== "cancelled") toast("Couldn't connect Spotify: " + r, true); });
 show("home");
 Social.init().then(() => { if (current === "home" || current === "settings") show(current); });
 on(what => { if (what === "me" && current === "settings") Settings.render(); });

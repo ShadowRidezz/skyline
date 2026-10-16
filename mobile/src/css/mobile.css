@@ -183,3 +183,33 @@ body.m-set .sx-set-body { padding: 8px 16px 30px !important; }
 .m-cs.on { border-color: var(--a1); background: color-mix(in srgb, var(--a1) 14%, transparent); }
 .m-li .seg button { padding: 0 12px; height: 32px; }
 label.m-li { cursor: pointer; }
+/* Home fills the whole screen: the clock up top, your cards sitting just above the tab bar (no dead space) */
+.m-home { display: flex; flex-direction: column; }
+.m-home .m-cards { margin-top: auto; padding-top: 12px; }
+.m-hero { padding-top: max(4vh, 14px); }
+.m-card:last-child { margin-bottom: 0; }
+.m-home { padding-bottom: 12px; }
+/* the bar at the bottom: less padding over the iPhone's home line */
+.m-tabs { padding-bottom: max(4px, calc(env(safe-area-inset-bottom) - 14px)); }
+.m-tabs .rbtn { height: 50px; }
+/* the X that hides a card */
+.m-x { width: 30px; height: 30px; margin: -6px -6px -6px 2px; display: grid; place-items: center; border: 0; border-radius: 50%; background: rgba(255,255,255,.07); color: var(--muted); cursor: pointer; flex: none; }
+.m-x svg { width: 14px; height: 14px; }
+.m-x:active { background: rgba(255,255,255,.16); }
+/* the music player */
+.m-player { padding: 14px 14px 10px; }
+.m-pl-top { display: flex; align-items: center; gap: 13px; }
+.m-pl-art { width: 58px; height: 58px; border-radius: 12px; object-fit: cover; flex: none; background: rgba(255,255,255,.08); box-shadow: 0 8px 22px -8px rgba(0,0,0,.7); }
+.m-pl-top .t { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.m-pl-top .t b { font-size: 16px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.m-pl-top .t small { color: var(--muted); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.m-pl-top .t em { font-style: normal; font-size: 11.5px; color: #1ed760; margin-top: 2px; }
+.m-pl-bar { height: 4px; margin: 13px 2px 5px; border-radius: 2px; background: rgba(255,255,255,.14); overflow: hidden; }
+.m-pl-bar i { display: block; height: 100%; border-radius: 2px; background: #fff; }
+.m-pl-time { display: flex; justify-content: space-between; padding: 0 2px; font-size: 11.5px; color: var(--faint); font-variant-numeric: tabular-nums; }
+.m-pl-ctl { display: flex; justify-content: center; align-items: center; gap: 30px; margin-top: 2px; }
+.m-pl-ctl button { width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 50%; background: none; color: var(--text); cursor: pointer; }
+.m-pl-ctl button svg { width: 24px; height: 24px; }
+.m-pl-ctl button.big { width: 52px; height: 52px; background: #fff; color: #0b0a14; }
+.m-pl-ctl button.big svg { width: 26px; height: 26px; }
+.m-pl-ctl button:active { transform: scale(.92); }

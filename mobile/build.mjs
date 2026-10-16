@@ -20,7 +20,9 @@ copy("node_modules/@supabase/supabase-js/dist/umd/supabase.js", "js/supabase.js"
 // (icons: mobile/src/icon-192.png and icon-512.png, on a dark background with room for round masks)
 // the public settings only: the server address and its public key, the GIF key, connection helpers
 const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, "main", "social-config.json"), "utf8"));
-fs.writeFileSync(path.join(OUT, "js", "config.js"), `window.SKY_CONFIG = ${JSON.stringify({ url: cfg.url, anonKey: cfg.anonKey, gifKey: cfg.gifKey || "", ice: cfg.iceServers || null, version: pkg.version })};\n`);
+// the Spotify app's Client ID (public, like the PC app's): from the config, else the one Skyline on this PC uses
+if (!cfg.spotifyId) try { cfg.spotifyId = JSON.parse(fs.readFileSync(path.join(process.env.APPDATA || "", "Skyline", "spotify.json"), "utf8")).clientId || ""; } catch (e) {}
+fs.writeFileSync(path.join(OUT, "js", "config.js"), `window.SKY_CONFIG = ${JSON.stringify({ url: cfg.url, anonKey: cfg.anonKey, gifKey: cfg.gifKey || "", spotifyId: cfg.spotifyId || "", ice: cfg.iceServers || null, version: pkg.version })};\n`);
 fs.writeFileSync(path.join(OUT, "sw.js"), fs.readFileSync(path.join(OUT, "sw.js"), "utf8").replace("__VERSION__", pkg.version + "-" + Date.now().toString(36)));   // (a new name every build: phones see each one as an update)
 fs.writeFileSync(path.join(OUT, ".nojekyll"), "");   // (GitHub Pages: serve the files as they are)
 console.log("phone app built into docs/ (" + pkg.version + ")");
