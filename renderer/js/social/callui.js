@@ -141,7 +141,7 @@ function renderStage() {
   } else {
     mainKey = "voice";
     mainHtml = `<div class="sx-voice">${tile(c.peer, null, false, themMuted)}${tile(S.me, null, true, meMuted)}</div>
-      ${c.state !== "connected" ? `<p class="sx-voice-state">${esc(c.state === "calling" ? `${c.ringing ? "Ringing" : "Calling"} ${c.peer.display_name}…` : c.state === "reconnecting" ? "Reconnecting…" : "Connecting…")}</p>` : ""}`;
+`;   // (calling, ringing, connecting: the badge at the top says which)
     stripHtml = "";
   }
   if (main.dataset.k !== mainKey + themMuted + meMuted + c.state) {
