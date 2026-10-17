@@ -58,8 +58,8 @@
 .vav.el { color: #ffd9b0 !important; background: #3d2a1c !important; }
 
 /* the side bar has ten pages now: tighten it on shorter windows so it all fits */
-@media (max-height: 820px) { .rail { gap: 1px; } .rbtn { height: 38px; } .rail-ind { height: 38px; } }
-@media (max-height: 700px) { .rail { gap: 0; padding-top: 6px; } .rbtn { height: 34px; } .rbtn svg { width: 18px; height: 18px; } .rail-ind { height: 34px; } }
+@media (max-height: 820px) { .rail { gap: 4px; } .rbtn { height: 42px; } .rail-ind { height: 42px; } }
+@media (max-height: 700px) { .rail { gap: 2px; padding-top: 6px; } .rbtn { height: 38px; } .rbtn svg { width: 20px; height: 20px; } .rail-ind { height: 38px; } }
 
 .pg { max-width: 1200px; margin: 0 auto; padding: 28px 40px 90px; display: grid; gap: 16px; align-content: start; }
 .pg-head { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }

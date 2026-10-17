@@ -8,27 +8,30 @@
 @keyframes viewInDown { from { opacity: 0; transform: translateY(8px); } }
 body[data-motion="subtle"] .view.enter { animation-duration: .18s; }
 
-/* ---------- the side bar: a solid strip with a sliding marker ---------- */
-/* fully see-through: the city shows behind it; a soft shadow keeps the names readable on any photo */
-.rail { background: none; border: 0; backdrop-filter: none; }
-.rail .rbtn { text-shadow: 0 1px 8px rgba(0,0,0,.85), 0 0 2px rgba(0,0,0,.6); }
-.rail .rbtn svg { filter: drop-shadow(0 1px 4px rgba(0,0,0,.7)); }
-.rail-ind { position: absolute; left: 14px; right: 14px; top: 0; height: 40px; border-radius: var(--r-sm); pointer-events: none; z-index: 0;
-  background: rgba(255,255,255,.07); transition: transform .3s cubic-bezier(.3,.9,.4,1), height .25s, opacity .25s; }
-.rail-ind::before { content: ""; position: absolute; left: -14px; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: var(--a1); }
-.rbtn.on { background: transparent !important; }
+/* ---------- the rail's gliding indicator ---------- */
+.rail { position: relative; }
+.rail-ind { position: absolute; left: 13px; right: 13px; top: 0; height: 46px; border-radius: 14px; pointer-events: none; z-index: 0;
+  background: color-mix(in srgb, var(--a1) 22%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--a1) 35%, transparent), 0 0 24px -6px var(--a1);
+  transition: transform .45s cubic-bezier(.3,1.35,.5,1), height .3s, opacity .3s; }
+.rail-ind::before { content: ""; position: absolute; left: -13px; top: 11px; bottom: 11px; width: 3px; border-radius: 3px; background: var(--rail-grad); box-shadow: 0 0 14px var(--a1); }
+.rbtn { z-index: 1; }
+.rbtn.on { background: transparent !important; box-shadow: none !important; }
+.rbtn.on::before { display: none; }
+.rbtn.pop svg { animation: iconPop .5s cubic-bezier(.3,1.6,.5,1); }
+@keyframes iconPop { 30% { transform: scale(.78) rotate(-8deg); } 70% { transform: scale(1.15) rotate(3deg); } }
+.rbtn:hover svg { transform: translateY(-1px) scale(1.06); transition: transform .2s; }
 
 /* side bar with labels */
 .rl { display: none; }
-body.rail-labels { --rail-w: 208px; }
-body.rail-labels .shell { grid-template-columns: 208px minmax(0, 1fr); }
+body.rail-labels { --rail-w: 196px; }
+body.rail-labels .shell { grid-template-columns: 196px minmax(0, 1fr); }
 body.rail-labels .rail { align-items: stretch; padding-left: 12px; padding-right: 12px; }
-body.rail-labels .rbtn { width: 100%; display: flex; justify-content: flex-start; gap: 12px; padding: 0 12px; font-weight: 550; font-size: 13.5px; }
+body.rail-labels .rbtn { width: 100%; display: flex; justify-content: flex-start; gap: 12px; padding: 0 14px; font-weight: 600; font-size: 13.5px; }
 body.rail-labels .rbtn .rl { display: inline; }
 body.rail-labels .rbtn .tip { display: none; }
 body.rail-labels .rail-ind { left: 12px; right: 12px; }
 body.rail-labels .rail-ind::before { left: -12px; }
-body.rail-labels .g-stage { left: 208px; }
+body.rail-labels .g-stage { left: 196px; }
 
 /* ---------- entrances: a short fade, staggered a little ---------- */
 .cascade { animation: cascadeIn .35s ease both; animation-delay: calc(var(--i, 0) * 25ms); }

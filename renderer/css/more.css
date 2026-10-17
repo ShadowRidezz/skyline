@@ -124,21 +124,31 @@ body.dropping .drop-ov svg { color: var(--a-soft); }
 body.dropping .drop-ov { opacity: 1; } body.dropping .drop-ov > div { transform: scale(1); }
 
 /* ---------- the assistant ---------- */
-.asst-orb { position: relative; flex: none; margin: 4px 0 6px; z-index: 2; width: 44px; height: 40px; align-self: center; border-radius: var(--r-sm); border: 1px solid var(--line2); padding: 0; cursor: pointer; color: var(--text);
-  background: rgba(255,255,255,.04); transition: background .12s, border-color .12s, color .12s; display: grid; place-items: center; }
-.asst-orb:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.2); }
-.asst-orb:active { background: rgba(255,255,255,.05); }
+.asst-orb { position: relative; flex: none; margin: 4px 0 6px; z-index: 2; width: 46px; height: 46px; align-self: center; border-radius: 50%; border: 0; padding: 0; cursor: pointer; color: #fff;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--a1) 70%, #fff 30%), var(--a1) 45%, var(--a2));
+  box-shadow: 0 10px 30px -8px var(--a1), 0 0 0 1px rgba(255,255,255,.18) inset, 0 0 calc(18px + var(--lv, 0) * 50px) color-mix(in srgb, var(--a1) 55%, transparent);
+  transition: transform .2s cubic-bezier(.2, .9, .3, 1.4), box-shadow .2s; display: grid; place-items: center; }
+.asst-orb:hover { transform: scale(1.08); }
+.asst-orb:active { transform: scale(.95); }
 .asst-orb .ao-core { position: relative; z-index: 1; display: grid; place-items: center; }
-.asst-orb .ao-core svg { width: 19px; height: 19px; color: var(--a-soft); }
-.asst-orb .ao-ring { position: absolute; inset: -1px; border-radius: inherit; border: 1.5px solid var(--a1); opacity: 0; }
+.asst-orb .ao-core svg { width: 21px; height: 21px; filter: drop-shadow(0 1px 4px rgba(0,0,0,.35)); }
+.asst-orb .ao-ring { position: absolute; inset: -6px; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--a1) 60%, transparent); opacity: 0; }
+.asst-orb::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, transparent, rgba(255,255,255,.35), transparent 40%); opacity: .5; mix-blend-mode: overlay; }
+.asst-orb:hover::after { animation: aoSpin 3s linear infinite; }
 @keyframes aoSpin { to { transform: rotate(360deg); } }
 .asst-orb .ao-label { display: none; }
 /* with labels in the side bar it lines up with Home, Music... as a pill */
-body.rail-labels .asst-orb { align-self: stretch; width: auto; display: flex; align-items: center; justify-content: flex-start; gap: 12px; padding: 0 12px; margin: 4px 0 6px; }
-body.rail-labels .asst-orb .ao-label { display: inline; position: relative; z-index: 1; font: 550 13.5px var(--font); }
-.asst-orb.live .ao-ring { opacity: calc(.4 + var(--lv, 0) * 1.5); }
-.asst-orb.live { background: color-mix(in srgb, var(--a1) 16%, transparent); border-color: color-mix(in srgb, var(--a1) 50%, transparent); }
-body.asst-off .asst-orb, body.ambient:not(.stir) .asst-orb, body.staging .asst-orb, body.booting .asst-orb { opacity: 0; pointer-events: none; }
+body.rail-labels .asst-orb { align-self: stretch; width: auto; border-radius: 14px; display: flex; align-items: center; justify-content: flex-start; gap: 12px; padding: 0 14px; margin: 4px 0 6px; }
+body.rail-labels .asst-orb .ao-label { display: inline; position: relative; z-index: 1; font: 650 13.5px var(--font); letter-spacing: .01em; text-shadow: 0 1px 6px rgba(0,0,0,.35); }
+body.rail-labels .asst-orb::after { display: none; }
+body.rail-labels .asst-orb .ao-ring { border-radius: 18px; }
+body.rail-labels .asst-orb:hover { transform: translateY(-1px); }
+body.rail-labels .asst-orb.live { transform: none; }
+.asst-orb.live .ao-ring { animation: aoPulse 1.3s ease-out infinite; }
+.asst-orb.live { transform: scale(calc(1.05 + var(--lv, 0) * .18)); }
+@keyframes aoPulse { from { opacity: .9; transform: scale(.9); } to { opacity: 0; transform: scale(1.7); } }
+body[data-asst="thinking"] .asst-orb::after { animation: aoSpin 1s linear infinite; opacity: .9; }
+body.asst-off .asst-orb, body.ambient:not(.stir) .asst-orb, body.staging .asst-orb, body.booting .asst-orb { opacity: 0; pointer-events: none; transform: scale(.6); }
 body.ambient .asst-orb { transition: opacity .4s, transform .4s; }
 
 .asst { position: fixed; left: calc(var(--rail-w, 72px) + 8px); bottom: 16px; z-index: 61; width: min(420px, calc(100vw - 44px)); max-height: min(620px, calc(100vh - 140px)); display: flex; flex-direction: column;
@@ -262,6 +272,4 @@ body:not(.music-on) .pl-backdrop, body:not(.music-on) .mu-backdrop { opacity: 0;
 .pl-line.wl .w.sung { color: var(--a-soft); }
 .lyrics p.on.wl .w.now, .amb-lyric.wl .w.now { background: linear-gradient(90deg, #fff 0 50%, rgba(255,255,255,.4) 50% 100%) 100% 0 / 200% 100% no-repeat; -webkit-background-clip: text; background-clip: text; color: transparent; }
 .pl-line.wl .w.now { background: linear-gradient(90deg, var(--a-soft) 0 50%, color-mix(in srgb, var(--a-soft) 40%, transparent) 50% 100%) 100% 0 / 200% 100% no-repeat; -webkit-background-clip: text; background-clip: text; color: transparent; }
-body[data-asst="thinking"] .asst-orb .ao-core svg { animation: aoThink 1.2s ease-in-out infinite; }
-@keyframes aoThink { 50% { opacity: .4; } }
 .sg-go svg { width: 16px; height: 16px; } .sp-img i svg, .sp-play svg { width: 14px; height: 14px; margin-left: 2px; }

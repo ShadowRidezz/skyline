@@ -7,7 +7,7 @@ const FX = (fx) => ({ glow: 0, particles: 0, particleSpeed: 30, comets: 0, comet
   bgOpacity: 100, stars: 0, rain: 0, snow: 0, lightning: 0, droplets: 0, neon: 0, reflections: 0, sun: 0, moon: 0, beams: 0, traffic: 0,
   bright: 100, grade: 45, sparkle: 55, drift: 50, ...fx });
 // Real photos of cities at night that come alive: their own lights twinkle and pulse with your music.
-const BLUE = { bg: "#03060e", skyTop: "#071a38", skyMid: "#13407e", skyLow: "#3f86d6", city: "#06101e", window: "#bfe3ff", accent: "#60a5fa", accent2: "#60a5fa" };
+const BLUE = { bg: "#03060e", skyTop: "#071a38", skyMid: "#13407e", skyLow: "#3f86d6", city: "#06101e", window: "#bfe3ff", accent: "#60a5fa", accent2: "#818cf8" };
 const PHOTO = (id, name, src, desc, credit, focus, colors = {}, fx = {}) => ({ id, name, scene: "photo", desc, photo: { src, focus, credit },
   colors: { ...BLUE, ...colors }, fx: FX({ glow: 45, particles: 8, particleSpeed: 25, comets: 18, cometSpeed: 45, blur: 0, speed: 45, music: 65, ...fx }), ui: { panel: 70, glass: 20 } });
 export const PHOTOS = [

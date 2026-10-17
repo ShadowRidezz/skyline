@@ -57,16 +57,18 @@ body.full .titlebar:hover { opacity: 1; }
 
 /* ---------- shell: a quiet side bar, then the page ---------- */
 .shell { position: relative; z-index: 1; display: grid; grid-template-columns: 72px minmax(0, 1fr); height: 100vh; padding-top: var(--tb); }
-.rail { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0 14px; transition: opacity .5s, transform .5s; }
-.rbtn { position: relative; z-index: 1; width: 44px; height: 40px; border-radius: var(--r-sm); border: 0; background: transparent; color: var(--muted); cursor: pointer; display: grid; place-items: center; transition: background .12s, color .12s; }
-.rbtn svg { width: 20px; height: 20px; flex: none; }
-.rbtn:hover { background: rgba(255,255,255,.06); color: var(--text); }
-.rbtn.on { color: var(--text); }
-.rbtn.on svg { color: var(--a-soft); }
-.rbtn .tip { position: absolute; left: 54px; white-space: nowrap; padding: 6px 10px; border-radius: 8px; background: var(--sheet); border: 1px solid var(--line2); font-size: 12px; font-weight: 500; color: var(--text); display: flex; gap: 8px; align-items: center;
-  opacity: 0; pointer-events: none; transition: opacity .12s; z-index: 40; box-shadow: var(--shadow); }
-.rbtn:hover .tip { opacity: 1; transition-delay: .35s; }
-.rdot { position: absolute; top: 9px; right: 9px; width: 6px; height: 6px; border-radius: 50%; background: var(--a1); display: none; }
+/* the side bar: the 1.27 look (see-through, a glowing box on the page you are on), as you asked to keep it */
+:root { --rail-grad: linear-gradient(135deg, var(--a1), var(--a2)); }
+.rail { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px 0 16px; background: transparent; transition: opacity .6s, transform .6s; }
+.rbtn { position: relative; width: 46px; height: 46px; border-radius: 14px; border: 0; background: transparent; color: var(--muted); cursor: pointer; display: grid; place-items: center; transition: background .15s, color .15s; }
+.rbtn svg { width: 21px; height: 21px; }
+.rbtn:hover { background: rgba(255,255,255,.07); color: var(--text); }
+.rbtn.on { color: var(--text); background: color-mix(in srgb, var(--a1) 20%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--a1) 30%, transparent); }
+.rbtn.on::before { content: ""; position: absolute; left: -13px; top: 11px; bottom: 11px; width: 3px; border-radius: 3px; background: var(--rail-grad); box-shadow: 0 0 12px var(--a1); }
+.rbtn .tip { position: absolute; left: 58px; white-space: nowrap; padding: 6px 10px; border-radius: 9px; background: var(--sheet); border: 1px solid var(--line2); font-size: 12px; display: flex; gap: 8px; align-items: center;
+  opacity: 0; pointer-events: none; transform: translateX(-4px); transition: opacity .12s, transform .12s; z-index: 40; box-shadow: 0 10px 30px -10px #000; }
+.rbtn:hover .tip { opacity: 1; transform: none; }
+.rdot { position: absolute; top: 9px; right: 9px; width: 7px; height: 7px; border-radius: 50%; background: var(--np-color); box-shadow: 0 0 8px var(--np-color); display: none; }
 body.music-playing .rdot { display: block; }
 .rail .grow { flex: 1; }
 main { min-width: 0; overflow: auto; position: relative; }
