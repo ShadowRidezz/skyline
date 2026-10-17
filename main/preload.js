@@ -134,6 +134,9 @@ contextBridge.exposeInMainWorld("sky", {
     signIn: (email, password) => ipcRenderer.invoke("social:signIn", email, password),
     signOut: () => ipcRenderer.invoke("social:signOut"),
     reset: email => ipcRenderer.invoke("social:reset", email),
+    verifyCode: (email, code) => ipcRenderer.invoke("social:verifyCode", email, code),
+    setPassword: password => ipcRenderer.invoke("social:setPassword", password),
+    testOutbox: email => ipcRenderer.invoke("social:testOutbox", email),   // (tests only)
     rpc: (fn, args) => ipcRenderer.invoke("social:rpc", fn, args),
     upload: (kind, bytes) => ipcRenderer.invoke("social:upload", kind, bytes),
     removeMedia: url => ipcRenderer.invoke("social:removeMedia", url),

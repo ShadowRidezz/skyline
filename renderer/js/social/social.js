@@ -23,7 +23,11 @@ async function init() {
   root.addEventListener("input", input);
   document.addEventListener("click", e => { if (menuEl && !menuEl.contains(e.target)) closeMenu(); }, true);
   document.addEventListener("keydown", e => { if (e.key === "Escape" && menuEl) { closeMenu(); e.stopPropagation(); } }, true);
-  sky.social.onAuth(async a => { const before = S.user && S.user.id; S.user = a.user || null; if ((S.user && S.user.id) !== before) await boot(); });
+  sky.social.onAuth(async a => {
+    if (a.event === "PASSWORD_RECOVERY") { recover = { step: "choose", email: (a.user && a.user.email) || "" }; document.dispatchEvent(new CustomEvent("sky:goto", { detail: "social" })); }   // (the email's link, opened in the web app)
+    if (!a.user) authMode = "in";   // (after signing out: the sign-in screen, with "Forgot password?", not "create an account")
+    const before = S.user && S.user.id; S.user = a.user || null; if ((S.user && S.user.id) !== before) await boot(); else if (recover) render();
+  });
   sky.social.onChange(change);
   sky.social.onLive(l => {
     const was = S.live; S.live = l.status === "SUBSCRIBED" ? "live" : l.status === "CLOSED" || l.status === "CHANNEL_ERROR" || l.status === "TIMED_OUT" ? "down" : S.live;
@@ -179,6 +183,7 @@ function render() {
   if (!root) return;
   if (!S.configured) return root.innerHTML = gate("Social isn't connected yet", "Friends, messages and calls need a small online server that everyone's Skyline talks to. Once it's set up, this tab lets you sign in.", "");
   if (S.booting) return root.innerHTML = `<div class="sx-gate"><div class="sx-spin"></div></div>`;
+  if (recover && (recover.step !== "choose" || S.user)) return recoverScreen();
   if (!S.user) return authScreen();
   if (!S.me) return usernameScreen();
   if (!root.querySelector(".sx-shell")) {
@@ -217,10 +222,43 @@ function authScreen() {
     } catch (er) { err.className = "sx-err"; err.textContent = er.message; btn.disabled = false; }
   };
 }
-async function resetPassword() {
-  const email = await dialog({ title: "Reset your password", text: "We'll email you a link to choose a new password.", input: ($("#sxAuth") && $("#sxAuth").email.value) || "", ok: "Send link" });
-  if (!email) return;
-  try { await api.reset(email); toast("If that email has an account, a reset link is on its way"); } catch (e) { toast(e.message, true); }
+/* ---------- forgot password: a code by email, then a new password or straight in ---------- */
+let recover = null;   // { step: "email" | "code" | "choose", email }
+function resetPassword() { recover = { step: "email", email: ($("#sxAuth") && $("#sxAuth").email.value.trim()) || "" }; render(); }
+function recoverScreen() {
+  const r = recover, f = (body, id) => `<div class="sx-gate"><form class="sx-gate-box sx-auth" id="${id}" novalidate><div class="sx-gate-ic">${icon(r.step === "choose" ? "check" : "inbox")}</div>${body}</form></div>`;
+  if (r.step === "email") root.innerHTML = f(`<h2>Forgot your password?</h2><p>We'll email you a 6-digit code. Type it in here and you're signed in. Then you can choose a new password, or just keep going.</p>
+    <label class="sx-field"><span>Email</span><input name="email" type="email" autocomplete="email" spellcheck="false" value="${esc(r.email)}" required></label>
+    <div class="sx-err" id="sxRecErr" role="alert"></div><button class="btn primary sx-wide" type="submit">Email me a code</button>
+    <div class="sx-auth-alt"><button type="button" class="sx-link" data-rec="back">Back to sign in</button></div>`, "sxRec");
+  else if (r.step === "code") root.innerHTML = f(`<h2>Check your email</h2><p>We sent a code to <b>${esc(r.email)}</b>. It can take a minute, and it might be in spam. The email also has a link that does the same thing.</p>
+    <label class="sx-field"><span>Code</span><input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" spellcheck="false" placeholder="123456" class="sx-code" required></label>
+    <div class="sx-err" id="sxRecErr" role="alert"></div><button class="btn primary sx-wide" type="submit">Sign in</button>
+    <div class="sx-auth-alt"><button type="button" class="sx-link" data-rec="resend" id="sxResend">Send a new code</button><span class="sx-sepdot"></span><button type="button" class="sx-link" data-rec="email">Use a different email</button></div>`, "sxRec");
+  else root.innerHTML = f(`<h2>You're signed in</h2><p>Want a new password? You can also skip this and change it later in Social settings.</p>
+    <label class="sx-field"><span>New password</span><input name="password" type="password" autocomplete="new-password" minlength="8"><small>At least 8 characters.</small></label>
+    <div class="sx-err" id="sxRecErr" role="alert"></div><button class="btn primary sx-wide" type="submit">Save new password</button>
+    <div class="sx-auth-alt"><button type="button" class="sx-link" data-rec="skip">Skip: just sign me in</button></div>`, "sxRec");
+  const form = $("#sxRec"), err = $("#sxRecErr"), first = form.querySelector("input"); if (first) first.focus();
+  const fail = e => { err.className = "sx-err"; err.textContent = e.message; form.querySelector("button[type=submit]").disabled = false; };
+  form.onclick = async e => {
+    const a = (e.target.closest("[data-rec]") || {}).dataset?.rec; if (!a) return;
+    if (a === "back") { recover = null; authMode = "in"; return render(); }
+    if (a === "email") { recover = { step: "email", email: r.email }; return render(); }
+    if (a === "skip") { recover = null; return render(); }
+    if (a === "resend") { const b = e.target; b.disabled = true;
+      try { await api.reset(r.email); err.className = "sx-ok"; err.textContent = "A new code is on its way."; } catch (er) { fail(er); }
+      setTimeout(() => { b.disabled = false; }, 30000); }
+  };
+  form.onsubmit = async e => {
+    e.preventDefault(); const btn = form.querySelector("button[type=submit]"); err.textContent = ""; btn.disabled = true;
+    try {
+      if (r.step === "email") { const email = form.email.value.trim(); await api.reset(email); recover = { step: "code", email }; return render(); }
+      if (r.step === "code") { recover = { step: "choose", email: r.email }; try { await api.verifyCode(r.email, form.code.value); } catch (er) { recover = { step: "code", email: r.email }; throw er; } return render(); }
+      const pw = form.password.value; if (!pw) { recover = null; return render(); }
+      await api.setPassword(pw); recover = null; toast("New password saved"); render();
+    } catch (er) { fail(er); }
+  };
 }
 
 /* ---------- choosing a username ---------- */

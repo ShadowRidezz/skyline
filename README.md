@@ -33,7 +33,8 @@ to reorder them, or turn them off.
   Spotify Premium. Without Premium it works through Spicetify, or plays the song on YouTube.
 - Music search remembers your recent searches. You can also share lyric cards and see a Weekly Wrapped.
 
-**Social:** your Skyline account, with friends and messages like Discord.
+**Social:** your Skyline account, with friends and messages like Discord. Forgot your password? You get a 6-digit
+code by email: type it in and you're signed in, then pick a new password or just carry on.
 - Direct messages with pictures, GIF search (with favorites and recents), stickers, emoji, replies and typing
   indicators. Right-click a sticker to delete it.
 - **Servers** with text and voice channels, invites, and roles for the owner.

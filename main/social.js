@@ -51,6 +51,9 @@ function config() {
 const tidyError = e => {   // server errors are short codes (see social.sql); anything else gets a plain message
   const m = String((e && (e.message || e.msg || e.error_description)) || e || "");
   if (/^[a-z_]{3,32}$/.test(m)) return m;
+  if (/otp_expired|token has expired|invalid.*(otp|token|code)|otp.*invalid|expired.*code/i.test(m)) return "bad_code";
+  if (/over_email_send_rate_limit|email rate limit|for security purposes, you can only request/i.test(m)) return "email_rate_limited";
+  if (/error sending|smtp|not authorized|email_address_not_authorized|unexpected_failure/i.test(m)) return "email_send_failed";
   if (/fetch failed|network|ENOTFOUND|ECONN|timed? ?out|Failed to fetch/i.test(m)) return "offline";
   if (/invalid login credentials/i.test(m)) return "bad_login";
   if (/already registered|already exists/i.test(m)) return "email_taken";
@@ -100,7 +103,10 @@ class SupabaseLink {
   }
   async signIn(email, password) { const { error } = await this.sb.auth.signInWithPassword({ email, password }); if (error) throw error; return this.user(); }
   async signOut() { await this.sb.auth.signOut(); }
-  async reset(email) { const { error } = await this.sb.auth.resetPasswordForEmail(email); if (error) throw error; }
+  // forgot password: an email with a 6-digit code (type it into Skyline) and a link (opens the web app)
+  async reset(email) { const { error } = await this.sb.auth.resetPasswordForEmail(email, { redirectTo: "https://shadowridezz.github.io/skyline/" }); if (error) throw error; }
+  async verifyCode(email, code) { const { error } = await this.sb.auth.verifyOtp({ email, token: code, type: "recovery" }); if (error) throw error; return this.user(); }
+  async setPassword(password) { const { error } = await this.sb.auth.updateUser({ password }); if (error) throw error; }
   async rpc(fn, args) { const { data, error } = await this.sb.rpc(fn, args || {}); if (error) throw error; return data; }
   async upload(path, buf, type) {
     const { error } = await this.sb.storage.from("media").upload(path, buf, { contentType: type, cacheControl: "31536000", upsert: false });
@@ -142,7 +148,9 @@ class TestLink {
   async signUp(email, password) { const s = await this.post("/auth/signup", { email, password }); this.save(s); return { user: s.user, confirm: false }; }
   async signIn(email, password) { this.save(await this.post("/auth/signin", { email, password })); return this.session.user; }
   async signOut() { this.save(null); }
-  async reset() {}
+  async reset(email) { await this.post("/auth/recover", { email }); }
+  async verifyCode(email, code) { this.save(await this.post("/auth/verify", { email, code })); return this.session.user; }
+  async setPassword(password) { await this.post("/auth/password", { password }); }
   async rpc(fn, args) { return (await this.post("/rpc/" + fn, args)).data; }
   async upload(path, buf, type) { return `data:${type};base64,${buf.toString("base64")}`; }   // (tests keep pictures inline)
   async removeMedia() {}
@@ -203,6 +211,10 @@ class Social {
     });
     h("social:signOut", () => need().signOut());
     h("social:reset", email => { email = String(email || "").trim().toLowerCase(); if (!EMAIL.test(email)) throw new Error("email_invalid"); return need().reset(email); });
+    h("social:verifyCode", (email, code) => { email = String(email || "").trim().toLowerCase(); code = String(code || "").replace(/\D/g, ""); if (!EMAIL.test(email) || code.length < 6 || code.length > 10) throw new Error("bad_code"); return need().verifyCode(email, code); });
+    // tests only: the code the stand-in server "emailed" (there's no inbox to read)
+    if (process.env.SKY_SOCIAL_TEST) h("social:testOutbox", async email => (await (await fetch(process.env.SKY_SOCIAL_TEST.replace(/\/$/, "") + "/test/outbox?email=" + encodeURIComponent(email))).json()).code);
+    h("social:setPassword", password => { password = String(password || ""); if (password.length < 8 || password.length > 72) throw new Error("weak_password"); return need().setPassword(password); });
     h("social:rpc", (fn, args) => {
       if (!RPCS.has(fn)) throw new Error("not_allowed");
       if (args != null && (typeof args !== "object" || JSON.stringify(args).length > 200000)) throw new Error("bad_request");

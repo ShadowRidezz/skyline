@@ -9,6 +9,7 @@ import { openDb, as } from "./db.mjs";
 const PORT = +(process.argv[2] || 47900);
 const SECRET = crypto.randomBytes(16).toString("hex");
 const db = await openDb();
+const codes = new Map();   // email -> the password-reset code it was "sent"
 const TABLES = { voice_members: "user_id", voice_signals: "id", typing_state: "user_id", servers: "id", server_members: "server_id", channels: "id", channel_messages: "id", channel_reactions: "message_id", message_reactions: "message_id", messages: "id", friend_requests: "id", friendships: "id", presence: "user_id", notifications: "id", call_signals: "id", profile_details: "user_id" };
 for (const [t, pk] of Object.entries(TABLES)) {
   await db.exec(`create or replace function public.tg_${t}() returns trigger language plpgsql as $$ begin
@@ -69,7 +70,24 @@ http.createServer(async (req, res) => {
       if (!r.rows[0]) return send(res, 400, { error: "bad_login" });
       const id = r.rows[0].id; return send(res, 200, { token: sign(id), user: { id, email } });
     }
+    // forgot password (like Supabase's recovery code): the code goes to a test outbox, not a real inbox
+    if (req.method === "POST" && url.pathname === "/auth/recover") {
+      const { email } = await body(req); const r = await db.query(`select id from auth.users where email = $1`, [email]);
+      if (r.rows[0]) { const code = String(crypto.randomInt(100000, 1000000)); codes.set(email, { code, id: r.rows[0].id, until: Date.now() + 15 * 60e3 }); }
+      return send(res, 200, { data: true });   // (the same answer either way, so it never says who has an account)
+    }
+    if (req.method === "GET" && url.pathname === "/test/outbox") { const c = codes.get(url.searchParams.get("email")); return send(res, 200, { code: c ? c.code : null }); }
+    if (req.method === "POST" && url.pathname === "/auth/verify") {
+      const { email, code } = await body(req), c = codes.get(email);
+      if (!c || c.code !== String(code) || Date.now() > c.until) return send(res, 400, { error: "bad_code" });
+      codes.delete(email); return send(res, 200, { token: sign(c.id), user: { id: c.id, email } });
+    }
     const uid = who(req);
+    if (req.method === "POST" && url.pathname === "/auth/password") {
+      if (!uid) return send(res, 401, { error: "signed_out" });
+      const { password } = await body(req); if (String(password || "").length < 8) return send(res, 400, { error: "weak_password" });
+      await db.query(`update auth.users set password = $1 where id = $2`, [hash(password), uid]); return send(res, 200, { data: true });
+    }
     if (url.pathname.startsWith("/rpc/") && req.method === "POST") {
       if (!uid) return send(res, 401, { error: "signed_out" });
       const fn = url.pathname.slice(5).replace(/[^a-z_]/g, ""), args = await body(req), keys = Object.keys(args).filter(k => /^p_[a-z_]+$/.test(k));

@@ -11,6 +11,9 @@
   const tidy = e => {
     const m = String((e && (e.message || e.msg || e.error_description)) || e || "");
     if (/^[a-z_]{3,32}$/.test(m)) return m;
+    if (/otp_expired|token has expired|invalid.*(otp|token|code)|otp.*invalid|expired.*code/i.test(m)) return "bad_code";
+    if (/over_email_send_rate_limit|email rate limit|for security purposes, you can only request/i.test(m)) return "email_rate_limited";
+    if (/error sending|smtp|not authorized|email_address_not_authorized|unexpected_failure/i.test(m)) return "email_send_failed";
     if (/fetch|network|Failed to fetch|NetworkError|timed? ?out/i.test(m)) return "offline";
     if (/invalid login credentials/i.test(m)) return "bad_login";
     if (/already registered|already exists/i.test(m)) return "email_taken";
@@ -70,7 +73,9 @@
       async signUp(email, password) { const { data, error } = await sb.auth.signUp({ email, password }); if (error) throw error; return { user: data.user ? { id: data.user.id, email: data.user.email } : null, confirm: !data.session }; },
       async signIn(email, password) { const { error } = await sb.auth.signInWithPassword({ email, password }); if (error) throw error; return user(); },
       async signOut() { await sb.auth.signOut(); },
-      async reset(email) { const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname }); if (error) throw error; },
+      async reset(email) { const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: "https://shadowridezz.github.io/skyline/" }); if (error) throw error; },
+      async verifyCode(email, code) { const { error } = await sb.auth.verifyOtp({ email, token: code, type: "recovery" }); if (error) throw error; return user(); },
+      async setPassword(password) { const { error } = await sb.auth.updateUser({ password }); if (error) throw error; },
       async rpc(fn, args) { const { data, error } = await sb.rpc(fn, args || {}); if (error) throw error; return data; },
       async upload(path, buf, type) { const { error } = await sb.storage.from("media").upload(path, buf, { contentType: type, cacheControl: "31536000", upsert: false }); if (error) throw error; return sb.storage.from("media").getPublicUrl(path).data.publicUrl; },
       async removeMedia(path) { await sb.storage.from("media").remove([path]).catch(() => {}); },
@@ -103,7 +108,10 @@
       user: async () => session && session.user,
       async signUp(email, password) { const s = await post("/auth/signup", { email, password }); save(s); return { user: s.user, confirm: false }; },
       async signIn(email, password) { save(await post("/auth/signin", { email, password })); return session.user; },
-      async signOut() { save(null); }, async reset() {},
+      async signOut() { save(null); },
+      async reset(email) { await post("/auth/recover", { email }); },
+      async verifyCode(email, code) { save(await post("/auth/verify", { email, code })); return session.user; },
+      async setPassword(password) { await post("/auth/password", { password }); },
       async rpc(fn, args) { return (await post("/rpc/" + fn, args)).data; },
       async upload(path, buf, type) { return `data:${type};base64,${toB64(buf)}`; },
       async removeMedia() {},
@@ -126,6 +134,8 @@
       signIn: (email, password) => wrap((async () => { email = String(email || "").trim().toLowerCase(); if (!EMAIL.test(email) || !password) throw new Error("bad_login"); return need().signIn(email, String(password)); })()),
       signOut: () => wrap(need().signOut()),
       reset: email => wrap((async () => { email = String(email || "").trim().toLowerCase(); if (!EMAIL.test(email)) throw new Error("email_invalid"); return need().reset(email); })()),
+      verifyCode: (email, code) => wrap((async () => { email = String(email || "").trim().toLowerCase(); code = String(code || "").replace(/\D/g, ""); if (!EMAIL.test(email) || code.length < 6 || code.length > 10) throw new Error("bad_code"); return need().verifyCode(email, code); })()),
+      setPassword: password => wrap((async () => { password = String(password || ""); if (password.length < 8 || password.length > 72) throw new Error("weak_password"); return need().setPassword(password); })()),
       rpc: (fn, args) => wrap(need().rpc(fn, args)),
       upload: (kind, data) => wrap((async () => {
         const l = need(), u = await l.must(); if (!KINDS[kind]) throw new Error("bad_request");

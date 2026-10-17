@@ -451,3 +451,5 @@ body.still .sx-in-who .sx-av { animation: none; }
 
 /* a toggle inside a settings row needs no box of its own */
 .sx-set-c .toggle { padding: 0; border: 0; background: none; }
+/* the code you get by email: big and easy to type */
+.sx-code { font: 600 22px/1 var(--display) !important; letter-spacing: .3em; text-align: center; font-variant-numeric: tabular-nums; }

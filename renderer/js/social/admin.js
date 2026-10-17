@@ -73,7 +73,11 @@ async function dbBox() {
       <small>The token stays encrypted on this PC and only your Skyline uses it.</small>`
     : `<b>Database</b> ${s.upToDate ? `<span class="ad-ok">Up to date</span>` : `<span class="ad-warn">Update ready</span>`}
       <p>${s.upToDate ? `Updated ${s.at ? new Date(s.at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : ""}. New versions of Skyline bring their database changes in by themselves.` : `This version of Skyline has database changes. ${s.error ? "Last try: " + esc(s.error) : ""}`}</p>
-      <div class="ad-db-row">${s.upToDate ? "" : `<button class="btn sm primary" data-ad="dbapply">Update the database now</button>`}<button class="btn sm ghost" data-ad="dbforget">Remove token</button></div>`;
+      <div class="ad-db-row">${s.upToDate ? "" : `<button class="btn sm primary" data-ad="dbapply">Update the database now</button>`}<button class="btn sm ghost" data-ad="dbforget">Remove token</button></div>
+      <p class="ad-mail">${s.authError ? `<span class="ad-warn">Sign-in email</span> Couldn't set up the "forgot password" email: ${esc(s.authError)}`
+        : !s.authReady ? `<span class="ad-warn">Sign-in email</span> Skyline sets up the "forgot password" email (a 6-digit code) on the server shortly.`
+        : s.customEmail === false ? `<span class="ad-warn">Sign-in email</span> Your server sends with Supabase's built-in email, which only reaches people on your Supabase team and only a few an hour. For friends to get their codes, add an email sender (SMTP) in Supabase › Authentication › Emails.`
+        : `<span class="ad-ok">Sign-in email</span> "Forgot password" sends a 6-digit code.`}</p>`;
 }
 async function loadBadges() { try { A.badges = await api.rpc("admin_badges") || []; } catch (e) { A.badges = []; toast(e.message, true); } if (A.tab === "badges" || A.tab === "people") draw(); if (A.open) loadHolders(A.open); }
 async function loadHolders(id) { A.holders = null; draw(); try { A.holders = await api.rpc("admin_badge_holders", { p_badge: id }) || []; } catch (e) { A.holders = []; } if (A.open === id) draw(); }

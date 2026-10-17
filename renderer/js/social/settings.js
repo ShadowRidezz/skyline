@@ -115,6 +115,7 @@ function body() {
       : `<p class="sx-none">You haven't blocked anyone.</p>`, "Blocked people can't find you, see your profile, message you, call you or send you requests.");
   }
   if (section === "account") return block("Account", `${row("Signed in as", "", `<span class="sx-mono">${esc((S.user && S.user.email) || "")}</span>`)}
+      ${row("Password", "Choose a new one. You stay signed in.", `<button class="btn sm" data-sx="newpassword">${icon("lock")}Change password</button>`)}
       ${row("Sign out", "You'll appear offline to friends.", `<button class="btn sm danger" data-sx="signoutset">${icon("logOut")}Sign out</button>`)}`);
   return "";
 }
@@ -181,6 +182,12 @@ async function click(a, x) {
   if (a === "set") { if (section === "profile" && x !== "profile" && !(await confirmLeave())) return; section = x; if (x === "blocked") S.blocked = await api.rpc("get_blocked").catch(() => []); return render(host, x); }
   if (a === "preset") { const p = PRESETS.find(q => q.name === x); if (!p) return; const { name, ...cols } = p; S.settings.appearance = cols; applyAppearance(cols); rerender(); return saveSoon(); }
   if (a === "resetcolors") { delete S.settings.appearance; applyAppearance(null); rerender(); return saveSoon(); }
+  if (a === "newpassword") {
+    const pw = await dialog({ title: "Change your password", text: "At least 8 characters.", input: "", ok: "Save", secret: true });
+    if (pw == null) return; if (pw.length < 8) return toast("Use a password with at least 8 characters.", true);
+    try { await api.setPassword(pw); toast("New password saved"); } catch (e) { toast(e.message, true); }
+    return;
+  }
   if (a === "testmic") return testMic(false);
   if (a === "hearmic") return testMic(true);
   if (a === "clearrecent") { S.settings.recentEmoji = []; S.settings.recentStickers = []; saveSoon(); return toast("Cleared"); }

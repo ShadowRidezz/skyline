@@ -12,11 +12,11 @@ export function toast(msg, bad) {
 }
 
 // An in-app dialog. Resolves true/false, or the typed text (null when cancelled) when `input` is given.
-export function dialog({ title, text = "", input = null, ok = "OK", cancel = "Cancel", danger = false, html = "" }) {
+export function dialog({ title, text = "", input = null, ok = "OK", cancel = "Cancel", danger = false, html = "", secret = false }) {
   return new Promise(resolve => {
     const m = $("#dlg"), asks = input != null;
     m.innerHTML = `<div class="dlg-box" role="dialog" aria-modal="true" aria-label="${esc(title)}"><h3>${esc(title)}</h3>${text ? `<p>${esc(text)}</p>` : ""}${html}
-      ${asks ? `<input class="dlg-in" maxlength="40" value="${esc(input)}" spellcheck="false">` : ""}
+      ${asks ? `<input class="dlg-in" ${secret ? 'type="password" maxlength="72" autocomplete="new-password"' : 'maxlength="40"'} value="${esc(input)}" spellcheck="false">` : ""}
       <div class="dlg-acts">${cancel ? `<button class="btn ghost" data-r="0">${esc(cancel)}</button>` : ""}<button class="btn ${danger ? "danger-solid" : "primary"}" data-r="1">${esc(ok)}</button></div></div>`;
     m.classList.remove("hidden");
     const inp = m.querySelector(".dlg-in");
