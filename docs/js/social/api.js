@@ -26,6 +26,7 @@ const WORDS = {
   already_sent: "You've already sent them a request.",
   not_accepting: "This person isn't accepting friend requests.",
   rate_limited: "Slow down a little and try again in a moment.",
+  relay_invalid: "Those relay addresses aren't valid (they start with turn: or stun:).",
   bad_code: "That code isn't right, or it has expired. Check the newest email, or send a new code.",
   email_rate_limited: "Too many emails were sent to that address just now. Wait a minute or two, then send a new code.",
   email_send_failed: "Skyline's server couldn't send the email right now. Try again in a few minutes. If it keeps happening, ask Shadow to check the server's email.",

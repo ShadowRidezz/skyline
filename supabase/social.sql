@@ -1659,6 +1659,39 @@ language sql stable security definer set search_path = public as $$
   select jsonb_build_object('data', data, 'updated_at', updated_at) from school_snapshot where user_id = auth.uid();
 $$;
 
+-- ---------- the call relay (TURN): for calls between networks that can't reach each other directly ----------
+-- One row, set by an admin in Skyline (Admin › Calls). Every signed-in Skyline reads it when it starts.
+create table if not exists public.call_relay (
+  id int primary key default 1 check (id = 1),
+  servers jsonb not null default '[]',
+  updated_at timestamptz not null default now()
+);
+alter table public.call_relay enable row level security;
+revoke all on public.call_relay from anon, authenticated;
+
+create or replace function public.get_ice() returns jsonb
+language sql stable security definer set search_path = public as $$
+  select case when auth.uid() is null then null else coalesce((select servers from call_relay where id = 1), '[]'::jsonb) end;
+$$;
+create or replace function public.admin_set_ice(p_servers jsonb) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare e jsonb; u jsonb;
+begin
+  perform public.require_admin_user();
+  if p_servers is null or jsonb_typeof(p_servers) <> 'array' or jsonb_array_length(p_servers) > 8 or pg_column_size(p_servers) > 6000 then raise exception 'relay_invalid'; end if;
+  for e in select * from jsonb_array_elements(p_servers) loop
+    if jsonb_typeof(e) <> 'object' or not (e ? 'urls') then raise exception 'relay_invalid'; end if;
+    for u in select * from jsonb_array_elements(case when jsonb_typeof(e->'urls') = 'array' then e->'urls' else jsonb_build_array(e->'urls') end) loop
+      if jsonb_typeof(u) <> 'string' or (u #>> '{}') !~ '^(stun|turn|turns):[A-Za-z0-9.:?=&_\[\]-]{3,200}$' then raise exception 'relay_invalid'; end if;
+    end loop;
+    if (e ? 'username' and (jsonb_typeof(e->'username') <> 'string' or char_length(e->>'username') > 200))
+       or (e ? 'credential' and (jsonb_typeof(e->'credential') <> 'string' or char_length(e->>'credential') > 200)) then raise exception 'relay_invalid'; end if;
+  end loop;
+  insert into call_relay (id, servers, updated_at) values (1, p_servers, now())
+    on conflict (id) do update set servers = excluded.servers, updated_at = now();
+  return p_servers;
+end $$;
+
 -- only signed-in users can call any of this
 do $$ declare f record; begin
   for f in select p.oid::regprocedure as sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
@@ -1671,7 +1704,7 @@ do $$ declare f record; begin
              'cm_pin','get_channel_messages','get_channel_message','search_channel','get_channel_pins','mark_channel_read','is_member','server_role','require_member','require_admin',
              'channel_name','attach_ok','is_admin','require_admin_user','my_badges','show_badge','admin_badges','admin_save_badge','admin_delete_badge','admin_give_badge',
              'admin_take_badge','admin_badge_holders','admin_users','admin_suspend','admin_stats','admin_announce',
-             'shown_activity','voice_join','voice_leave','voice_state','voice_heartbeat','send_voice_signal','set_typing','save_school','get_school')
+             'shown_activity','voice_join','voice_leave','voice_state','voice_heartbeat','send_voice_signal','set_typing','save_school','get_school','get_ice','admin_set_ice')
   loop
     execute format('revoke all on function %s from public, anon', f.sig);
     execute format('grant execute on function %s to authenticated', f.sig);

@@ -169,3 +169,6 @@ b.sx-live-pill { cursor: default; }
 .ad-smtp-g { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 8px 0; }
 .ad-smtp-g label { display: grid; gap: 4px; font-size: 12px; } .ad-smtp-g label:first-child { grid-column: 1 / -1; }
 .ad-smtp-g input { height: 32px; border-radius: var(--r-sm); border: 1px solid var(--line2); background: rgba(0,0,0,.28); padding: 0 10px; color: var(--text); outline: none; }
+/* Admin: the call relay */
+#adRelay textarea { width: 100%; margin: 8px 0; font: 12px/1.45 "Cascadia Mono", Consolas, monospace; resize: vertical; }
+.ad-relay-st { font-size: 12.5px; color: var(--muted); } .ad-relay-st.ok { color: var(--ok); } .ad-relay-st.bad { color: var(--bad); }

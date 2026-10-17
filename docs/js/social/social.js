@@ -48,6 +48,11 @@ async function init() {
   await boot();
 }
 
+// the call relay (TURN) the admin set: added to the usual servers, so calls connect even between strict networks
+export async function loadRelay() {
+  S.baseIce = S.baseIce || S.ice || [];
+  try { const r = await api.rpc("get_ice"); S.ice = Array.isArray(r) && r.length ? [...S.baseIce, ...r] : S.baseIce; } catch (e) {}
+}
 async function boot() {
   S.booting = true; S.me = null; S.friends = []; S.requests = []; S.notes = []; S.servers = []; S.convos.clear(); S.view = { kind: "friends" }; S.panel = null;
   clearInterval(hbTimer); clearInterval(friendsTimer);
@@ -60,6 +65,7 @@ async function boot() {
   if (S.me) {
     S.settings = await api.rpc("get_settings").catch(() => ({})) || {};
     S.isAdmin = S.canBadge = await api.rpc("is_admin").catch(() => false) === true;   // Skyline's owner: the Admin section (the server checks every admin action itself)
+    await loadRelay();
     applyAppearance(S.settings.appearance);
     await refreshAll(true);
     heartbeat(); hbTimer = setInterval(heartbeat, 20000);

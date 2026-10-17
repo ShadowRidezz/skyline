@@ -9,7 +9,7 @@ const path = require("path");
 const RPCS = new Set([
   "create_server", "get_servers", "get_members", "update_server", "delete_server", "leave_server", "kick_member", "set_member_role", "create_channel", "update_channel",
   "delete_channel", "reorder_channels", "create_invite", "get_invite", "join_server", "get_invites", "revoke_invite", "send_channel_message", "cm_edit", "cm_delete", "cm_react",
-  "save_school", "get_school",
+  "save_school", "get_school", "get_ice", "admin_set_ice",
   "voice_join", "voice_leave", "voice_state", "voice_heartbeat", "send_voice_signal", "set_typing",
   "cm_pin", "get_channel_messages", "get_channel_message", "search_channel", "get_channel_pins", "mark_channel_read",
   "is_admin", "my_badges", "show_badge", "admin_badges", "admin_save_badge", "admin_delete_badge", "admin_give_badge", "admin_take_badge", "admin_badge_holders", "admin_users", "admin_suspend", "admin_stats", "admin_announce",

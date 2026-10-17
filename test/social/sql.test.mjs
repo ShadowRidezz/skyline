@@ -420,5 +420,15 @@ ok((await one(B, "get_school")) === null, "nobody else can read it");
 ok((await as(db, B, "select * from school_snapshot")).rows.length === 0, "not even from the table");
 ok(await err(rpc(A, "save_school", { p_data: JSON.stringify([1, 2]) })) === "school_invalid", "it must be a summary object");
 
+// ---------- the call relay (TURN) ----------
+const RELAY = JSON.stringify([{ urls: ["turn:relay.example.com:80", "turns:relay.example.com:443?transport=tcp"], username: "u1", credential: "p1" }]);
+ok(await err(rpc(B, "admin_set_ice", { p_servers: RELAY })) === "not_admin", "only admins set the call relay");
+ok(await err(rpc(A, "admin_set_ice", { p_servers: JSON.stringify([{ urls: "http://evil" }]) })) === "relay_invalid", "only stun:/turn: addresses");
+ok(await err(rpc(A, "admin_set_ice", { p_servers: JSON.stringify({ urls: "turn:x.com" }) })) === "relay_invalid", "it must be a list");
+await rpc(A, "admin_set_ice", { p_servers: RELAY });
+ok((await one(B, "get_ice"))[0].username === "u1", "every signed-in person gets the relay for their calls");
+ok(await err(as(db, B, "select * from call_relay")) !== null, "the table can't be read directly");
+ok(await err(as(db, null, "select get_ice()")) !== null, "signed-out callers are refused");
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

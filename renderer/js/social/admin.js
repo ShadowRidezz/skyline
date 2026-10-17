@@ -35,6 +35,7 @@ function body() {
     return `<div class="ad-stats">${tile(s.users, "People", s.new_week ? `+${s.new_week} this week` : "")}${tile(s.online, "Online now")}${tile(s.active_day, "Active today")}${tile(s.messages_day, "Messages today", `${Number(s.messages).toLocaleString()} all time`)}
         ${tile(s.servers, "Servers")}${tile(s.friendships, "Friendships")}${tile(s.calls_day, "Calls today")}${tile(s.badges, "Badges made")}${tile(s.suspended, "Suspended")}</div>
       <div id="adDb" class="ad-db"></div>
+      <div id="adRelay" class="ad-db"></div>
       <div class="ad-quick"><button class="btn sm primary" data-ad="tab:badges">${icon("award")}Make or give a badge</button><button class="btn sm" data-ad="tab:people">${icon("users")}Find someone</button><button class="btn sm" data-ad="tab:announce">${icon("megaphone")}Send an announcement</button><button class="btn sm ghost" data-ad="refresh">${icon("refresh")}Refresh</button></div>
       <p class="sx-set-note">Only your account sees this section. The server checks that it's you on every admin action, so nobody can get these powers by changing their app.</p>`;
   }
@@ -62,7 +63,34 @@ function body() {
       <div class="sx-form-acts"><button class="btn primary sm" data-ad="announce">${icon("megaphone")}Send to everyone</button></div>`;
   return "";
 }
-async function loadStats() { try { A.stats = await api.rpc("admin_stats"); } catch (e) { A.stats = A.stats || {}; } if (A.tab === "overview") { draw(); dbBox(); } }
+async function loadStats() { try { A.stats = await api.rpc("admin_stats"); } catch (e) { A.stats = A.stats || {}; } if (A.tab === "overview") { draw(); dbBox(); relayBox(); } }
+// ---------- the call relay (TURN) ----------
+// Paste the list from the relay's dashboard (Metered shows it as a code snippet; plain JSON works too).
+function parseRelay(text) {
+  let t = String(text || "").trim(); const a = t.indexOf("["), b = t.lastIndexOf("]"); if (a < 0 || b < a) return null;
+  t = t.slice(a, b + 1).replace(/\/\/[^\n]*/g, "").replace(/'/g, '"').replace(/([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)\s*:/g, '$1"$2":').replace(/,\s*([}\]])/g, "$1");
+  try {
+    const list = JSON.parse(t); if (!Array.isArray(list)) return null;
+    return list.map(x => ({ urls: x.urls || x.url, ...(x.username ? { username: String(x.username) } : {}), ...(x.credential ? { credential: String(x.credential) } : {}) })).filter(x => x.urls);
+  } catch (e) { return null; }
+}
+async function testRelay(list) {   // can this PC get a relay address from it? (the same check a call makes)
+  const pc = new RTCPeerConnection({ iceServers: list, iceTransportPolicy: "relay" });
+  try {
+    const got = new Promise(ok => { pc.onicecandidate = e => { if (e.candidate && / typ relay /.test(e.candidate.candidate)) ok(true); if (!e.candidate) ok(false); }; setTimeout(() => ok(false), 9000); });
+    pc.createDataChannel("t"); await pc.setLocalDescription(await pc.createOffer());
+    return await got;
+  } finally { pc.close(); }
+}
+async function relayBox() {
+  const el = $("#adRelay"); if (!el) return;
+  let cur = []; try { cur = await api.rpc("get_ice") || []; } catch (e) {}
+  A.relay = cur;
+  el.innerHTML = `<b>Call relay</b> ${cur.length ? `<span class="ad-ok">On</span>` : `<span class="ad-warn">Off</span>`}
+    <p>${cur.length ? `Calls that can't connect directly go through your relay (${cur.length} address${cur.length > 1 ? "es" : ""}). Friends' Skylines pick it up when they start.` : `Without a relay, calls between some networks (school Wi-Fi, phone hotspots, strict routers) stay on "Connecting…". Paste your relay's list below.`}</p>
+    <textarea id="adRelayIn" rows="4" spellcheck="false" placeholder="Paste the iceServers list from your relay's dashboard (Metered: TURN Server › Credentials › ICE Servers Array)"></textarea>
+    <div class="ad-db-row"><button class="btn sm primary" data-ad="relaysave">Save relay</button>${cur.length ? `<button class="btn sm" data-ad="relaytest">Test relay</button><button class="btn sm ghost danger" data-ad="relayoff">Turn off</button>` : ""}<span class="ad-relay-st" id="adRelaySt"></span></div>`;
+}
 // database updates, without opening Supabase: a token once, then every update goes in by itself
 async function dbBox() {
   const el = $("#adDb"); if (!el || !sky.db) return;
@@ -194,6 +222,18 @@ async function click(e) {
     b.textContent = "Updating…"; const u = await sky.db.apply(); toast(u.ok ? "Database updated" : u.error, !u.ok); dbBox(); return true; }
   if (a === "dbapply") { b.disabled = true; b.textContent = "Updating…"; const u = await sky.db.apply(); toast(u.ok ? "Database updated" : u.error, !u.ok); dbBox(); return true; }
   if (a === "dbforget") { await sky.db.forget(); dbBox(); return true; }
+  if (a === "relaysave" || a === "relaytest" || a === "relayoff") {
+    const st = $("#adRelaySt"), say = (t, bad) => { if (st) { st.textContent = t; st.className = "ad-relay-st" + (bad ? " bad" : " ok"); } };
+    let list = A.relay || [];
+    if (a === "relaysave") { list = parseRelay(($("#adRelayIn") || {}).value); if (!list || !list.length) { say("That doesn't look like a list of relay addresses. Copy the whole snippet from the dashboard.", true); return true; } }
+    if (a === "relayoff") list = [];
+    b.disabled = true;
+    if (list.length) { say("Testing…"); if (!(await testRelay(list))) { b.disabled = false; say("The relay didn't answer. Check the username and password are in the list you pasted.", true); return true; } }
+    if (a !== "relaytest") { try { await api.rpc("admin_set_ice", { p_servers: list }); } catch (e) { b.disabled = false; say(e.message, true); return true; } }
+    const { loadRelay } = await import("./social.js"); await loadRelay();
+    toast(a === "relayoff" ? "Call relay turned off" : a === "relaytest" ? "The relay works" : "Relay saved and working. Friends get it next time Skyline starts.");
+    relayBox(); return true;
+  }
   if (a === "smtp") {
     const v = id => ($("#" + id) || {}).value || "";
     b.disabled = true; b.textContent = "Setting up…";
