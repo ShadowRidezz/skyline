@@ -39,6 +39,6 @@ export function themeCard(code, mine) {
   const c = t.colors, sw = [c.bg, c.skyTop, c.skyMid, c.skyLow, c.window, c.accent].filter(Boolean);
   const canUse = typeof window !== "undefined" && window.skyThemes && !mine;
   return `<div class="sx-theme" data-theme="${esc(code)}"><span class="sx-theme-sw" style="background:linear-gradient(90deg, ${sw.map((x, i) => `${x} ${i / sw.length * 100}% ${(i + 1) / sw.length * 100}%`).join(", ")})"></span>
-    <span class="sx-theme-t"><b>${esc(t.name)}</b><small>Skyline theme${t.photo ? " · " + esc(t.photo.src.split("/").pop().replace(/\.jpg$/, "").replace(/-/g, " ")) + " photo" : ""}</small></span>
+    <span class="sx-theme-t"><b>${esc(t.name)}</b><small>Skyline theme${t.photo ? " · " + esc((n => n.charAt(0).toUpperCase() + n.slice(1))(t.photo.src.split("/").pop().replace(/\.jpg$/, "").replace(/-/g, " "))) + " photo" : ""}</small></span>
     ${canUse ? `<button class="btn sm primary" data-sx="usetheme:${esc(code)}">${icon("palette")}Use this theme</button>` : mine ? `<small class="sx-theme-note">You shared this</small>` : `<small class="sx-theme-note">Open Skyline on your PC to use it</small>`}</div>`;
 }

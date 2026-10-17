@@ -559,6 +559,7 @@ async function click(e) {
     case "srvmenu": return Servers.serverMenu(x, b, menu);
     case "newchannel": return Servers.channelDialog(x);
     case "newvoice": return Servers.channelDialog(x, null, "voice");
+    case "usetheme": { const { decodeTheme } = await import("./themeshare.js"); const t = decodeTheme(x); if (t && window.skyThemes) window.skyThemes.add(t); return; }
     case "vjoin": { const c = Servers.channel(x); if (c) await VoiceChat.join(c.id, c.server_id); return; }
     case "vmute": return VoiceChat.mute();
     case "vdeafen": return VoiceChat.deafen();

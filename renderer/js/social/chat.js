@@ -209,7 +209,8 @@ function textHtml(body, t) {
     const known = you || (t.kind === "dm" ? t.f.username.toLowerCase() === low : Servers.memberByName(t.sv.id, low));
     return known ? `${pre}<span class="sx-mention${you ? " you" : ""}">@${name}</span>` : all;
   });
-  h = h.replace(THEME_RE, "").replace(/:\s*$/, "");   // (a shared theme's code shows as its card, not as text)
+  if (THEME_RE.test(h)) h = h.replace(THEME_RE, "").replace(/:\s*$/, "");   // (a shared theme's code shows as its card, not as text)
+  THEME_RE.lastIndex = 0;
   return h.replace(/sky:invite\/([A-Za-z0-9]{8})/g, `<span class="sx-invlink">sky:invite/$1</span>`);
 }
 function bodyHtml(m, t) {

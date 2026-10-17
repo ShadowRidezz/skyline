@@ -365,6 +365,8 @@ function stopPreview(card) { clearTimeout(card._timer); if (card._stop) card._st
 // a theme a friend sent in Social: added to your themes and switched to (Social's "Use this theme" calls this)
 window.skyThemes = {
   async add(raw) {
+    const same = Themes.all().find(x => x.name === raw.name && JSON.stringify(x.colors) === JSON.stringify(Themes.normTheme(raw).colors) && (x.photo || {}).src === (raw.photo || {}).src);
+    if (same) { await Themes.select(same.id, { quiet: true }); Themes.persist(); if ($("#thGallery")) gallery(); return toast(`Now using “${same.name}”`); }
     const t = Themes.normTheme({ ...raw, id: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) });
     t.builtin = false; t.name = uniqueName(String(raw.name || "Shared theme").slice(0, 40));
     Themes.doc.custom.push(t);

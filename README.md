@@ -43,6 +43,7 @@ to reorder them, or turn them off.
   a **Hear yourself** test.
 - **Watch together:** watch YouTube or listen along on Spotify with a friend.
 - Profiles with badges, a status, and "Playing Fortnite" style activity.
+- **Share themes:** send a Theme Studio theme to a friend in a DM; they get a card and switch to it with one click.
 
 **Games:** your whole library in one place. Steam, Epic, Xbox, browser and local games, with their real cover art.
 - Play time per game (only while the game is in front), and a game stats card.
@@ -52,6 +53,8 @@ to reorder them, or turn them off.
 
 **School:** Google Classroom assignments and grades, a calendar, your class schedule, and study tools (flashcards,
 quizzes, an assignment planner). Grade alerts and spoken homework reminders. Everything also shows on the phone app.
+**Grade history** shows every change to each class average and what caused it (a low quiz, a regrade), with the
+biggest drop called out.
 
 **Money:** track what comes in and goes out, and save up for goals.
 
@@ -70,7 +73,8 @@ line icons, the same on the PC and the phone.
 for colours, effects, rain, snow, your own photos, fonts, glass styles and layouts. Themes can change by time of
 day, and live weather appears in the sky.
 
-**App:** tray icon with music controls, starts with Windows if you want, a command bar (Ctrl+K), a sleep timer,
+**App:** **fast start** (the clock and your city in well under a second; the rest loads right after), tray icon
+with music controls, starts with Windows if you want, a command bar (Ctrl+K), a sleep timer,
 backup and restore, and ambient mode (just the city, the time and your music). Press **?** for all shortcuts.
 
 ## Privacy
