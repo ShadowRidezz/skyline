@@ -3,7 +3,7 @@
 A living night-city dashboard for Windows, with your music, your friends, your games and your school in one place.
 Your desktop becomes a city at night, and its lights move with whatever you're listening to.
 
-<!-- version -->**Latest version: 1.28.2**<!-- /version -->
+<!-- version -->**Latest version: 1.28.3**<!-- /version -->
 
 ## Get it
 
