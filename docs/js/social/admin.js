@@ -36,6 +36,7 @@ function body() {
         ${tile(s.servers, "Servers")}${tile(s.friendships, "Friendships")}${tile(s.calls_day, "Calls today")}${tile(s.badges, "Badges made")}${tile(s.suspended, "Suspended")}</div>
       <div id="adDb" class="ad-db"></div>
       <div id="adRelay" class="ad-db"></div>
+      <div id="adGcid" class="ad-db"></div>
       <div class="ad-quick"><button class="btn sm primary" data-ad="tab:badges">${icon("award")}Make or give a badge</button><button class="btn sm" data-ad="tab:people">${icon("users")}Find someone</button><button class="btn sm" data-ad="tab:announce">${icon("megaphone")}Send an announcement</button><button class="btn sm ghost" data-ad="refresh">${icon("refresh")}Refresh</button></div>
       <p class="sx-set-note">Only your account sees this section. The server checks that it's you on every admin action, so nobody can get these powers by changing their app.</p>`;
   }
@@ -63,7 +64,7 @@ function body() {
       <div class="sx-form-acts"><button class="btn primary sm" data-ad="announce">${icon("megaphone")}Send to everyone</button></div>`;
   return "";
 }
-async function loadStats() { try { A.stats = await api.rpc("admin_stats"); } catch (e) { A.stats = A.stats || {}; } if (A.tab === "overview") { draw(); dbBox(); relayBox(); } }
+async function loadStats() { try { A.stats = await api.rpc("admin_stats"); } catch (e) { A.stats = A.stats || {}; } if (A.tab === "overview") { draw(); dbBox(); relayBox(); gcidBox(); } }
 // ---------- the call relay (TURN) ----------
 // Paste the list from the relay's dashboard (Metered shows it as a code snippet; plain JSON works too).
 function parseRelay(text) {
@@ -90,6 +91,15 @@ async function relayBox() {
     <p>${cur.length ? `Calls that can't connect directly go through your relay (${cur.length} address${cur.length > 1 ? "es" : ""}). Friends' Skylines pick it up when they start.` : `Without a relay, calls between some networks (school Wi-Fi, phone hotspots, strict routers) stay on "Connecting…". Paste your relay's list below.`}</p>
     <textarea id="adRelayIn" rows="4" spellcheck="false" placeholder="Paste the iceServers list from your relay's dashboard (Metered: TURN Server › Credentials › ICE Servers Array)"></textarea>
     <div class="ad-db-row"><button class="btn sm primary" data-ad="relaysave">Save relay</button>${cur.length ? `<button class="btn sm" data-ad="relaytest">Test relay</button><button class="btn sm ghost danger" data-ad="relayoff">Turn off</button>` : ""}<span class="ad-relay-st" id="adRelaySt"></span></div>`;
+}
+// the phone app's own Classroom sign-in: a Google Client ID (public, not a secret), saved once for every phone
+async function gcidBox() {
+  const el = $("#adGcid"); if (!el) return;
+  let cur = ""; try { cur = ((await api.rpc("get_app_settings")) || {}).classroom_client || ""; } catch (e) {}
+  el.innerHTML = `<b>Phone Classroom sign-in</b> ${cur ? `<span class="ad-ok">On</span>` : `<span class="ad-warn">Off</span>`}
+    <p>${cur ? `Phones can connect Google Classroom by themselves. Client ID: <code>${esc(cur.slice(0, 18))}…</code>` : `With a Google Client ID, the phone app can read Classroom by itself, without the PC. Steps are in the README under "Phone Classroom sign-in".`}</p>
+    <input id="adGcidIn" spellcheck="false" placeholder="123456789012-abc….apps.googleusercontent.com" value="${esc(cur)}">
+    <div class="ad-db-row"><button class="btn sm primary" data-ad="gcidsave">Save Client ID</button>${cur ? `<button class="btn sm ghost danger" data-ad="gcidoff">Turn off</button>` : ""}</div>`;
 }
 // database updates, without opening Supabase: a token once, then every update goes in by itself
 async function dbBox() {
@@ -233,6 +243,12 @@ async function click(e) {
     const { loadRelay } = await import("./social.js"); await loadRelay();
     toast(a === "relayoff" ? "Call relay turned off" : a === "relaytest" ? "The relay works" : "Relay saved and working. Friends get it next time Skyline starts.");
     relayBox(); return true;
+  }
+  if (a === "gcidsave" || a === "gcidoff") {
+    const v = a === "gcidoff" ? "" : String(($("#adGcidIn") || {}).value || "").trim();
+    try { await api.rpc("admin_set_classroom_client", { p_id: v }); toast(v ? "Saved. Phones pick it up next time they open School." : "Phone Classroom sign-in turned off"); }
+    catch (e) { toast(e.message, true); }
+    gcidBox(); return true;
   }
   if (a === "smtp") {
     const v = id => ($("#" + id) || {}).value || "";

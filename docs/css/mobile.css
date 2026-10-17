@@ -118,6 +118,18 @@ input, textarea, select { font-size: 16px !important; }
 .m-s-ring b { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: #0d1017; font: 650 13px var(--font); }
 .m-s-empty { height: 100%; display: grid; place-content: center; text-align: center; gap: 6px; padding: 30px; color: var(--muted); }
 .m-s-empty b { color: var(--text); font-size: 17px; }
+.m-s-empty.sm { height: auto; padding: 24px 20px; }
+/* Classroom: connect on your PC, or on this phone */
+.m-cr { margin: 14px 0 0; }
+.m-cr .m-cr-i { width: 30px; height: 30px; flex: none; display: grid; place-items: center; border-radius: 50%; background: rgba(255,255,255,.07); color: var(--muted); }
+.m-cr .m-cr-i svg { width: 16px; height: 16px; } .m-cr .m-cr-i .sx-spin { width: 14px; height: 14px; }
+.m-cr .m-cr-i.ok { color: var(--good, #3ecf8e); } .m-cr .m-cr-i.warn { color: var(--warn, #fbbf24); }
+.m-cr-row { display: flex; flex-wrap: wrap; gap: 8px; } .m-cr-row .btn { margin-top: 12px; } .m-cr-row .btn svg { width: 15px; height: 15px; }
+.m-cr-err { margin: 10px 0 0; font-size: 13.5px; line-height: 1.45; color: var(--bad); }
+.m-cr-note { margin: 12px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--faint); }
+.m-cr.slim { display: flex; align-items: center; gap: 12px; padding: 10px 12px; }
+.m-cr.slim .t { flex: 1; min-width: 0; display: grid; gap: 2px; } .m-cr.slim .t b { font-size: 14px; font-weight: 600; } .m-cr.slim .t small { font-size: 12.5px; color: var(--muted); }
+.m-cr.slim .btn { margin: 0; }
 .m-card .m-s-row { background: rgba(255,255,255,.035); }
 
 /* Home */

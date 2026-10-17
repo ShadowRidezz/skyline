@@ -79,6 +79,7 @@ class Classroom {
 
   // you sign in yourself, in Google's own page; the window closes once Classroom opens
   connect() {
+    if (this.fake) return this.fakeConnect();
     if (this.login && !this.login.isDestroyed()) { this.login.focus(); return true; }
     this.ses();
     const w = this.win(true); this.login = w;
@@ -190,7 +191,21 @@ class Classroom {
     const freshGrades = d.gradesAt ? grades.filter(g => { const p = prev.get(g.id); return !p || p.score !== g.score || p.outOf !== g.outOf; }).map(g => g.id) : [];
     return this.write({ ...d, grades, gradesAt: now, spId: sp, freshGrades });
   }
+  // tests only (--shot with SKY_CR_FAKE=1): "signing in" takes a few seconds, then two made-up assignments; never opens Google
+  fakeConnect() {
+    if (this.login) return true;
+    this.login = { fake: true }; this.tell();
+    setTimeout(() => {
+      this.login = null;
+      const due = new Date(Date.now() + 2 * 864e5).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+      this.write({ connected: true, expired: false, error: "", at: Date.now(), courses: { c1: "8th Grade Science" }, fresh: [], grades: [], freshGrades: [],
+        items: [{ id: "f1", course: "c1", title: "Lab report: density", cls: "8th Grade Science", due, noDue: false, missing: false, url: "https://classroom.google.com/c/c1/a/f1", kind: "a", points: 20 }] });
+      this.tell();
+    }, 4000);
+    return true;
+  }
   install(testing) {
+    this.fake = !!testing && process.env.SKY_CR_FAKE === "1";
     const h = (ch, fn) => ipcMain.handle(ch, (e, ...a) => fn(...a));
     if (testing) h("cr:test", (pieces, label, courses) => tidy({ course: "c1", kind: "a", id: "t1", url: "https://classroom.google.com/u/0/c/c1/a/t1/details", lines: [], texts: pieces, label: label || "" }, courses || {}, "assigned"));
     h("cr:status", () => this.status());

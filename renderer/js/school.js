@@ -115,6 +115,44 @@ const Classroom = {
   },
   shown() { if (this.st.connected && !this.st.expired && !this.st.syncing && Date.now() - (this.st.at || 0) > 15 * 60e3) sky.classroom.sync().catch(() => {}); },   // fresh when you look
 };
+// "Connect Classroom on your PC" from the phone: the phone leaves a request on your Social account; this PC sees it
+// live (or at its next check-in), opens Google's own sign-in window (you type your password yourself) and tells the
+// phone how it's going. It also checks in every minute so the phone knows Skyline is running here.
+const PhoneLink = {
+  handled: 0, busy: false, last: "",
+  async mods() { const [{ S: SS }, { api }] = await Promise.all([import("./social/state.js"), import("./social/api.js")]); return { SS, api }; },
+  state() { const s = Classroom.st || {}; return s.signingIn ? "signing_in" : s.expired ? "expired" : s.connected ? (s.error && !s.items.length ? "error" : "connected") : "not_connected"; },
+  async report(force) {
+    try {
+      const { SS, api } = await this.mods(); if (!SS.me) return;
+      const st = this.state(), note = st === "error" ? String(Classroom.st.error || "").slice(0, 160) : "";
+      if (!force && st + note === this.last && Date.now() - this.at < 55000) return;
+      this.last = st + note; this.at = Date.now();
+      const r = await api.rpc("school_pc_report", { p_state: st, p_note: note, p_handled: this.handled || null });
+      this.check(r);
+    } catch (e) {}
+  },
+  check(r) {
+    if (!r || this.busy || !(r.request_id > r.handled_id) || r.request_id <= this.handled) return;
+    if (r.request_at && r.now && new Date(r.now) - new Date(r.request_at) > 10 * 60e3) { this.handled = r.request_id; return this.report(true); }   // (an old request: don't pop a window hours later)
+    this.handled = r.request_id; this.busy = true;
+    const s = Classroom.st || {};
+    const go = s.connected && !s.expired ? sky.classroom.sync(true) : sky.classroom.connect();
+    toast(s.connected && !s.expired ? "Your phone asked for Classroom: updating it now" : "Your phone asked to connect Classroom. Sign in to Google in the window that opened");
+    this.want = true;   // (the phone gets a fresh summary as soon as Classroom is read)
+    Promise.resolve(go).catch(() => {}).finally(() => { this.busy = false; this.report(true); });
+  },
+  init() {
+    if (!sky || !sky.social || !sky.classroom) return;
+    sky.social.onChange(c => { if (c.table === "school_link" && c.row) this.check(c.row.now ? c.row : { ...c.row, now: new Date().toISOString() }); });
+    sky.classroom.onStatus(s => {
+      clearTimeout(this.t); this.t = setTimeout(() => this.report(), 800);
+      if (this.want && s.connected && !s.syncing && !s.signingIn) { this.want = false; phoneSoon(1500); }
+    });
+    setTimeout(() => this.report(true), 4000);
+    setInterval(() => this.report(), 15000);   // (sends only when something changed, or once a minute)
+  },
+};
 // every Classroom class with work becomes one of your classes (colour, short name), once
 function linkCourses() {
   const st = Classroom.st; if (!D || !st.connected) return;
@@ -337,7 +375,7 @@ export const School = {
     D = Object.assign({ classes: [], work: [], links: [], crDone: {}, extra: {}, periods: [], grades: [], decks: [], doneLog: {}, remind: { on: true, at: "19:00" }, reminded: { tests: {} } }, (await store.read("school")) || {});
     if (!D.links.length && !D.linksSet) D.links = [{ name: "Google Classroom", url: "https://classroom.google.com" }, { name: "Google Docs", url: "https://docs.google.com" }, { name: "Quizlet", url: "https://quizlet.com" }, { name: "Khan Academy", url: "https://www.khanacademy.org" }];
     D.reminded.tests = D.reminded.tests || {};
-    await Classroom.init();
+    await Classroom.init(); PhoneLink.init();
     trackGrades();   // (remembers today's scores, so a regrade later shows up in the grade history)
     const v = $("#view-school");
     v.addEventListener("click", e => this.click(e));

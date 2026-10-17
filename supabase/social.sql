@@ -1659,6 +1659,78 @@ language sql stable security definer set search_path = public as $$
   select jsonb_build_object('data', data, 'updated_at', updated_at) from school_snapshot where user_id = auth.uid();
 $$;
 
+-- ---------- connecting Classroom from your phone ----------
+-- The phone asks ("Connect Classroom on your PC"); your PC's Skyline sees it live, opens Google's own sign-in window
+-- (you type your password yourself), then reports how it went. The PC also checks in every minute or so, so the
+-- phone can tell whether Skyline is running on it. Only you can read or change yours.
+create table if not exists public.school_link (
+  user_id uuid primary key references public.profiles (id) on delete cascade,
+  request_id bigint not null default 0,
+  request_at timestamptz,
+  handled_id bigint not null default 0,
+  pc_state text not null default '',
+  pc_note text not null default '',
+  pc_seen timestamptz,
+  updated_at timestamptz not null default now()
+);
+alter table public.school_link enable row level security;
+drop policy if exists school_link_read on public.school_link;
+create policy school_link_read on public.school_link for select to authenticated using (user_id = auth.uid());
+revoke all on public.school_link from anon, authenticated;
+grant select on public.school_link to authenticated;
+create or replace function public.school_link_status() returns jsonb
+language sql stable security definer set search_path = public as $$
+  select jsonb_build_object('request_id', coalesce(l.request_id, 0), 'request_at', l.request_at, 'handled_id', coalesce(l.handled_id, 0),
+    'pc_state', coalesce(l.pc_state, ''), 'pc_note', coalesce(l.pc_note, ''), 'pc_seen', l.pc_seen, 'now', now())
+  from (select auth.uid() as u) me left join school_link l on l.user_id = me.u where me.u is not null;
+$$;
+create or replace function public.school_connect_request() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare u uuid := public.require_profile();
+begin
+  insert into school_link (user_id, request_id, request_at) values (u, 1, now())
+    on conflict (user_id) do update set
+      request_id = case when school_link.request_at > now() - interval '5 seconds' then school_link.request_id else school_link.request_id + 1 end,
+      request_at = case when school_link.request_at > now() - interval '5 seconds' then school_link.request_at else now() end,
+      updated_at = now();
+  return public.school_link_status();
+end $$;
+create or replace function public.school_pc_report(p_state text, p_note text default '', p_handled bigint default null) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare u uuid := public.require_profile();
+begin
+  if p_state is null or p_state not in ('connected', 'expired', 'signing_in', 'not_connected', 'error', 'off') then raise exception 'state_invalid'; end if;
+  insert into school_link (user_id, pc_state, pc_note, pc_seen) values (u, p_state, left(coalesce(p_note, ''), 200), case when p_state = 'off' then null else now() end)
+    on conflict (user_id) do update set pc_state = excluded.pc_state, pc_note = excluded.pc_note, pc_seen = excluded.pc_seen,
+      handled_id = greatest(school_link.handled_id, least(coalesce(p_handled, 0), school_link.request_id)), updated_at = now();
+  return public.school_link_status();
+end $$;
+
+-- public settings an admin sets once for every Skyline (today: the Google sign-in Client ID the phone app uses to read
+-- Classroom directly). Anyone signed in can read them; they hold nothing secret.
+create table if not exists public.app_settings (
+  id int primary key default 1 check (id = 1),
+  classroom_client text not null default '',
+  updated_at timestamptz not null default now()
+);
+alter table public.app_settings enable row level security;
+revoke all on public.app_settings from anon, authenticated;
+create or replace function public.get_app_settings() returns jsonb
+language sql stable security definer set search_path = public as $$
+  select case when auth.uid() is null then null else
+    coalesce((select jsonb_build_object('classroom_client', classroom_client) from app_settings where id = 1), '{"classroom_client": ""}'::jsonb) end;
+$$;
+create or replace function public.admin_set_classroom_client(p_id text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare v text := btrim(coalesce(p_id, ''));
+begin
+  perform public.require_admin_user();
+  if v <> '' and v !~ '^[0-9]{6,20}-[a-z0-9]{10,64}\.apps\.googleusercontent\.com$' then raise exception 'client_invalid'; end if;
+  insert into app_settings (id, classroom_client, updated_at) values (1, v, now())
+    on conflict (id) do update set classroom_client = excluded.classroom_client, updated_at = now();
+  return public.get_app_settings();
+end $$;
+
 -- ---------- the call relay (TURN): for calls between networks that can't reach each other directly ----------
 -- One row, set by an admin in Skyline (Admin › Calls). Every signed-in Skyline reads it when it starts.
 create table if not exists public.call_relay (
@@ -1704,7 +1776,8 @@ do $$ declare f record; begin
              'cm_pin','get_channel_messages','get_channel_message','search_channel','get_channel_pins','mark_channel_read','is_member','server_role','require_member','require_admin',
              'channel_name','attach_ok','is_admin','require_admin_user','my_badges','show_badge','admin_badges','admin_save_badge','admin_delete_badge','admin_give_badge',
              'admin_take_badge','admin_badge_holders','admin_users','admin_suspend','admin_stats','admin_announce',
-             'shown_activity','voice_join','voice_leave','voice_state','voice_heartbeat','send_voice_signal','set_typing','save_school','get_school','get_ice','admin_set_ice')
+             'shown_activity','voice_join','voice_leave','voice_state','voice_heartbeat','send_voice_signal','set_typing','save_school','get_school','get_ice','admin_set_ice',
+             'school_link_status','school_connect_request','school_pc_report','get_app_settings','admin_set_classroom_client')
   loop
     execute format('revoke all on function %s from public, anon', f.sig);
     execute format('grant execute on function %s to authenticated', f.sig);
@@ -1721,7 +1794,7 @@ revoke all on function public.badge_json(public.badge_catalog) from public, anon
 do $$ declare t text; begin
   if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
     foreach t in array array['messages', 'friend_requests', 'friendships', 'presence', 'call_signals', 'notifications', 'profile_details', 'message_reactions',
-      'servers', 'server_members', 'channels', 'channel_messages', 'channel_reactions', 'voice_members', 'voice_signals', 'typing_state'] loop
+      'servers', 'server_members', 'channels', 'channel_messages', 'channel_reactions', 'voice_members', 'voice_signals', 'typing_state', 'school_link'] loop
       if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t) then
         execute format('alter publication supabase_realtime add table public.%I', t);
       end if;

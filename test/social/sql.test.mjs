@@ -430,5 +430,29 @@ ok((await one(B, "get_ice"))[0].username === "u1", "every signed-in person gets 
 ok(await err(as(db, B, "select * from call_relay")) !== null, "the table can't be read directly");
 ok(await err(as(db, null, "select get_ice()")) !== null, "signed-out callers are refused");
 
+// ---------- connecting Classroom from the phone ----------
+let sl = await one(A, "school_link_status");
+ok(sl.request_id === 0 && sl.pc_seen === null, "nothing asked yet, no PC seen");
+sl = await one(A, "school_connect_request");
+ok(sl.request_id === 1 && sl.handled_id === 0, "the phone asks the PC to connect");
+ok((await one(A, "school_connect_request")).request_id === 1, "pressing again right away doesn't ask twice");
+ok((await one(B, "school_link_status")).request_id === 0, "nobody else sees your request");
+ok((await as(db, B, "select * from school_link")).rows.length === 0, "not even from the table");
+sl = await one(A, "school_pc_report", { p_state: "signing_in", p_note: "", p_handled: 1 });
+ok(sl.handled_id === 1 && sl.pc_state === "signing_in" && sl.pc_seen, "the PC picks it up and says so");
+ok((await one(A, "school_pc_report", { p_state: "connected", p_handled: 99 })).handled_id === 1, "the PC can't mark requests that were never made");
+ok(await err(rpc(A, "school_pc_report", { p_state: "hacked" })) === "state_invalid", "only known PC states");
+ok((await one(A, "school_pc_report", { p_state: "off" })).pc_seen === null, "a PC that closes says it's off");
+ok(await err(as(db, null, "select school_link_status()")) !== null, "signed-out callers are refused");
+
+// ---------- public app settings (the phone's Google Client ID) ----------
+const GID = "123456789012-abcdefghij0123456789abcdefghijkl.apps.googleusercontent.com";
+ok((await one(B, "get_app_settings")).classroom_client === "", "no Client ID yet");
+ok(await err(rpc(B, "admin_set_classroom_client", { p_id: GID })) === "not_admin", "only admins set it");
+ok(await err(rpc(A, "admin_set_classroom_client", { p_id: "https://evil" })) === "client_invalid", "only a Google Client ID");
+await rpc(A, "admin_set_classroom_client", { p_id: GID });
+ok((await one(B, "get_app_settings")).classroom_client === GID, "every signed-in phone gets it");
+ok(await err(as(db, B, "select * from app_settings")) !== null, "the table can't be read directly");
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -17,7 +17,10 @@ Your desktop becomes a city at night, and its lights move with whatever you're l
 
   It opens like a normal app and is always the newest version. On the phone you get Home (the time and
   your city's weather with an hourly and 5-day forecast), Social (messages, friends, servers, GIFs) and
-  School (your grades and homework, sent there by your PC's Skyline).
+  School (your grades and homework, sent there by your PC's Skyline). To connect Google Classroom from the
+  phone, tap **Connect on your PC**: Skyline on your PC opens Google's sign-in and you type your password there
+  (your PC has to be on with Skyline running). If Skyline's admin has set up a Google Client ID, you can also
+  tap **Connect on this phone** (some school accounts block this; then use Connect on your PC).
 
 ## What's in it
 
@@ -53,7 +56,8 @@ code by email: type it in and you're signed in, then pick a new password or just
 - **Minecraft:** jump straight into your modpacks.
 
 **School:** Google Classroom assignments and grades, a calendar, your class schedule, and study tools (flashcards,
-quizzes, an assignment planner). Grade alerts and spoken homework reminders. Everything also shows on the phone app.
+quizzes, an assignment planner). Grade alerts and spoken homework reminders. Everything also shows on the phone app,
+and the phone can ask your PC to connect Classroom (it shows whether your PC is waiting, off, connected or needs a sign-in).
 **Grade history** shows every change to each class average and what caused it (a low quiz, a regrade), with the
 biggest drop called out.
 
@@ -78,10 +82,37 @@ day, and live weather appears in the sky.
 with music controls, starts with Windows if you want, a command bar (Ctrl+K), a sleep timer,
 backup and restore, and ambient mode (just the city, the time and your music). Press **?** for all shortcuts.
 
+## Phone Classroom sign-in (for Skyline's admin, once)
+
+"Connect on this phone" needs a Google Client ID. It's free and public (not a password). In a browser on your PC:
+
+1. Go to **https://console.cloud.google.com/** and sign in with a personal Google account (a school account
+   usually can't make projects).
+2. Top bar › project picker › **New project**. Name it `Skyline`, press **Create**, then pick it in the project picker.
+3. Search bar › type **Google Classroom API** › open it › **Enable**.
+4. Left menu › **APIs & Services** › **OAuth consent screen** (it may say **Google Auth Platform** › **Get started**).
+   App name `Skyline`, your email as support and contact email, Audience **External**, then **Create**.
+5. **Data access** (or **Scopes**) › **Add or remove scopes** › paste these three, one at a time, into
+   "Manually add scopes" › **Add to table** › **Update** › **Save**:
+   - `https://www.googleapis.com/auth/classroom.courses.readonly`
+   - `https://www.googleapis.com/auth/classroom.coursework.me.readonly`
+   - `https://www.googleapis.com/auth/classroom.student-submissions.me.readonly`
+6. **Audience** › **Test users** › **Add users** › add your and your friends' Google accounts (up to 100), **Save**.
+   (While the app is in Testing, only these accounts can sign in, and Google asks again every 7 days.)
+7. **Clients** (or **Credentials** › **Create credentials**) › **Create client** › Application type **Web application**,
+   name `Skyline phone`. Under **Authorized JavaScript origins** › **Add URI** › `https://shadowridezz.github.io`
+   (nothing after it, no slash). Leave redirect URIs empty. **Create**.
+8. Copy the **Client ID** (it ends in `.apps.googleusercontent.com`). In Skyline on your PC or phone:
+   **Admin › Overview › Phone Classroom sign-in**, paste it, **Save Client ID**. Every phone gets it.
+
+School accounts: many schools only allow apps they've approved. Google then shows "Access blocked" and the phone
+says to use **Connect on your PC** instead, which always works because it signs in on Google's own Classroom page.
+
 ## Privacy
 
 Skyline's own settings and files stay on your PC, in `%APPDATA%\Skyline`. Social (messages, friends, servers) and
-the school summary for the phone app are stored in Skyline's online database, and only you and the people you
+the school summary for the phone app are stored in Skyline's online database (Connect on this phone reads
+Classroom straight from Google into your phone and keeps it only on that phone), and only you and the people you
 talk to can read them. API keys and sign-ins are stored encrypted on your PC and never go in backups.
 
 ## Building it yourself

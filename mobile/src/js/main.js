@@ -7,6 +7,8 @@ import { S, on, avatar, statusOf, subline } from "./social/state.js";
 import { api } from "./social/api.js";
 import { Music } from "./music.js";
 import { Weather, wicon, wmo } from "./weather.js";
+import { Direct } from "./classroom.js";
+import { icon } from "./social/icons.js";
 
 const store = { get(k, d) { try { const v = localStorage.getItem("sky-" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem("sky-" + k, JSON.stringify(v)); } catch (e) {} } };
@@ -109,23 +111,80 @@ document.addEventListener("sky:goto", () => show("social"));
 
 /* ---------- School data (from your PC's Skyline), shared by Home and School ---------- */
 const School = {
-  data: null, at: 0, who: null, tab: "due",
+  data: null, at: 0, who: null, tab: "due", link: null, linkErr: "", asked: 0, poll: 0, direct: null, dErr: "", dBusy: false,
   async load(force) {
     if (!S.me) return null;
     if (this.who !== S.me.id) { this.data = null; this.who = S.me.id; }   // (another account signed in: never show the last one's)
     if (force || !this.data || Date.now() - this.at > 60000) { const r = await api.rpc("get_school"); this.data = r || {}; this.at = Date.now(); }
     return this.data;
   },
+  // "Connect Classroom on your PC": what your PC's Skyline last said, and whether it's running
+  async loadLink() { try { this.link = await api.rpc("school_link_status"); this.linkErr = ""; } catch (e) { this.linkErr = e.message; } return this.link; },
+  linkState() {
+    const L = this.link; if (!L) return { k: "unknown" };
+    const now = L.now ? Date.parse(L.now) : Date.now(), seen = L.pc_seen ? Date.parse(L.pc_seen) : 0, on = seen && now - seen < 150e3;
+    const pending = L.request_id > L.handled_id && L.request_at && now - Date.parse(L.request_at) < 10 * 60e3;
+    if (pending) return on ? { k: "waiting", t: "Waiting for your PC…", s: "Skyline on your PC is opening Google's sign-in." }
+      : { k: "off", t: "Your PC's Skyline is off", s: "Turn on your PC and open Skyline. It picks this up if you do it in the next 10 minutes." };
+    if (!on) return { k: "off", t: "Your PC's Skyline is off", s: seen ? `Last seen ${when(seen).toLowerCase()} at ${new Date(seen).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}.` : "Open Skyline on your PC, signed in with this account." };
+    if (L.pc_state === "signing_in") return { k: "signin", t: "Sign in on your PC", s: "Google's sign-in window is open on your PC. Type your school password there." };
+    if (L.pc_state === "connected") return { k: "ok", t: "Connected on your PC", s: "Your PC reads Classroom every few minutes and sends it here." };
+    if (L.pc_state === "expired") return { k: "need", t: "Sign-in needed", s: "Your school sign-in ran out on your PC. Tap below and sign in again there." };
+    if (L.pc_state === "error") return { k: "need", t: "Classroom had a problem on your PC", s: L.pc_note || "Try again." };
+    return { k: "none", t: "Classroom isn't connected", s: "Tap below and sign in to Google on your PC." };
+  },
+  linkCard() {
+    const st = this.linkState(), dir = this.direct, cid = Direct.client;
+    if (dir) return `<section class="m-card m-cr"><header><span class="m-cr-i ok">${icon("check")}</span><h2>Connected on this phone</h2></header>
+      <p class="m-muted">Read from Google Classroom ${esc(when(dir.at).toLowerCase())} at ${esc(new Date(dir.at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }))}. Google lets this phone read for an hour at a time.</p>
+      ${this.dErr ? `<p class="m-cr-err">${esc(this.dErr)}</p>` : ""}
+      <div class="m-cr-row"><button class="btn sm primary" data-cr="direct" ${this.dBusy ? "disabled" : ""}>${icon("refresh")}${this.dBusy ? "Reading…" : "Refresh"}</button><button class="btn sm ghost" data-cr="forget">Disconnect</button></div></section>`;
+    if (st.k === "ok" && !this.dErr) return `<section class="m-card m-cr slim"><span class="m-cr-i ok">${icon("check")}</span><span class="t"><b>${st.t}</b><small>${st.s}</small></span><button class="btn sm" data-cr="ask">Update</button></section>`;
+    const busy = st.k === "waiting" || st.k === "signin";
+    return `<section class="m-card m-cr"><header><span class="m-cr-i ${st.k === "off" || st.k === "need" ? "warn" : busy ? "busy" : ""}">${busy ? `<span class="sx-spin"></span>` : icon(st.k === "off" ? "screen" : st.k === "need" ? "alert" : "link")}</span><h2>${esc(st.t || "Google Classroom")}</h2></header>
+      <p class="m-muted">${esc(st.s || "")}</p>${this.linkErr ? `<p class="m-cr-err">${esc(this.linkErr)}</p>` : ""}
+      <div class="m-cr-row"><button class="btn sm primary" data-cr="ask" ${busy ? "disabled" : ""}>${icon("screen")}${st.k === "need" ? "Sign in again on your PC" : "Connect on your PC"}</button>
+      ${cid ? `<button class="btn sm" data-cr="direct" ${this.dBusy ? "disabled" : ""}>${this.dBusy ? "Connecting…" : "Connect on this phone"}</button>` : ""}</div>
+      ${this.dErr ? `<p class="m-cr-err">${esc(this.dErr)}</p>` : ""}
+      <p class="m-cr-note">Connect on your PC works only while Skyline is running on your PC. You type your password in Google's own window there.</p></section>`;
+  },
+  // check often while something is happening, otherwise now and then
+  watch() {
+    clearTimeout(this.poll); if (current !== "school" || !S.me) return;
+    const k = this.linkState().k, quick = k === "waiting" || k === "signin" || Date.now() - this.asked < 120e3;
+    this.poll = setTimeout(async () => {
+      const was = JSON.stringify(this.linkState()); await this.loadLink();
+      if (Date.now() - this.asked < 180e3) await this.load(true).catch(() => {});   // (the PC sends a fresh summary a few seconds after it connects)
+      if (current === "school" && (JSON.stringify(this.linkState()) !== was || Date.now() - this.asked < 180e3)) this.render(); else this.watch();
+    }, quick ? 3000 : 20000);
+  },
+  async act(a) {
+    if (a === "ask") { try { this.link = await api.rpc("school_connect_request"); this.asked = Date.now(); this.linkErr = ""; } catch (e) { this.linkErr = e.message; } return this.render(); }
+    if (a === "forget") { Direct.forget(); this.direct = null; this.dErr = ""; return this.render(); }
+    if (a === "direct") {
+      this.dBusy = true; this.dErr = ""; this.render();
+      try { const snap = await Direct.read(S.me.id); this.direct = { at: snap.at, snap }; }
+      catch (e) { this.dErr = e.message; if (e.blocked) { Direct.forget(); this.direct = null; } }
+      this.dBusy = false; return this.render();
+    }
+  },
   async render() {
     const el = $("#mSchool");
     if (!S.me) { el.innerHTML = signInFirst("Your grades and homework come from your PC's Skyline, through your Skyline account."); return; }
     if (!this.data) el.innerHTML = `<div class="m-s-empty"><span class="sx-spin"></span></div>`;
-    try { await this.load(); } catch (e) { if (!this.data) { el.innerHTML = `<div class="m-s-empty"><b>Couldn't load your school</b><p>${esc(e.message)}</p></div>`; return; } }
-    const d = (this.data && this.data.data) || null;
-    if (!d) { el.innerHTML = `<header class="m-s-head"><h1>School</h1></header><div class="m-s-empty"><b>Nothing here yet</b><p>Open Skyline on your PC (signed in to Social with this account). It sends your classes, grades and homework here by itself.</p></div>`; return; }
+    try { await Promise.all([this.load(), this.link ? null : this.loadLink(), Direct.clientId()]); } catch (e) { if (!this.data) { el.innerHTML = `<div class="m-s-empty"><b>Couldn't load your school</b><p>${esc(e.message)}</p></div>`; return; } }
+    if (current !== "school") return;
+    const saved = Direct.saved(S.me.id); this.direct = saved ? { at: saved.at, snap: saved.snap } : null;
+    const card = this.linkCard();
+    el.onclick = e => { const b = e.target.closest("[data-cr]"); if (b) this.act(b.dataset.cr); };
+    this.watch();
+    const fromPhone = this.direct && (!this.data.updated_at || this.direct.at > Date.parse(this.data.updated_at));
+    const d = fromPhone ? this.direct.snap : (this.data && this.data.data) || null;
+    if (!d) { el.innerHTML = `<header class="m-s-head"><h1>School</h1></header>${card}<div class="m-s-empty sm"><b>Nothing here yet</b><p>Once Classroom is connected, your classes, grades and homework show up here.</p></div>`; return; }
+    const upd = fromPhone ? this.direct.at : Date.parse(this.data.updated_at);
     const due = d.due || [], grades = d.grades || [], classes = (d.classes || []).filter(c => c.avg != null);
     const late = due.filter(x => x.late).length, soon = due.filter(x => !x.late && x.when - Date.now() < 2 * day).length;
-    el.innerHTML = `<header class="m-s-head"><h1>School</h1><small>Updated ${esc(when(this.data.updated_at))} at ${esc(new Date(this.data.updated_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }))} from your PC</small></header>
+    el.innerHTML = `<header class="m-s-head"><h1>School</h1><small>Updated ${esc(when(upd))} at ${esc(new Date(upd).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }))} ${fromPhone ? "from Google Classroom" : "from your PC"}</small></header>${card}
       <div class="m-s-stats"><div><b style="color:${d.overall != null ? color(d.overall) : "inherit"}">${d.overall != null ? d.overall.toFixed(1) + "%" : "–"}</b><span>Overall</span></div><div><b>${d.gpa != null ? d.gpa.toFixed(2) : "–"}</b><span>GPA</span></div><div><b class="${late ? "bad" : ""}">${late}</b><span>Overdue</span></div><div><b>${soon}</b><span>Due soon</span></div></div>
       <div class="seg m-s-seg"><button class="${this.tab === "due" ? "on" : ""}" data-st="due">Due</button><button class="${this.tab === "grades" ? "on" : ""}" data-st="grades">Grades</button><button class="${this.tab === "classes" ? "on" : ""}" data-st="classes">Classes</button></div>
       <div class="m-s-list">${this.tab === "due" ? (due.length ? due.map(dueRow).join("") : `<p class="sx-none">Nothing due in the next three weeks.</p>`)

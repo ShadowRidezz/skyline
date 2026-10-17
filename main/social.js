@@ -9,7 +9,7 @@ const path = require("path");
 const RPCS = new Set([
   "create_server", "get_servers", "get_members", "update_server", "delete_server", "leave_server", "kick_member", "set_member_role", "create_channel", "update_channel",
   "delete_channel", "reorder_channels", "create_invite", "get_invite", "join_server", "get_invites", "revoke_invite", "send_channel_message", "cm_edit", "cm_delete", "cm_react",
-  "save_school", "get_school", "get_ice", "admin_set_ice",
+  "save_school", "get_school", "get_ice", "admin_set_ice", "school_link_status", "school_connect_request", "school_pc_report", "get_app_settings", "admin_set_classroom_client",
   "voice_join", "voice_leave", "voice_state", "voice_heartbeat", "send_voice_signal", "set_typing",
   "cm_pin", "get_channel_messages", "get_channel_message", "search_channel", "get_channel_pins", "mark_channel_read",
   "is_admin", "my_badges", "show_badge", "admin_badges", "admin_save_badge", "admin_delete_badge", "admin_give_badge", "admin_take_badge", "admin_badge_holders", "admin_users", "admin_suspend", "admin_stats", "admin_announce",
@@ -17,7 +17,7 @@ const RPCS = new Set([
   "search_users", "get_profile", "send_request", "respond_request", "cancel_request", "get_requests", "get_friends", "remove_friend",
   "block_user", "unblock_user", "get_blocked", "send_message", "get_messages", "mark_read", "send_signal", "get_notifications", "mark_notifications_read"]);
 const TABLES = ["messages", "message_reactions", "friend_requests", "friendships", "presence", "notifications", "profile_details",
-  "servers", "server_members", "channels", "channel_messages", "channel_reactions", "voice_members", "typing_state"];
+  "servers", "server_members", "channels", "channel_messages", "channel_reactions", "voice_members", "typing_state", "school_link"];
 const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/;
 // pictures you can upload, recognised by their actual bytes (a renamed file isn't accepted)
 const KINDS = { avatar: 4 * 1048576, banner: 6 * 1048576, background: 6 * 1048576, sticker: 1048576, server: 4 * 1048576 };

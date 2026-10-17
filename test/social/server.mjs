@@ -10,7 +10,7 @@ const PORT = +(process.argv[2] || 47900);
 const SECRET = crypto.randomBytes(16).toString("hex");
 const db = await openDb();
 const codes = new Map();   // email -> the password-reset code it was "sent"
-const TABLES = { voice_members: "user_id", voice_signals: "id", typing_state: "user_id", servers: "id", server_members: "server_id", channels: "id", channel_messages: "id", channel_reactions: "message_id", message_reactions: "message_id", messages: "id", friend_requests: "id", friendships: "id", presence: "user_id", notifications: "id", call_signals: "id", profile_details: "user_id" };
+const TABLES = { school_link: "user_id", voice_members: "user_id", voice_signals: "id", typing_state: "user_id", servers: "id", server_members: "server_id", channels: "id", channel_messages: "id", channel_reactions: "message_id", message_reactions: "message_id", messages: "id", friend_requests: "id", friendships: "id", presence: "user_id", notifications: "id", call_signals: "id", profile_details: "user_id" };
 for (const [t, pk] of Object.entries(TABLES)) {
   await db.exec(`create or replace function public.tg_${t}() returns trigger language plpgsql as $$ begin
     perform pg_notify('changes', json_build_object('table', '${t}', 'type', TG_OP, 'pk', (case when TG_OP = 'DELETE' then OLD.${pk} else NEW.${pk} end)::text)::text);

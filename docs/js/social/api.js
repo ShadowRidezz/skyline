@@ -27,6 +27,7 @@ const WORDS = {
   not_accepting: "This person isn't accepting friend requests.",
   rate_limited: "Slow down a little and try again in a moment.",
   relay_invalid: "Those relay addresses aren't valid (they start with turn: or stun:).",
+  client_invalid: "That isn't a Google Client ID. It ends in .apps.googleusercontent.com",
   bad_code: "That code isn't right, or it has expired. Check the newest email, or send a new code.",
   email_rate_limited: "Too many emails were sent to that address just now. Wait a minute or two, then send a new code.",
   email_send_failed: "Skyline's server couldn't send the email right now. Try again in a few minutes. If it keeps happening, ask Shadow to check the server's email.",
