@@ -1,7 +1,6 @@
-// Skyline's motion system: page transitions, the gliding rail indicator, cascading entrances, light
-// that follows the cursor, 3D tilt, ripples, magnetic buttons, counters, confetti, cursor effects,
-// interface sounds and the startup "lights on" intro. Everything scales with Settings › Interface ›
-// Motion and switches off when animations are reduced.
+// Skyline's motion system: page transitions, the side bar's sliding marker, short entrances, counters,
+// rolling clock digits, confetti, interface sounds and the startup "lights on" intro. Everything scales with
+// Settings › Interface › Motion and switches off when animations are reduced.
 import { $, $$, clamp } from "./util.js";
 
 let prefs = () => ({});
@@ -29,7 +28,6 @@ export function railIndicator() {
   ind.style.opacity = 1;
   ind.style.transform = `translateY(${act.offsetTop}px)`;
   ind.style.height = act.offsetHeight + "px";
-  if (full()) { act.classList.remove("pop"); void act.offsetWidth; act.classList.add("pop"); }
 }
 
 /* ---------- cascading entrances ---------- */
@@ -43,38 +41,10 @@ export function cascade(root, sel = ".glass, .gcard, .th-card, .widget, .sbox") 
   }
 }
 
-/* ---------- light that follows the cursor + 3D tilt + magnetic buttons ---------- */
-let lastSpot = null, lastTilt = null, lastMag = null, raf = 0, pend = null;
-function pointer(e) {
-  pend = e; if (raf) return;
-  raf = requestAnimationFrame(() => {
-    raf = 0; const ev = pend; if (!ev || !on()) return;
-    const t = ev.target instanceof Element ? ev.target : null;
-    const spot = t && t.closest(".glass, .gcard, .th-card, .lk, .subnav");
-    if (lastSpot && lastSpot !== spot) lastSpot.classList.remove("lit");
-    if (spot) { const r = spot.getBoundingClientRect(); spot.style.setProperty("--mx", ev.clientX - r.left + "px"); spot.style.setProperty("--my", ev.clientY - r.top + "px"); spot.classList.add("lit"); }
-    lastSpot = spot;
-    const tilt = full() && prefs().tilt !== false && t && t.closest(".gcard, .th-card, .tt, .pl-art, .mu-art");
-    if (lastTilt && lastTilt !== tilt) { lastTilt.style.removeProperty("--rx"); lastTilt.style.removeProperty("--ry"); lastTilt.classList.remove("tilting"); }
-    if (tilt) { const r = tilt.getBoundingClientRect(), x = (ev.clientX - r.left) / r.width - .5, y = (ev.clientY - r.top) / r.height - .5;
-      tilt.style.setProperty("--rx", (-y * 9).toFixed(2) + "deg"); tilt.style.setProperty("--ry", (x * 11).toFixed(2) + "deg"); tilt.classList.add("tilting"); }
-    lastTilt = tilt;
-    const mag = full() && t && t.closest(".btn.lg, .pl-btn.big, .btn.primary");
-    if (lastMag && lastMag !== mag) { lastMag.style.removeProperty("--tx"); lastMag.style.removeProperty("--ty"); }
-    if (mag) { const r = mag.getBoundingClientRect(); mag.style.setProperty("--tx", ((ev.clientX - r.left - r.width / 2) * .18).toFixed(1) + "px"); mag.style.setProperty("--ty", ((ev.clientY - r.top - r.height / 2) * .28).toFixed(1) + "px"); }
-    lastMag = mag;
-    cursorMove(ev);
-  });
-}
-
-/* ---------- ripples ---------- */
-function ripple(e) {
-  if (!on() || e.button !== 0) return;
-  const b = e.target.closest(".btn, .rbtn, .pl-btn, .gchip, .seg button, .subnav button, .tb-btn, .ibtn, .gex, .lk"); if (!b) return;
-  const r = b.getBoundingClientRect(), s = Math.max(r.width, r.height) * 2.2, i = document.createElement("i");
-  i.className = "ripple"; i.style.cssText = `width:${s}px;height:${s}px;left:${e.clientX - r.left - s / 2}px;top:${e.clientY - r.top - s / 2}px`;
-  b.appendChild(i); setTimeout(() => i.remove(), 650);
-  sound("click");
+/* ---------- clicks (a sound, when interface sounds are on) ---------- */
+function click(e) {
+  if (e.button !== 0) return;
+  if (e.target.closest && e.target.closest(".btn, .rbtn, .pl-btn, .gchip, .seg button, .subnav button, .tb-btn, .ibtn, .gex, .lk")) sound("click");
 }
 
 /* ---------- counters ---------- */
@@ -122,37 +92,6 @@ export function confetti(x = innerWidth / 2, y = innerHeight / 3, colors) {
   sound("success");
 }
 
-/* ---------- cursor glow + sparkle trail ---------- */
-let glowEl = null, trail = null;
-function cursorMove(e) {
-  const p = prefs();
-  if (glowEl) { glowEl.style.transform = `translate(${e.clientX - 160}px, ${e.clientY - 160}px)`; }
-  if (trail && p.trail && full()) {
-    const last = trail.last || { x: e.clientX, y: e.clientY }, d = Math.hypot(e.clientX - last.x, e.clientY - last.y);
-    for (let k = 0; k < Math.min(4, d / 9); k++) trail.ps.push({ x: e.clientX + (Math.random() - .5) * 8, y: e.clientY + (Math.random() - .5) * 8, vx: (Math.random() - .5) * .8, vy: Math.random() * .6 + .2, life: 1, s: 1 + Math.random() * 2.2 });
-    trail.last = { x: e.clientX, y: e.clientY };
-    if (!trail.raf) trail.raf = requestAnimationFrame(trailStep);
-  }
-}
-function trailStep() {
-  const t = trail; t.raf = 0; const g = t.g;
-  if (t.cv.width !== innerWidth || t.cv.height !== innerHeight) { t.cv.width = innerWidth; t.cv.height = innerHeight; }
-  g.clearRect(0, 0, t.cv.width, t.cv.height);
-  const col = getComputedStyle(document.documentElement).getPropertyValue("--a-soft").trim() || "#cdbcff";
-  g.globalCompositeOperation = "lighter";
-  t.ps = t.ps.filter(p => { p.life -= .035; if (p.life <= 0) return false; p.x += p.vx; p.y += p.vy;
-    g.globalAlpha = p.life; g.fillStyle = col; g.beginPath(); g.arc(p.x, p.y, p.s * p.life, 0, Math.PI * 2); g.fill();
-    g.globalAlpha = p.life * .3; g.beginPath(); g.arc(p.x, p.y, p.s * 3 * p.life, 0, Math.PI * 2); g.fill(); return true; });
-  if (t.ps.length) t.raf = requestAnimationFrame(trailStep);
-}
-export function cursorFx() {
-  const p = prefs();
-  if (p.cursorGlow !== false && on()) { if (!glowEl) { glowEl = document.createElement("div"); glowEl.className = "cursor-glow"; document.body.appendChild(glowEl); } }
-  else if (glowEl) { glowEl.remove(); glowEl = null; }
-  if (p.trail && full()) { if (!trail) { const cv = document.createElement("canvas"); cv.className = "trail"; document.body.appendChild(cv); trail = { cv, g: cv.getContext("2d"), ps: [] }; } }
-  else if (trail) { trail.cv.remove(); trail = null; }
-}
-
 /* ---------- interface sounds (made on the spot, very quiet) ---------- */
 let actx = null, lastHover = 0;
 export function sound(kind) {
@@ -178,7 +117,7 @@ export function intro() {
   const el = document.createElement("div"); el.className = "intro";
   el.innerHTML = `<div class="intro-mark"><svg viewBox="0 0 120 120"><defs><linearGradient id="ig" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="var(--a1)"/><stop offset="1" stop-color="var(--a2)"/></linearGradient></defs>
     <g transform="translate(-4 0)"><path class="ln" d="M14 104V72h12v-10h10v42M40 104V52l10-8 10 8v52M64 104V64h14v40M82 104V36h8V24h4v12h8v68M106 104V70h8v34"/><circle class="moon" cx="92" cy="18" r="0"/></g></svg>
-    <div class="intro-name">SKYLINE</div></div>`;
+    <div class="intro-name">Skyline</div></div>`;
   document.body.appendChild(el);
   return new Promise(res => {
     const done = () => { if (el.classList.contains("out")) return; el.classList.add("out"); setTimeout(() => { el.remove(); res(); }, 700); };
@@ -190,13 +129,9 @@ export function intro() {
 export const FX = {
   init(getPrefs, isReduced) {
     prefs = getPrefs; reduced = isReduced;
-    document.addEventListener("pointermove", pointer, { passive: true });
-    document.addEventListener("pointerdown", ripple, { passive: true });
-    document.addEventListener("pointerover", e => { if (e.target.closest && e.target.closest(".btn, .rbtn, .gcard, .th-card, .lk, .pl-btn")) sound("hover"); }, { passive: true });
-    document.addEventListener("pointerleave", () => { if (lastTilt) { lastTilt.style.removeProperty("--rx"); lastTilt.style.removeProperty("--ry"); } }, { passive: true });
+    document.addEventListener("pointerdown", click, { passive: true });
     addEventListener("resize", () => railIndicator());
-    cursorFx();
   },
-  apply() { document.body.dataset.motion = level(); cursorFx(); railIndicator(); },
+  apply() { document.body.dataset.motion = level(); railIndicator(); },
   transition, railIndicator, cascade, count, roll, confetti, sound, intro, level,
 };

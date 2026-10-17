@@ -1,15 +1,15 @@
 // Settings › Interface: how Skyline itself looks and moves (separate from the background themes).
-import { $, $$, sky, toast, dialog, setSeg, toHsl, fromHsl, lum, mixHex } from "./util.js";
+import { $, $$, sky, toast, dialog, setSeg, toHsl, fromHsl, lum, mixHex, onAccent } from "./util.js";
 import { Settings } from "./widgets.js";
 import { Themes } from "./themes.js";
 import { FX } from "./fx.js";
 
 export const UI_DEFAULTS = {
-  motion: "full", intro: true, clockRoll: true, tilt: true,
-  font: "modern", radius: 20, scale: 100, glass: "frosted", railLabels: false,
-  accent: "theme", accentColor: "#8b5cf6",
+  motion: "full", intro: true, clockRoll: true,
+  font: "modern", radius: 14, scale: 100, glass: "frosted", railLabels: true,
+  accent: "theme", accentColor: "#5b9cff",
   layout: "classic", player: "card",
-  cursorGlow: true, trail: false, skyClicks: true, sounds: false, soundVol: 40,
+  skyClicks: true, sounds: false, soundVol: 40,
 };
 const FONTS = {
   modern: ['"Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif', '"Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif'],
@@ -18,7 +18,12 @@ const FONTS = {
   elegant: ['"Segoe UI Variable Text", "Segoe UI", sans-serif', '"Sitka Display", Georgia, "Times New Roman", serif'],
   rounded: ['"Segoe UI Variable Small", "Segoe UI", sans-serif', '"Segoe Print", "Segoe UI Variable Display", sans-serif'],
 };
-export const P = () => { const d = Settings.data; d.ui = { ...UI_DEFAULTS, ...(d.ui || {}) }; return d.ui; };
+export const P = () => {
+  const d = Settings.data; d.ui = { ...UI_DEFAULTS, ...(d.ui || {}) };
+  // the 2.0 look: rounder-but-tighter corners, and the old cursor effects are gone (once, so your own choice after that stays)
+  if (!d.ui.look2) { d.ui.look2 = true; if (d.ui.radius >= 18) d.ui.radius = 14; delete d.ui.tilt; delete d.ui.cursorGlow; delete d.ui.trail; }
+  return d.ui;
+};
 let albumColors = null;
 
 export function applyAccent() {
@@ -28,9 +33,9 @@ export function applyAccent() {
   if (p.accent === "custom") { a1 = p.accentColor; const [h, s, l] = toHsl(a1); a2 = fromHsl(h + .12, Math.max(s, .5), Math.min(Math.max(l, .45), .65)); }
   if (!a1) return;   // the theme's own accent stays
   const [ah, as, al] = toHsl(a1);
-  r.setProperty("--a1", a1); r.setProperty("--a2", a2); r.setProperty("--grad", `linear-gradient(135deg, ${a1}, ${a2})`);
+  r.setProperty("--a1", a1); r.setProperty("--a2", a2); r.setProperty("--grad", a1);
   r.setProperty("--a-soft", fromHsl(ah, Math.min(1, as), Math.max(al, .8)));
-  r.setProperty("--on-a", lum(mixHex(a1, a2, .5)) > .42 ? "#0b0b10" : "#ffffff");
+  r.setProperty("--on-a", onAccent(a1));
 }
 
 export function apply() {
@@ -38,7 +43,7 @@ export function apply() {
   b.font = p.font; b.glass = p.glass; b.layout = p.layout; b.player = p.player;
   document.body.classList.toggle("rail-labels", !!p.railLabels);
   const f = FONTS[p.font] || FONTS.modern; r.setProperty("--font", f[0]); r.setProperty("--display", f[1]);
-  r.setProperty("--r", p.radius + "px"); r.setProperty("--r-sm", Math.round(p.radius * .5) + "px");
+  r.setProperty("--r", p.radius + "px"); r.setProperty("--r-sm", Math.max(4, Math.min(10, Math.round(p.radius * .58))) + "px");
   if (sky && sky.win.zoom) sky.win.zoom(p.scale / 100);
   applyAccent();
   FX.apply();
@@ -66,35 +71,30 @@ function build(box) {
   const seg = (k, opts) => `<div class="seg" data-ui="${k}">${opts.map(([v, l]) => `<button data-v="${v}">${l}</button>`).join("")}</div>`;
   const tog = (k, title, sub) => `<label class="toggle"><input type="checkbox" data-ui="${k}"><span class="sw"></span><span class="t"><b>${title}</b>${sub ? `<small>${sub}</small>` : ""}</span></label>`;
   box.innerHTML = `
-    <div class="glass sbox"><h3>✨ Motion</h3>
+    <div class="glass sbox"><h3>Motion</h3>
       <div class="field">Animations${seg("motion", [["off", "Off"], ["subtle", "Subtle"], ["full", "Full"]])}</div>
       ${tog("intro", "Startup animation", "The city switches its lights on when Skyline opens")}
       ${tog("clockRoll", "Rolling clock digits", "Numbers slide into place as time passes")}
-      ${tog("tilt", "3D tilt", "Cards and covers lean toward your cursor")}
     </div>
-    <div class="glass sbox"><h3>🎨 Look</h3>
+    <div class="glass sbox"><h3>Look</h3>
       <div class="field">Font${seg("font", [["modern", "Modern"], ["tech", "Tech"], ["mono", "Mono"], ["elegant", "Elegant"], ["rounded", "Playful"]])}</div>
       <label class="sl"><span>Roundness</span><input type="range" class="rg" min="0" max="32" data-ui="radius"><output id="uiRadiusV"></output></label>
       <label class="sl"><span>Interface size</span><input type="range" class="rg" min="80" max="130" step="5" data-ui="scale"><output id="uiScaleV"></output></label>
       <div class="field">Glass${seg("glass", [["clear", "Clear"], ["frosted", "Frosted"], ["solid", "Solid"]])}</div>
       ${tog("railLabels", "Labels in the side bar", "Show names next to the icons")}
     </div>
-    <div class="glass sbox"><h3>🌈 Accent colour</h3>
+    <div class="glass sbox"><h3>Accent colour</h3>
       <div class="field">Where the accent comes from${seg("accent", [["theme", "Theme"], ["album", "Album art"], ["custom", "Custom"]])}</div>
       <label class="swatch inline"><input type="color" id="uiAccentColor" data-ui="accentColor"><span>Your colour</span></label>
-      <p class="muted">“Album art” recolours buttons, sliders and glows to match whatever you're listening to.</p>
+      <p class="muted">“Album art” recolours buttons, sliders and highlights to match whatever you're listening to.</p>
     </div>
-    <div class="glass sbox"><h3>🏙️ Home</h3>
+    <div class="glass sbox"><h3>Home</h3>
       <div class="field">Layout${seg("layout", [["classic", "Classic"], ["centered", "Centered"], ["focus", "Focus"]])}</div>
       <div class="field">Music player${seg("player", [["card", "Card"], ["vinyl", "Vinyl"], ["compact", "Compact"]])}</div>
       <p class="muted">Focus keeps just the time and your music. Vinyl spins a record behind the cover while music plays.</p>
     </div>
-    <div class="glass sbox"><h3>🌠 Effects</h3>
-      ${tog("cursorGlow", "Cursor glow", "A soft light follows your mouse")}
-      ${tog("trail", "Sparkle trail", "Stardust behind your cursor")}
+    <div class="glass sbox"><h3>Sounds and sky</h3>
       ${tog("skyClicks", "Interactive sky", "Click the background for a shooting star, double-click for fireworks")}
-    </div>
-    <div class="glass sbox"><h3>🔊 Sounds</h3>
       ${tog("sounds", "Interface sounds", "Soft clicks and chimes, made on the spot")}
       <label class="sl"><span>Volume</span><input type="range" class="rg" min="0" max="100" data-ui="soundVol"><output id="uiVolV"></output></label>
       <div class="row"><button class="btn sm" id="uiTest">Try them</button><button class="btn sm ghost danger" id="uiReset">Reset interface</button></div>

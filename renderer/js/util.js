@@ -59,6 +59,8 @@ export function fromHsl(h, s, l) {
   return hex([f(0) * 255, f(8) * 255, f(4) * 255]);
 }
 export const lum = h => { const [r, g, b] = rgb(h).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }); return .2126 * r + .7152 * g + .0722 * b; };
+// text on an accent-coloured button: white or near-black, whichever reads better
+export const onAccent = hex => { const L = lum(hex); return 1.05 / (L + .05) >= (L + .05) / .054 ? "#ffffff" : "#0b0c10"; };
 export const mixHex = (a, b, t) => { const x = rgb(a), y = rgb(b); return hex(x.map((v, i) => v + (y[i] - v) * t)); };
 export const rgba = (h, a) => `rgba(${rgb(h).join(",")},${+a.toFixed(3)})`;
 

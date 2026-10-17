@@ -1,7 +1,7 @@
 // Themes: the built-in looks, your own themes, the active one, and applying a theme to the page.
 // Built-ins never change; edits are a live "draft" until saved as one of your own themes.
 import { Scene } from "./scene/scene.js";
-import { sky, store, clamp, toHsl, fromHsl, lum, mixHex, rgba } from "./util.js";
+import { sky, store, clamp, toHsl, fromHsl, lum, mixHex, rgba, onAccent } from "./util.js";
 
 const FX = (fx) => ({ glow: 0, particles: 0, particleSpeed: 30, comets: 0, cometSpeed: 45, haze: 0, blur: 30, speed: 45, music: 60,
   bgOpacity: 100, stars: 0, rain: 0, snow: 0, lightning: 0, droplets: 0, neon: 0, reflections: 0, sun: 0, moon: 0, beams: 0, traffic: 0,
@@ -59,15 +59,15 @@ function normDoc(d) {
 /* ---------- turning a theme into the page's colours ---------- */
 export function cssVars(t) {
   const [h, s0, l0] = toHsl(t.colors.bg), s = Math.min(s0, .42), l = Math.min(l0, .1);
-  const P = clamp(t.ui.panel, 55, 100) / 100, tone = dl => fromHsl(h, s, clamp(l + dl, 0, .3));
+  const P = clamp(t.ui.panel, 80, 100) / 100, tone = dl => fromHsl(h, s, clamp(l + dl, 0, .3));   // (cards stay readable over any photo)
   const a1 = t.colors.accent, a2 = t.colors.accent2 || a1, [ah, as, al] = toHsl(a1);
   return {
     "--bg": fromHsl(h, s, l), "--bg2": rgba(tone(.02), Math.min(1, P + .08)),
     "--panel": rgba(tone(.045), P), "--panel2": rgba(tone(.075), Math.min(1, P + .1)), "--panel3": rgba(tone(.11), Math.min(1, P + .14)),
     "--side": rgba(tone(.02), Math.min(1, P + .04)), "--sheet": rgba(tone(.028), .97),
-    "--a1": a1, "--a2": a2, "--grad": `linear-gradient(135deg, ${a1}, ${a2})`,
+    "--a1": a1, "--a2": a2, "--grad": a1,
     "--a-soft": fromHsl(ah, Math.min(1, as), Math.max(al, .8)),
-    "--on-a": lum(mixHex(a1, a2, .5)) > .42 ? "#0b0b10" : "#ffffff",
+    "--on-a": onAccent(a1),
     "--glass": `${clamp(t.ui.glass, 0, 40)}px`, "--win": t.colors.window,
   };
 }

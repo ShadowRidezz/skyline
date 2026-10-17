@@ -1,6 +1,7 @@
 // Extras: the command bar (Ctrl+K), the sleep timer, the daily briefing on Home, play time on the Games page,
 // and backup & restore in Settings.
 import { $, $$, esc, sky, toast, dialog, store } from "./util.js";
+import { icon, hasIcon } from "./social/icons.js";
 import { Settings, Widgets } from "./widgets.js";
 import { Music } from "./music.js";
 import { Games } from "./games.js";
@@ -189,27 +190,27 @@ export const Briefing = {
     const greet = ($("[data-greet]")?.textContent || "").split(",")[0].trim(), h = new Date().getHours(), hi = `${/^good /i.test(greet) ? greet.toLowerCase().replace(/^\w/, c => c.toUpperCase()) : `Good ${h < 12 ? "morning" : h < 18 ? "afternoon" : "evening"}`}${S().name ? ", " + S().name : ""}`;   // the same greeting as the clock
     const [plays, pt] = await Promise.all([sky.plays ? sky.plays.stats("week").catch(() => null) : null, sky.playtime ? sky.playtime.stats().catch(() => null) : null]);
     const lines = [], say = [];
-    const wx = Widgets.weatherText ? Widgets.weatherText() : ""; if (wx) { lines.push(["🌤", `It's ${esc(wx)}`]); say.push(`It's ${wx}`); }
+    const wx = Widgets.weatherText ? Widgets.weatherText() : ""; if (wx) { lines.push(["cloud", `It's ${esc(wx)}`]); say.push(`It's ${wx}`); }
     const sc = School.brief();
     if (sc) {
       const list = l => l.slice(0, 3).join(", ") + (l.length > 3 ? ` and ${l.length - 3} more` : "");
-      if (sc.now) lines.push(["🏫", `You're in <b>${esc(sc.now)}</b> right now.`]);
-      if (sc.overdue.length) { lines.push(["⚠️", `<b>${sc.overdue.length} overdue:</b> ${esc(list(sc.overdue))}`]); say.push(`${sc.overdue.length} thing${sc.overdue.length > 1 ? "s are" : " is"} overdue: ${list(sc.overdue)}.`); }
-      if (sc.today.length) { lines.push(["📌", `<b>Due today:</b> ${esc(list(sc.today))}`]); say.push(`Due today: ${list(sc.today)}.`); }
-      if (sc.tomorrow.length) { lines.push(["📚", `<b>Due tomorrow:</b> ${esc(list(sc.tomorrow))}`]); say.push(`Due tomorrow: ${list(sc.tomorrow)}.`); }
-      if (sc.test && sc.test.days <= 7) { const d = sc.test.days === 0 ? "today" : sc.test.days === 1 ? "tomorrow" : `in ${sc.test.days} days`; lines.push(["🧪", `<b>${esc(sc.test.name)}</b> is ${d}.`]); say.push(`${sc.test.name} is ${d}.`); }
-      if (!sc.overdue.length && !sc.today.length && !sc.tomorrow.length) { lines.push(["🎉", "Nothing due today or tomorrow."]); say.push("Nothing's due today or tomorrow."); }
-      if (sc.streak > 1) lines.push(["🔥", `${sc.streak}-day homework streak. Keep it going!`]);
+      if (sc.now) lines.push(["cap", `You're in <b>${esc(sc.now)}</b> right now.`]);
+      if (sc.overdue.length) { lines.push(["alert", `<b>${sc.overdue.length} overdue:</b> ${esc(list(sc.overdue))}`]); say.push(`${sc.overdue.length} thing${sc.overdue.length > 1 ? "s are" : " is"} overdue: ${list(sc.overdue)}.`); }
+      if (sc.today.length) { lines.push(["pin", `<b>Due today:</b> ${esc(list(sc.today))}`]); say.push(`Due today: ${list(sc.today)}.`); }
+      if (sc.tomorrow.length) { lines.push(["book", `<b>Due tomorrow:</b> ${esc(list(sc.tomorrow))}`]); say.push(`Due tomorrow: ${list(sc.tomorrow)}.`); }
+      if (sc.test && sc.test.days <= 7) { const d = sc.test.days === 0 ? "today" : sc.test.days === 1 ? "tomorrow" : `in ${sc.test.days} days`; lines.push(["flask", `<b>${esc(sc.test.name)}</b> is ${d}.`]); say.push(`${sc.test.name} is ${d}.`); }
+      if (!sc.overdue.length && !sc.today.length && !sc.tomorrow.length) { lines.push(["checkCircle", "Nothing due today or tomorrow."]); say.push("Nothing's due today or tomorrow."); }
+      if (sc.streak > 1) lines.push(["flame", `${sc.streak}-day homework streak.`]);
     }
     const cd = (S().countdowns || []).map(c => { const t = c.yearly ? (() => { const [y, m, d] = c.date.split("-").map(Number), n = new Date(); let x = new Date(n.getFullYear(), m - 1, d); if (x < new Date(n.getFullYear(), n.getMonth(), n.getDate())) x = new Date(n.getFullYear() + 1, m - 1, d); return x.getTime(); })() : new Date(c.date + "T00:00").getTime(); return { name: c.name, days: Math.round((t - new Date().setHours(0, 0, 0, 0)) / 864e5) }; }).filter(c => c.days >= 0).sort((a, b) => a.days - b.days)[0];
-    if (cd) { lines.push(["⏳", cd.days === 0 ? `<b>${esc(cd.name)}</b> is today! 🎉` : `<b>${cd.days}</b> day${cd.days > 1 ? "s" : ""} until ${esc(cd.name)}.`]); say.push(cd.days === 0 ? `${cd.name} is today!` : `${cd.days} day${cd.days > 1 ? "s" : ""} until ${cd.name}.`); }
+    if (cd) { lines.push(["clock", cd.days === 0 ? `<b>${esc(cd.name)}</b> is today.` : `<b>${cd.days}</b> day${cd.days > 1 ? "s" : ""} until ${esc(cd.name)}.`]); say.push(cd.days === 0 ? `${cd.name} is today!` : `${cd.days} day${cd.days > 1 ? "s" : ""} until ${cd.name}.`); }
     const top = plays && (plays.songs || plays.top || [])[0];
     // the song you listened to the longest this week (once there's enough listening to say)
-    if (top && (top.title || top.name) && plays.mins >= 10) lines.push(["🎵", `Your most-played song this week: <b>${esc(top.title || top.name)}</b>${top.artist ? " by " + esc(top.artist) : ""} (${mins(Math.max(1, Math.round((top.secs || 0) / 60)))}) · ${mins(plays.mins)} of music in all.`]);
-    if (pt && pt.days && pt.days.length > 1) { const y = pt.days[pt.days.length - 2]; if (y.mins >= 5) lines.push(["🎮", `${mins(y.mins)} of games yesterday.`]); }
+    if (top && (top.title || top.name) && plays.mins >= 10) lines.push(["music", `Your most-played song this week: <b>${esc(top.title || top.name)}</b>${top.artist ? " by " + esc(top.artist) : ""} (${mins(Math.max(1, Math.round((top.secs || 0) / 60)))}) · ${mins(plays.mins)} of music in all.`]);
+    if (pt && pt.days && pt.days.length > 1) { const y = pt.days[pt.days.length - 2]; if (y.mins >= 5) lines.push(["gamepad", `${mins(y.mins)} of games yesterday.`]); }
     this.text = [hi + ".", ...say].join(" ");
-    box.innerHTML = `<div class="br-h"><span class="br-hi">${esc(hi)}</span><span class="sp"></span><button class="ibtn xs" data-br="say" title="Read it to me">🔊</button><button class="ibtn xs" data-br="off" title="Hide for today">✕</button></div>
-      <div class="br-l">${lines.map(([i, t]) => `<div><span>${i}</span><p>${t}</p></div>`).join("") || `<div><span>✨</span><p>Have a good one.</p></div>`}</div>`;
+    box.innerHTML = `<div class="br-h"><span class="br-hi">Today</span><span class="sp"></span><button class="ibtn xs" data-br="say" title="Read it to me" aria-label="Read it to me">${icon("volume")}</button><button class="ibtn xs" data-br="off" title="Hide for today" aria-label="Hide for today">${icon("x")}</button></div>
+      <div class="br-l">${lines.map(([i, t]) => `<div><span>${icon(i)}</span><p>${t}</p></div>`).join("") || `<div><span>${icon("sun")}</span><p>Have a good one.</p></div>`}</div>`;
     box.classList.remove("hidden");
     if (force) FX.cascade(box.parentElement, "#brief");
     if (!wx && !this.retried) { this.retried = true; setTimeout(() => { if (!box.classList.contains("hidden")) this.show(force); }, 6000); }   // the weather loads a moment after start
@@ -225,7 +226,7 @@ export const Briefing = {
 };
 
 /* ================= the command bar (Ctrl+K) ================= */
-const PAGES = [["home", "🏙️", "Home"], ["music", "🎵", "Music & lyrics"], ["games", "🎮", "Games"], ["school", "🎓", "School"], ["money", "💵", "Money"], ["youtube", "▶️", "YouTube"], ["minecraft", "⛏️", "Minecraft"], ["settings", "⚙️", "Settings"]];
+const PAGES = [["home", "home", "Home"], ["music", "music", "Music & lyrics"], ["games", "gamepad", "Games"], ["school", "cap", "School"], ["money", "wallet", "Money"], ["youtube", "play", "YouTube"], ["minecraft", "cube", "Minecraft"], ["settings", "settings", "Settings"]];
 const SECTIONS = [["appearance", "Theme Studio (backgrounds)"], ["home", "Home widgets"], ["music", "Music settings"], ["assistant", "Assistant & voice"], ["ai", "AI builder & key"], ["ui", "Interface"], ["auto", "Automations"], ["app", "App, startup & backup"], ["about", "About Skyline"]];
 function score(text, q) {   // how well "q" matches: start of the name > start of a word > anywhere > letters in order
   const t = text.toLowerCase(); if (!q) return 1;
@@ -271,44 +272,44 @@ export const CmdK = {
   // things that need a look on disk: modpacks, notes, homework, flashcard decks
   async gather() {
     const out = [];
-    try { for (const p of (await sky.pages.mcProfiles()) || []) out.push({ i: "⛏️", t: p.title || p.name, s: "Minecraft modpack · play", run: () => sky.pages.mcLaunch(p.name).then(() => toast(`Starting ${p.title || p.name}…`)).catch(e => toast(clean(e), true)) }); } catch (e) {}
+    try { for (const p of (await sky.pages.mcProfiles()) || []) out.push({ i: "cube", t: p.title || p.name, s: "Minecraft modpack · play", run: () => sky.pages.mcLaunch(p.name).then(() => toast(`Starting ${p.title || p.name}…`)).catch(e => toast(clean(e), true)) }); } catch (e) {}
     for (const x of School.search()) out.push({ i: x.i, t: x.t, s: x.s, run: () => { School.reveal(x); nav.go("school"); } });
     return out;
   },
   items(q) {
     const r = [];
-    const c = calc(q); if (c != null) r.push({ i: "🧮", t: `= ${c.toLocaleString(undefined, { maximumFractionDigits: 10 })}`, s: "Enter copies it", score: 1000, run: () => { navigator.clipboard.writeText(String(c)).catch(() => {}); toast(`Copied ${c}`); } });
+    const c = calc(q); if (c != null) r.push({ i: "calc", t: `= ${c.toLocaleString(undefined, { maximumFractionDigits: 10 })}`, s: "Enter copies it", score: 1000, run: () => { navigator.clipboard.writeText(String(c)).catch(() => {}); toast(`Copied ${c}`); } });
     for (const [v, i, t] of PAGES) r.push({ i, t, s: "Page", run: () => nav.go(v) });
-    for (const [v, t] of SECTIONS) r.push({ i: "⚙️", t, s: "Settings", run: () => nav.go("settings", v) });
+    for (const [v, t] of SECTIONS) r.push({ i: "settings", t, s: "Settings", run: () => nav.go("settings", v) });
     const playing = Music.meta.on && Music.meta.playing;
-    r.push({ i: playing ? "⏸" : "▶️", t: playing ? "Pause music" : "Play music", s: "Music · Space", run: () => Music.cmd("toggle") },
-      { i: "⏭", t: "Next song", s: "Music · N", run: () => Music.cmd("next") }, { i: "⏮", t: "Previous song", s: "Music · P", run: () => Music.cmd("prev") },
-      { i: "🪟", t: "Mini player", s: "M", run: () => sky.mini.toggle() }, { i: "🌌", t: "Ambient mode", s: "", run: () => nav.ambient(true) },
-      { i: "🎙️", t: "Talk to Sky", s: "A", run: () => Assistant.listen() },
-      { i: "🌙", t: "Sleep timer: 30 minutes", s: "Music stops by itself", run: () => Sleep.set(30) }, { i: "🌙", t: "Sleep timer: after this song", s: "Music stops by itself", run: () => Sleep.set("song") },
-      ...(Sleep.active() ? [{ i: "🌙", t: "Turn off the sleep timer", s: "", run: () => Sleep.set(0) }] : []),
-      { i: "⏱", t: "Focus timer: 25 minutes", s: "Study / work session", run: () => { Widgets.timer(25); toast("⏱ 25-minute focus timer started"); } },
-      { i: "🎁", t: "Weekly Wrapped", s: "Your week in music and games, as a picture", run: () => import("./fun.js").then(m => m.wrapped()) },
-      { i: "🖼", t: "Share this lyric", s: "The line that's playing, as a picture", run: () => import("./fun.js").then(m => m.lyricCard()) },
-      { i: "☀️", t: "Daily briefing", s: "Weather, school, countdowns", run: () => { nav.go("home"); setTimeout(() => Briefing.show(true), 350); } },
-      { i: "🔍", t: "Search games", s: "G", run: () => Games.search() }, { i: "💾", t: "Back up Skyline", s: "Settings › App", run: () => { nav.go("settings", "app"); setTimeout(() => $("#bkSave")?.click(), 400); } },
-      { i: "⌨️", t: "Keyboard shortcuts", s: "?", run: () => nav.shortcuts() });
-    for (const g of Games.items()) r.push({ i: g.kind === "made" ? "✦" : "🎮", t: g.name, s: g.kind === "made" ? "Your game · play" : "Game · play", run: () => Games.play(g.kind, g.id) });
+    r.push({ i: playing ? "pause" : "play", t: playing ? "Pause music" : "Play music", s: "Music · Space", run: () => Music.cmd("toggle") },
+      { i: "next", t: "Next song", s: "Music · N", run: () => Music.cmd("next") }, { i: "prev", t: "Previous song", s: "Music · P", run: () => Music.cmd("prev") },
+      { i: "pip", t: "Mini player", s: "M", run: () => sky.mini.toggle() }, { i: "moon", t: "Ambient mode", s: "", run: () => nav.ambient(true) },
+      { i: "mic", t: "Talk to Sky", s: "A", run: () => Assistant.listen() },
+      { i: "moon", t: "Sleep timer: 30 minutes", s: "Music stops by itself", run: () => Sleep.set(30) }, { i: "moon", t: "Sleep timer: after this song", s: "Music stops by itself", run: () => Sleep.set("song") },
+      ...(Sleep.active() ? [{ i: "moon", t: "Turn off the sleep timer", s: "", run: () => Sleep.set(0) }] : []),
+      { i: "timer", t: "Focus timer: 25 minutes", s: "Study / work session", run: () => { Widgets.timer(25); toast("25-minute focus timer started"); } },
+      { i: "gift", t: "Weekly Wrapped", s: "Your week in music and games, as a picture", run: () => import("./fun.js").then(m => m.wrapped()) },
+      { i: "image", t: "Share this lyric", s: "The line that's playing, as a picture", run: () => import("./fun.js").then(m => m.lyricCard()) },
+      { i: "sun", t: "Daily briefing", s: "Weather, school, countdowns", run: () => { nav.go("home"); setTimeout(() => Briefing.show(true), 350); } },
+      { i: "search", t: "Search games", s: "G", run: () => Games.search() }, { i: "save", t: "Back up Skyline", s: "Settings › App", run: () => { nav.go("settings", "app"); setTimeout(() => $("#bkSave")?.click(), 400); } },
+      { i: "keyboard", t: "Keyboard shortcuts", s: "?", run: () => nav.shortcuts() });
+    for (const g of Games.items()) r.push({ i: g.kind === "made" ? "sparkle" : "gamepad", t: g.name, s: g.kind === "made" ? "Your game · play" : "Game · play", run: () => Games.play(g.kind, g.id) });
     r.push(...this.extra);
     const ql = q.toLowerCase().trim();
     const hits = ql ? r.map(x => ({ ...x, score: x.score || score(x.t, ql) })).filter(x => x.score > 0).sort((a, b) => b.score - a.score).slice(0, 9) : r.filter(x => x.s === "Page").concat(r.filter(x => /Daily briefing|Sleep timer: 30|Focus timer/.test(x.t)));
     if (ql) {   // and always: ask for it
-      hits.push({ i: "▶️", t: `Play “${q.trim()}”`, s: "Music · Spotify, YouTube or your songs", run: () => this.ask("play " + q.trim()) },
-        { i: "✦", t: `Ask Sky: “${q.trim()}”`, s: "Assistant", run: () => this.ask(q.trim()) },
-        { i: "🌐", t: `Search the web for “${q.trim()}”`, s: "Google", run: () => sky.openUrl("https://www.google.com/search?q=" + encodeURIComponent(q.trim())) });
+      hits.push({ i: "play", t: `Play “${q.trim()}”`, s: "Music · Spotify, YouTube or your songs", run: () => this.ask("play " + q.trim()) },
+        { i: "sparkle", t: `Ask Sky: “${q.trim()}”`, s: "Assistant", run: () => this.ask(q.trim()) },
+        { i: "globe", t: `Search the web for “${q.trim()}”`, s: "Google", run: () => sky.openUrl("https://www.google.com/search?q=" + encodeURIComponent(q.trim())) });
     }
     return hits;
   },
-  async ask(text) { toast("✦ " + text); try { const r = await Assistant.converse(text); if (r && r.reply) toast(r.reply.slice(0, 160)); } catch (e) { toast(clean(e), true); } },
+  async ask(text) { toast(text); try { const r = await Assistant.converse(text); if (r && r.reply) toast(r.reply.slice(0, 160)); } catch (e) { toast(clean(e), true); } },
   render() {
     const q = $("#cmdkIn")?.value || ""; this.list = this.items(q);
     const box = $("#cmdkList"); if (!box) return;
-    box.innerHTML = this.list.map((x, n) => `<button class="ck-r" data-ck="${n}"><span class="ck-i">${x.i}</span><span class="ck-t">${esc(x.t)}</span><small>${esc(x.s || "")}</small></button>`).join("") || `<div class="ck-none">Nothing found</div>`;
+    box.innerHTML = this.list.map((x, n) => `<button class="ck-r" data-ck="${n}"><span class="ck-i">${hasIcon(x.i) ? icon(x.i) : esc(x.i || "")}</span><span class="ck-t">${esc(x.t)}</span><small>${esc(x.s || "")}</small></button>`).join("") || `<div class="ck-none">Nothing found</div>`;
     this.paintSel();
   },
   paintSel() { $$("#cmdkList [data-ck]").forEach(b => b.classList.toggle("on", +b.dataset.ck === this.sel)); const on = $("#cmdkList .on"); if (on) on.scrollIntoView({ block: "nearest" }); },
