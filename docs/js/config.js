@@ -1,1 +1,1 @@
-window.SKY_CONFIG = {"url":"https://arjpxyjesczwepbymwry.supabase.co","anonKey":"sb_publishable_aVFd-31e1ur90-Nm7FWB0Q_Kk1ACKri","gifKey":"8LDpUltBOY8FfO0uARzd4Adzqhoc92Y5","spotifyId":"732c1793eccb4e9b9f8114dc8528f8ba","ice":[],"version":"1.29.0"};
+window.SKY_CONFIG = {"url":"https://arjpxyjesczwepbymwry.supabase.co","anonKey":"sb_publishable_aVFd-31e1ur90-Nm7FWB0Q_Kk1ACKri","gifKey":"8LDpUltBOY8FfO0uARzd4Adzqhoc92Y5","spotifyId":"732c1793eccb4e9b9f8114dc8528f8ba","ice":[],"version":"1.29.1"};
