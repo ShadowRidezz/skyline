@@ -15,8 +15,9 @@ Your desktop becomes a city at night, and its lights move with whatever you're l
   - iPhone: Safari › Share › **Add to Home Screen**.
   - Android: Chrome › ⋮ › **Install app**.
 
-  It opens like a normal app and is always the newest version. On the phone you get Social (messages, friends,
-  servers, GIFs) and School (your grades and homework, sent there by your PC's Skyline).
+  It opens like a normal app and is always the newest version. On the phone you get Home (the time, your
+  city's weather with an hourly and 5-day forecast, and your music), Social (messages, friends, servers, GIFs) and
+  School (your grades and homework, sent there by your PC's Skyline).
 
 ## What's in it
 

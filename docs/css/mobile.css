@@ -213,3 +213,45 @@ label.m-li { cursor: pointer; }
 .m-pl-ctl button.big { width: 52px; height: 52px; background: #fff; color: #0b0a14; }
 .m-pl-ctl button.big svg { width: 26px; height: 26px; }
 .m-pl-ctl button:active { transform: scale(.92); }
+/* the weather window: top right of Home, glass like the cards; tap it for the forecast */
+.m-hero-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; min-height: 18px; }
+.m-hero-top > small { padding-top: 2px; }
+.m-wx { flex: none; display: grid; justify-items: end; gap: 1px; min-width: 104px; max-width: 46vw; padding: 9px 12px 9px 11px; border-radius: 18px; color: #fff; font: inherit; text-align: right; cursor: pointer; text-shadow: none;
+  background: rgba(16,14,30,.5); border: 1px solid rgba(255,255,255,.12); -webkit-backdrop-filter: blur(18px) saturate(1.3); backdrop-filter: blur(18px) saturate(1.3); box-shadow: 0 10px 30px -14px rgba(0,0,0,.7); }
+.m-wx:active { transform: scale(.97); }
+.m-wx-now { display: flex; align-items: center; gap: 6px; }
+.m-wx-now svg { width: 26px; height: 26px; color: var(--a-soft); filter: drop-shadow(0 0 10px color-mix(in srgb, var(--a1) 55%, transparent)); }
+.m-wx-now b { font: 300 30px/1 var(--display); letter-spacing: -.03em; }
+.m-wx small { font-size: 12px; color: rgba(255,255,255,.85); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.m-wx .m-wx-hl { color: rgba(255,255,255,.7); font-variant-numeric: tabular-nums; }
+.m-wx .m-wx-city { color: rgba(255,255,255,.6); font-size: 11.5px; }
+.m-wx.empty { display: flex; align-items: center; gap: 8px; text-align: left; }
+.m-wx.empty svg { width: 22px; height: 22px; color: var(--a-soft); flex: none; }
+.m-wx.empty span { display: grid; } .m-wx.empty b { font-size: 14px; font-weight: 600; }
+/* the forecast sheet (slides up from the bottom) */
+.m-sheet { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; background: rgba(0,0,0,.45); animation: mShFade .2s ease; }
+.m-sh-box { position: relative; width: 100%; max-height: 86dvh; overflow-y: auto; padding: 20px 16px calc(18px + env(safe-area-inset-bottom)); border-radius: 24px 24px 0 0;
+  background: rgba(14,12,26,.92); border-top: 1px solid rgba(255,255,255,.1); -webkit-backdrop-filter: blur(24px) saturate(1.3); backdrop-filter: blur(24px) saturate(1.3); animation: mShUp .26s cubic-bezier(.2,.9,.3,1); }
+.m-sh-grab { position: absolute; top: 7px; left: 50%; width: 38px; height: 4px; margin-left: -19px; border-radius: 2px; background: rgba(255,255,255,.22); }
+.m-sh-head { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.m-sh-head h2 { flex: 1; margin: 0; display: flex; align-items: center; gap: 6px; font: 650 19px var(--display); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m-sh-head .link { border: 0; background: none; color: var(--a-soft); font: 600 14px var(--font); padding: 6px; cursor: pointer; }
+.m-wx-pin { width: 17px; height: 17px; color: var(--a-soft); flex: none; }
+.m-sh-box .w-hours { display: flex; overflow-x: auto; gap: 4px; margin: 12px -16px 0; padding: 0 12px; scrollbar-width: none; }
+.m-sh-box .w-hours::-webkit-scrollbar { display: none; }
+.m-sh-box .wh { flex: none; width: 52px; background: rgba(255,255,255,.04); padding: 8px 0; }
+.m-sh-box .w-days { margin-top: 12px; gap: 6px; }
+.m-sh-box .wd { grid-template-columns: 52px 24px 1fr auto; font-size: 14px; padding: 4px 0; }
+.m-sh-box .wd i { font-style: normal; font-size: 12px; color: #7cc4ff; }
+.m-sh-box .wd svg { width: 22px; height: 22px; }
+.m-sh-box .w-row { font-size: 13px; }
+.m-sh-box .w-sun { align-items: center; margin-top: 14px; font-size: 13px; }
+.m-sh-box .w-sun .seg button { height: 30px; padding: 0 12px; }
+.m-sh-box #wxQ { width: 100%; height: 46px; padding: 0 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color: var(--text); font-family: var(--font); }
+.m-wx-here { width: 100%; display: flex; align-items: center; gap: 10px; margin-top: 10px; padding: 12px 14px; border: 0; border-radius: 14px; background: rgba(255,255,255,.05); color: var(--a-soft); font: 600 15px var(--font); cursor: pointer; }
+.m-wx-here svg { width: 20px; height: 20px; }
+.m-wx-res { margin-top: 6px; min-height: 120px; }
+.m-wx-res .m-row { padding: 11px 6px; }
+@keyframes mShUp { from { transform: translateY(100%); } }
+@keyframes mShFade { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .m-sheet, .m-sh-box { animation: none; } }

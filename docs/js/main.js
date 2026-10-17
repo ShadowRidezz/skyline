@@ -6,6 +6,7 @@ import { Social } from "./social/social.js";
 import { S, on, avatar, statusOf, subline } from "./social/state.js";
 import { api } from "./social/api.js";
 import { Music } from "./music.js";
+import { Weather, wicon, wmo } from "./weather.js";
 
 const store = { get(k, d) { try { const v = localStorage.getItem("sky-" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem("sky-" + k, JSON.stringify(v)); } catch (e) {} } };
@@ -166,8 +167,9 @@ const Home = {
       if (c.due && next.length) cards += `<section class="m-card"><header><h2>Up next</h2><button class="link" data-m="school">See all</button><button class="m-x" data-m="hidedue" aria-label="Hide">${X}</button></header><div class="m-s-list">${next.map(dueRow).join("")}</div></section>`;
     }
     cards = playerCard() + cards;
-    el.innerHTML = `<div class="m-hero" data-style="${esc(c.style)}">${c.date ? `<small>${esc(now.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }))}</small>` : ""}
+    el.innerHTML = `<div class="m-hero" data-style="${esc(c.style)}"><div class="m-hero-top">${c.date ? `<small>${esc(now.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }))}</small>` : "<span></span>"}${wxWindow()}</div>
       <div class="m-clock">${time}${ampm ? `<span>${ampm}</span>` : ""}</div>${c.greeting ? `<p>${esc(hi)}${name ? ", " + esc(name) : ""}</p>` : ""}</div><div class="m-cards">${cards}</div>`;
+    Weather.load();
     if (S.me && (!School.data || Date.now() - School.at > 60000)) School.load().then(() => { if (current === "home") this.paint(); }).catch(() => {});
     clearTimeout(this.timer); this.timer = setTimeout(() => { if (current === "home") this.paint(); }, c.seconds ? 1000 - now.getMilliseconds() + 20 : (60 - now.getSeconds()) * 1000 + 50);
   },
@@ -175,6 +177,77 @@ const Home = {
 };
 const X = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>`;
 const dueKey = x => `${x.title}|${x.when}`;
+
+/* the weather window (top right of Home) and its forecast sheet, like the PC's weather widget */
+function wxWindow() {
+  const s = Weather.settings(); if (!s.show) return "";
+  if (!s.city) return `<button class="m-wx empty" data-m="wx">${wicon("pin")}<span><b>Weather</b><small>Add your city</small></span></button>`;
+  const j = Weather.data;
+  if (!j) return `<button class="m-wx" data-m="wx"><span class="m-wx-now">${wicon("cloud")}<b>${Weather.failed ? "–" : "…"}</b></span><small class="m-wx-city">${esc(s.city.name)}</small></button>`;
+  const cur = j.current, [label, ic] = wmo(cur.weather_code, cur.is_day);
+  return `<button class="m-wx" data-m="wx" aria-label="Weather in ${esc(s.city.name)}: ${esc(label)}, ${Math.round(cur.temperature_2m)} degrees">
+    <span class="m-wx-now">${wicon(ic)}<b>${Math.round(cur.temperature_2m)}°</b></span><small>${esc(label)}</small>
+    <small class="m-wx-hl">H ${Math.round(j.daily.temperature_2m_max[0])}° L ${Math.round(j.daily.temperature_2m_min[0])}°</small><small class="m-wx-city">${esc(s.city.name)}</small></button>`;
+}
+const WxSheet = {
+  open: false, searching: false, results: [], qT: 0,
+  show(search) { this.open = true; this.searching = !!search || !Weather.settings().city; this.render(); Weather.load(); },
+  close() { this.open = false; const el = document.getElementById("mWx"); if (el) el.remove(); },
+  render() {
+    if (!this.open) return;
+    let el = document.getElementById("mWx");
+    if (!el) { el = document.createElement("div"); el.id = "mWx"; el.className = "m-sheet"; document.body.appendChild(el); el.addEventListener("click", e => this.click(e)); el.addEventListener("input", e => this.input(e)); }
+    const s = Weather.settings(), j = Weather.data;
+    if (this.searching && el.querySelector("#wxQ")) return;   // (don't wipe what you're typing)
+    let body;
+    if (this.searching) body = `<header class="m-sh-head"><h2>Your city</h2>${s.city ? `<button class="link" data-wx="cancel">Cancel</button>` : ""}</header>
+      <input id="wxQ" type="search" placeholder="Search for a city" autocomplete="off" enterkeyhint="search">
+      <button class="m-wx-here" data-wx="here">${wicon("pin")}<span>Use my location</span></button><div class="m-wx-res" id="wxRes"></div>`;
+    else if (!j) body = `<header class="m-sh-head"><h2>${esc(s.city.name)}</h2><button class="link" data-wx="city">Change</button></header>
+      <div class="m-s-empty">${Weather.failed ? `<b>Weather is unavailable right now</b><p>Trying again soon.</p>` : `<span class="sx-spin"></span>`}</div>`;
+    else {
+      const cur = j.current, [label, ic] = wmo(cur.weather_code, cur.is_day), c = s.units === "c";
+      const hourFmt = new Intl.DateTimeFormat(undefined, { hour: "numeric" }), tm = t => new Date(t).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+      const nowIdx = Math.max(0, j.hourly.time.findIndex(t => new Date(t) > new Date()) - 1);
+      const hours = j.hourly.time.slice(nowIdx, nowIdx + 12).map((t, i) => { const k = nowIdx + i, [, hi] = wmo(j.hourly.weather_code[k], j.hourly.is_day[k]);
+        return `<div class="wh"><small>${i ? hourFmt.format(new Date(t)) : "Now"}</small>${wicon(hi)}<b>${Math.round(j.hourly.temperature_2m[k])}°</b><i>${j.hourly.precipitation_probability[k] >= 30 ? j.hourly.precipitation_probability[k] + "%" : ""}</i></div>`; }).join("");
+      const days = j.daily.time.slice(1, 6).map((t, i) => { const k = i + 1, [, di] = wmo(j.daily.weather_code[k], 1), rain = j.daily.precipitation_probability_max[k];
+        return `<div class="wd"><span>${new Date(t + "T12:00").toLocaleDateString(undefined, { weekday: "short" })}</span>${wicon(di)}<i>${rain >= 30 ? rain + "%" : ""}</i><span class="wd-r"><b>${Math.round(j.daily.temperature_2m_max[k])}°</b> ${Math.round(j.daily.temperature_2m_min[k])}°</span></div>`; }).join("");
+      body = `<header class="m-sh-head"><h2>${s.city.here ? wicon("pin", "m-wx-pin") : ""}${esc(s.city.name)}</h2><button class="link" data-wx="city">Change</button></header>
+        <div class="w-top"><span class="w-ic">${wicon(ic)}</span><div class="w-t">${Math.round(cur.temperature_2m)}<sup>°${c ? "C" : "F"}</sup></div><div class="w-l"><b>${esc(label)}</b><small>${esc(s.city.region || "")}</small></div></div>
+        <div class="w-row"><span>H ${Math.round(j.daily.temperature_2m_max[0])}° · L ${Math.round(j.daily.temperature_2m_min[0])}°</span><span>Feels ${Math.round(cur.apparent_temperature)}°</span>
+          <span>${Math.round(cur.wind_speed_10m)} ${c ? "km/h" : "mph"}</span><span>${cur.relative_humidity_2m}%</span></div>
+        <div class="w-hours">${hours}</div><div class="w-days">${days}</div>
+        <div class="w-sun"><span>↑ ${tm(j.daily.sunrise[0])}</span><span>↓ ${tm(j.daily.sunset[0])}</span>
+          <div class="seg"><button class="${c ? "" : "on"}" data-wx="u:f">°F</button><button class="${c ? "on" : ""}" data-wx="u:c">°C</button></div></div>`;
+    }
+    el.innerHTML = `<div class="m-sh-box" role="dialog" aria-label="Weather"><i class="m-sh-grab"></i>${body}</div>`;
+    if (this.searching) setTimeout(() => el.querySelector("#wxQ")?.focus(), 50);
+  },
+  input(e) {
+    if (e.target.id !== "wxQ") return;
+    clearTimeout(this.qT); const q = e.target.value.trim(), out = document.getElementById("wxRes");
+    if (q.length < 2) { out.innerHTML = ""; return; }
+    this.qT = setTimeout(async () => {
+      try { this.results = await Weather.search(q);
+        out.innerHTML = this.results.map((c, i) => `<button class="m-row" data-wxc="${i}"><span class="t"><b>${esc(c.name)}</b><small>${esc(c.region)}</small></span></button>`).join("") || `<p class="sx-none">No place called that. Try the nearest city.</p>`;
+      } catch (er) { out.innerHTML = `<p class="sx-none">Couldn't search right now. Check your internet connection.</p>`; }
+    }, 300);
+  },
+  pick(city) { this.searching = false; Weather.set("city", city); toast(`Weather set to ${city.name}`); this.render(); Home.paint(); if (current === "settings") Settings.render(); },
+  async click(e) {
+    if (e.target === e.currentTarget) return this.close();
+    const r = e.target.closest("[data-wxc]"); if (r) return this.pick(this.results[+r.dataset.wxc]);
+    const b = e.target.closest("[data-wx]"), a = b && b.dataset.wx; if (!a) return;
+    if (a === "city") { this.searching = true; this.render(); }
+    if (a === "cancel") { this.searching = false; this.render(); }
+    if (a === "here") { b.disabled = true; b.querySelector("span").textContent = "Finding you…";
+      try { this.pick(await Weather.locate()); } catch (er) { toast(er.message, true); b.disabled = false; b.querySelector("span").textContent = "Use my location"; } }
+    if (a.startsWith("u:")) Weather.set("units", a.slice(2));
+  },
+};
+Weather.onChange = () => { if (current === "home") Home.paint(); WxSheet.render(); };
+document.addEventListener("visibilitychange", () => { if (!document.hidden && current === "home") Weather.load(); });
 
 /* the music player: what's on Spotify right now (on any device) */
 const ICON = { prev: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14L9.5 12z"/></svg>`, next: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5v14l10.5-7z"/></svg>`,
@@ -207,6 +280,7 @@ $("#mHome").addEventListener("click", e => {
   const pl = e.target.closest("[data-pl]"); if (pl) return Music.control(pl.dataset.pl);
   const m = (e.target.closest("[data-m]") || {}).dataset?.m;
   if (m === "school") show("school");
+  if (m === "wx") WxSheet.show();
   if (m === "hidedue") { const d = School.data && School.data.data; store.set("dueHide", [...new Set([...store.get("dueHide", []), ...((d && d.due) || []).map(dueKey)])].slice(-200)); Home.paint(); }
   if (m === "hidesp") { store.set("spHide", true); Home.paint(); }
   if (m === "spconnect") Music.connect();
@@ -233,6 +307,10 @@ const Settings = {
       </div>
       <h3 class="m-h3">On Home</h3>
       <div class="m-list">${[["messages", "New messages", "Chats with messages you haven't read"], ["due", "Up next", "Your next homework, from School"]].map(([k, l, s]) => `<label class="m-li"><span class="t"><b>${l}</b><small>${s}</small></span><span class="toggle"><input type="checkbox" data-clockt="${k}" ${ck[k] ? "checked" : ""}><span class="sw"></span></span></label>`).join("")}</div>
+      <h3 class="m-h3">Weather</h3>
+      <div class="m-list">${(() => { const w = Weather.settings(); return `<button data-m="wxcity"><span class="t"><b>Your city</b><small>${w.city ? esc(w.city.name + (w.city.region ? ", " + w.city.region : "")) : "Not set: search for it, or use this phone's location"}</small></span>${chev}</button>
+        <div class="m-li"><span class="t"><b>Temperature</b></span><div class="seg"><button class="${w.units === "c" ? "" : "on"}" data-m="wxu:f">°F</button><button class="${w.units === "c" ? "on" : ""}" data-m="wxu:c">°C</button></div></div>
+        <label class="m-li"><span class="t"><b>Show on Home</b><small>The weather window at the top right</small></span><span class="toggle"><input type="checkbox" data-wxshow ${w.show ? "checked" : ""}><span class="sw"></span></span></label>`; })()}</div>
       ${Music.available() ? `<h3 class="m-h3">Music</h3><div class="m-list">${Music.connected()
         ? `<div class="m-li"><span class="t"><b>Spotify</b><small>Connected: what you play shows on Home</small></span><button class="btn sm" data-m="spoff">Disconnect</button></div>`
         : `<div class="m-li"><span class="t"><b>Spotify</b><small>See what's playing and control it from Home</small></span><button class="btn sm primary" data-m="spconnect">Connect</button></div>`}</div>` : ""}
@@ -254,13 +332,15 @@ $("#mSettings").addEventListener("click", async e => {
   if (t.dataset.set) return openSocial({ kind: "settings", section: t.dataset.set }, "settings");
   const m = t.dataset.m;
   if (m === "spconnect") return Music.connect();
+  if (m === "wxcity") return WxSheet.show(true);
+  if (m && m.startsWith("wxu:")) { Weather.set("units", m.slice(4)); return Settings.render(); }
   if (m === "spoff") { Music.disconnect(); return Settings.render(); }
   if (m === "notify") { await Notification.requestPermission().catch(() => {}); Settings.render(); }
   if (m === "refresh") { try { const r = await navigator.serviceWorker?.getRegistration(); if (r) await r.update(); } catch (e) {} location.reload(); }
   if (m === "signout") { await sky.social.signOut(); location.reload(); }
 });
 
-$("#mSettings").addEventListener("change", e => { const k = e.target.dataset && e.target.dataset.clockt; if (k) setClock(k, e.target.checked); });
+$("#mSettings").addEventListener("change", e => { if (e.target.matches("[data-wxshow]")) Weather.set("show", e.target.checked); const k = e.target.dataset && e.target.dataset.clockt; if (k) setClock(k, e.target.checked); });
 
 /* ---------- start ---------- */
 applyBg();
