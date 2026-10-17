@@ -5,10 +5,11 @@ import { icon, BADGE_ICONS } from "./icons.js";
 import { api } from "./api.js";
 import { S, emit, avatar, badgesHtml } from "./state.js";
 import { permissionWords } from "./call.js";
+import { openMic, VOICE_QUALITY } from "./audio.js";
 import { mountEditor, pickProfilePicture, confirmLeave } from "./editor.js";
 import { Admin } from "./admin.js";
 
-let ctx = null, host = null, section = "profile", testStream = null, meterRaf = 0, saveT = 0;
+let ctx = null, host = null, section = "profile", testStream = null, testTrack = null, testEl = null, meterRaf = 0, saveT = 0;
 // (Admin only shows for Skyline's owner)
 const SECTIONS = () => [["profile", "Profile", "user"], ["badges", "Badges", "award"], ["appearance", "Appearance", "palette"], ["chat", "Chat", "message"], ["privacy", "Privacy & safety", "shield"],
   ["notifications", "Notifications", "bell"], ["devices", "Voice & video", "mic"], ["blocked", "Blocked", "ban"], ["account", "Account", "logOut"]];
@@ -94,10 +95,12 @@ function body() {
       "Do not disturb mutes all of these. Incoming calls still show inside Skyline, silently.");
   const vo = set.voice || {};
   if (section === "devices") return block("Microphone", `<div id="sxDevMic">${row("Input device", "", `<select class="sx-select" data-dev="mic"><option>Loading…</option></select>`)}</div>
-      ${row("Test", "Speak: the bar should move.", `<div class="sx-meter"><i id="sxMeter"></i></div><button class="btn sm" data-sx="testmic">Test microphone</button>`)}
-      ${row("Noise suppression", "Cuts fans, keyboards and background noise.", toggle("voice.noise", vo.noise !== false))}
-      ${row("Echo cancellation", "Stops friends hearing themselves through your speakers.", toggle("voice.echo", vo.echo !== false))}
-      ${row("Automatic volume", "Evens out how loud you sound.", toggle("voice.agc", vo.agc !== false))}
+      ${row("Test", "Speak: the bar should move. With headphones on, Hear yourself plays back exactly what friends hear.", `<div class="sx-meter"><i id="sxMeter"></i></div><button class="btn sm" data-sx="testmic">Test</button><button class="btn sm" data-sx="hearmic">Hear yourself</button>`)}
+      ${row("Voice quality", esc((VOICE_QUALITY[vo.quality] || VOICE_QUALITY.high).note), `<select class="sx-select" data-set="voice.quality">${Object.entries(VOICE_QUALITY).map(([k, q]) => `<option value="${k}" ${(VOICE_QUALITY[vo.quality] ? vo.quality : "high") === k ? "selected" : ""}>${q.label} · ${q.kbps} kbps</option>`).join("")}</select>`)}
+      ${row("Clear voice", "Takes out rumble and desk bumps, and keeps you at one steady volume.", toggle("voice.clear", vo.clear !== false))}
+      ${vo.quality === "studio" ? "" : row("Noise suppression", "Cuts fans, keyboards and background noise.", toggle("voice.noise", vo.noise !== false))}
+      ${row("Echo cancellation", "Stops friends hearing themselves through your speakers. Turn off only with headphones.", toggle("voice.echo", vo.echo !== false))}
+      ${vo.quality === "studio" ? "" : row("Automatic volume", "Evens out how loud you sound.", toggle("voice.agc", vo.agc !== false))}
       ${row("Join calls muted", "Unmute when you're ready to talk.", toggle("voice.joinMuted", !!vo.joinMuted))}`)
     + block("Call volume", row("How loud friends sound", "Above 100% boosts quiet microphones. You can also change it during a call.", `<input type="range" class="rg sx-volset" min="0" max="300" step="10" value="${vo.volume ?? 200}" data-set="voice.volume"><b class="sx-mono" id="sxVolVal">${vo.volume ?? 200}%</b>`))
     + block("Speakers", row("Output device", "Where you hear calls.", `<select class="sx-select" data-dev="out"><option>Loading…</option></select>`))
@@ -139,11 +142,13 @@ async function devices() {
     if (!items.length) sel.innerHTML = `<option value="">None found</option>`; };
   fill("audioinput", "mic"); fill("audiooutput", "out"); fill("videoinput", "cam");
 }
-async function testMic() {
+// the test uses the same microphone path as a real call, so what you see (and hear) is what friends get
+async function testMic(listen) {
   stopTest();
   try {
     const d = S.settings.devices || {};
-    testStream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: d.mic ? { ideal: d.mic } : undefined } });
+    testTrack = await openMic(d.mic, S.settings.voice || {}); testStream = new MediaStream([testTrack]);
+    if (listen) { testEl = new Audio(); testEl.srcObject = testStream; if (d.out && testEl.setSinkId) testEl.setSinkId(d.out).catch(() => {}); testEl.play().catch(() => {}); }
     const ac = new AudioContext(), an = ac.createAnalyser(); an.fftSize = 512; ac.createMediaStreamSource(testStream).connect(an);
     const buf = new Uint8Array(an.fftSize), bar = $("#sxMeter"), until = Date.now() + 15000;
     const step = () => { if (!testStream || Date.now() > until || !bar.isConnected) { ac.close(); return stopTest(); }
@@ -162,6 +167,8 @@ async function testCam() {
 }
 function stopTest() {
   cancelAnimationFrame(meterRaf);
+  if (testEl) { testEl.pause(); testEl.srcObject = null; testEl = null; }
+  if (testTrack) { testTrack.stop(); testTrack = null; }
   if (testStream) { testStream.getTracks().forEach(t => t.stop()); testStream = null; }
   const v = $("#sxCamPrev"); if (v) { v.srcObject = null; v.classList.remove("on"); }
   const bar = $("#sxMeter"); if (bar) bar.style.transform = "scaleX(0)";
@@ -172,7 +179,8 @@ async function click(a, x) {
   if (a === "set") { if (section === "profile" && x !== "profile" && !(await confirmLeave())) return; section = x; if (x === "blocked") S.blocked = await api.rpc("get_blocked").catch(() => []); return render(host, x); }
   if (a === "preset") { const p = PRESETS.find(q => q.name === x); if (!p) return; const { name, ...cols } = p; S.settings.appearance = cols; applyAppearance(cols); rerender(); return saveSoon(); }
   if (a === "resetcolors") { delete S.settings.appearance; applyAppearance(null); rerender(); return saveSoon(); }
-  if (a === "testmic") return testMic();
+  if (a === "testmic") return testMic(false);
+  if (a === "hearmic") return testMic(true);
   if (a === "clearrecent") { S.settings.recentEmoji = []; S.settings.recentStickers = []; saveSoon(); return toast("Cleared"); }
   if (a === "testcam") return testCam();
   if (a === "unblockset") { try { await api.rpc("unblock_user", { p_user: x }); S.blocked = S.blocked.filter(b => b.id !== x); toast("Unblocked"); rerender(); } catch (e) { toast(e.message, true); } return; }
@@ -187,6 +195,7 @@ async function change(e) {
       const [grp, key] = k.split("."), val = t.type === "range" ? +t.value : v;
       S.settings[grp] = { ...(S.settings[grp] || {}), [key]: val };
       if (k === "voice.volume") import("./callui.js").then(m => m.setVolume(val));
+      if (k === "voice.quality") rerender();
       if (grp === "chat") document.dispatchEvent(new CustomEvent("sx:chatprefs"));
       return saveSoon();
     }
