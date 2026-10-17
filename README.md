@@ -3,7 +3,7 @@
 A living night-city dashboard for Windows, with your music, your friends, your games and your school in one place.
 Your desktop becomes a city at night, and its lights move with whatever you're listening to.
 
-<!-- version -->**Latest version: 1.26.0**<!-- /version -->
+<!-- version -->**Latest version: 1.27.0**<!-- /version -->
 
 ## Get it
 
@@ -12,8 +12,8 @@ Your desktop becomes a city at night, and its lights move with whatever you're l
   user only (no admin needed). After that Skyline **updates itself**: new versions download in the background and
   install the next time it restarts.
 - **iPhone and Android:** open **https://shadowridezz.github.io/skyline/** on your phone.
-  - iPhone: Safari › Share › **Add to Home Screen**.
-  - Android: Chrome › ⋮ › **Install app**.
+  - iPhone: Safari â€º Share â€º **Add to Home Screen**.
+  - Android: Chrome â€º â‹® â€º **Install app**.
 
   It opens like a normal app and is always the newest version. On the phone you get Home (the time, your
   city's weather with an hourly and 5-day forecast, and your music), Social (messages, friends, servers, GIFs) and
@@ -25,7 +25,7 @@ Your desktop becomes a city at night, and its lights move with whatever you're l
 network graphs; a calendar, countdown, focus timer, tasks, a notes box, and quick links. Drag widgets by their title
 to reorder them, or turn them off.
 
-**Music:** whatever Windows says is playing (Spotify, a YouTube tab, Apple Music…).
+**Music:** whatever Windows says is playing (Spotify, a YouTube tab, Apple Musicâ€¦).
 - Play/pause, skip, seek, shuffle, repeat, volume, synced lyrics, recently played and a pop-out mini player.
 - A real frequency spectrum from your speakers drives the visualisers and the city lights.
 - **Your own songs:** drop in MP3, M4A, FLAC, WAV, OGG or Opus files and they play inside Skyline.
