@@ -255,3 +255,8 @@ button.mc-prof .ibtn { display: none; } button.mc-prof:hover .ibtn { display: in
 .gb-hint { display: block; font-size: 11px; font-weight: 500; color: var(--faint); }
 .btn.mc-play:hover { background: #37a148; }
 .yt-go svg { width: 36px; height: 36px; filter: drop-shadow(0 2px 8px rgba(0,0,0,.6)); }
+/* YouTube: recently watched and saved as one scrolling row; the grid below is recommended for you */
+.yt-row { display: grid; grid-auto-flow: column; grid-auto-columns: 220px; gap: 12px; overflow-x: auto; padding-bottom: 6px; scroll-snap-type: x proximity; }
+.yt-row .yt-card { scroll-snap-align: start; }
+.yt-row::-webkit-scrollbar { height: 8px; }
+#ytRecent .pg-h, #ytSaved .pg-h { margin-bottom: 8px; }

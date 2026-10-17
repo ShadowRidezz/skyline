@@ -174,6 +174,7 @@ contextBridge.exposeInMainWorld("sky", {
   pages: {
     ytSearch: q => ipcRenderer.invoke("yt:search", q),
     ytMore: (token, have) => ipcRenderer.invoke("yt:more", token, have),
+    ytRelated: (ids, skip) => ipcRenderer.invoke("yt:related", ids, skip),
     mcStatus: host => ipcRenderer.invoke("mc:status", host),
     mcProfiles: () => ipcRenderer.invoke("mc:profiles"),
     mcLaunch: (name, server) => ipcRenderer.invoke("mc:launch", name, server),

@@ -63,7 +63,8 @@ biggest drop called out.
 
 **Money:** track what comes in and goes out, and save up for goals.
 
-**YouTube:** search and watch without leaving Skyline.
+**YouTube:** search and watch without leaving Skyline. The page opens on videos recommended from what you watch,
+with a row of what you watched recently.
 
 **Sky, the assistant** (Ask Sky in the side bar, or Ctrl+Space / Alt+Shift+A from anywhere):
 - Talk to it: "open Minecraft", "play Blinding Lights", "volume 40", "set a timer for 25 minutes", "what's due tomorrow?".

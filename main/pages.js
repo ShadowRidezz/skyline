@@ -32,6 +32,12 @@ function ytItems(data, seen) {
         length: badge && !live ? badge[1] : "", views: flat.find(t => /views?|watching/i.test(t)) || "", age: flat.find(t => /ago$/i.test(t)) || "", live });
       return;
     }
+    if (o.compactVideoRenderer && o.compactVideoRenderer.videoId) {
+      const v = o.compactVideoRenderer;
+      add({ id: v.videoId, title: txt(v.title), channel: txt(v.longBylineText || v.shortBylineText), thumb: `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg`,
+        length: txt(v.lengthText), views: txt(v.shortViewCountText || v.viewCountText), age: txt(v.publishedTimeText), live: !v.lengthText });
+      return;
+    }
     if (o.continuationItemRenderer) { const t = (((o.continuationItemRenderer.continuationEndpoint || {}).continuationCommand) || {}).token; if (t) next = t; return; }
     for (const k in o) walk(o[k]);
   };
@@ -57,6 +63,27 @@ async function ytMore(token, have) {
   const { items, next } = ytItems(await r.json(), new Set(Array.isArray(have) ? have : []));
   if (next) YT_PAGES.set(next, p);
   return { items, more: next || "" };
+}
+
+// recommended for you: YouTube's own "up next" picks for the videos you watched lately, mixed together (no account:
+// it's built from what you watch in Skyline). Videos you've already seen are left out.
+const YT_REL = new Map();   // video id -> { at, items }
+async function ytRelatedOne(id) {
+  const c = YT_REL.get(id); if (c && Date.now() - c.at < 30 * 60e3) return c.items;
+  const r = await net.fetch(`https://www.youtube.com/watch?${new URLSearchParams({ v: id, hl: "en", gl: "US" })}`, { headers: BROWSER });
+  if (!r.ok) throw new Error("YouTube didn't answer (" + r.status + ")");
+  const m = (await r.text()).match(/var ytInitialData = (\{[\s\S]*?\});<\/script>/); if (!m) return [];
+  const data = JSON.parse(m[1]), sec = (((data.contents || {}).twoColumnWatchNextResults || {}).secondaryResults) || data;
+  const items = ytItems(sec, new Set([id])).items.filter(v => !v.live).slice(0, 20);
+  YT_REL.set(id, { at: Date.now(), items }); while (YT_REL.size > 50) YT_REL.delete(YT_REL.keys().next().value);
+  return items;
+}
+async function ytRelated(ids, skip) {
+  ids = (Array.isArray(ids) ? ids : []).filter(x => /^[A-Za-z0-9_-]{11}$/.test(x)).slice(0, 5);
+  const seen = new Set(Array.isArray(skip) ? skip : []), lists = await Promise.all(ids.map(id => ytRelatedOne(id).catch(() => [])));
+  const out = [];
+  for (let i = 0; i < 20; i++) for (const l of lists) { const v = l[i]; if (v && !seen.has(v.id)) { seen.add(v.id); out.push(v); } }   // take turns, so no one video fills the page
+  return out.slice(0, 48);
 }
 
 async function mcStatus(host) {
@@ -117,6 +144,7 @@ async function mcLaunch(name, server) {
 function install() {
   ipcMain.handle("yt:search", (e, q) => ytSearch(q));
   ipcMain.handle("yt:more", (e, token, have) => ytMore(String(token || ""), have));
+  ipcMain.handle("yt:related", (e, ids, skip) => ytRelated(ids, skip));
   ipcMain.handle("mc:status", (e, host) => mcStatus(host));
   ipcMain.handle("mc:profiles", () => mcProfiles());
   ipcMain.handle("mc:launch", (e, name, server) => mcLaunch(name, server));

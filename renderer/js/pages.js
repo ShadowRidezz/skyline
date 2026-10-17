@@ -78,7 +78,7 @@ const Money = {
 
 /* ================= YouTube ================= */
 const YouTube = {
-  results: [], playing: null, q: "", more: "", loading: false, gen: 0,
+  results: [], recs: [], recsAt: 0, recsFor: "", playing: null, q: "", more: "", loading: false, gen: 0,
   async init() {
     await load("youtube", { saved: [], recent: [], pos: {} });
     D.youtube.pos = D.youtube.pos || {};
@@ -100,12 +100,14 @@ const YouTube = {
     });
     addEventListener("beforeunload", () => this.remember(true));
     const v = $("#view-youtube");
+    $("#ytResults").before($("#ytRecent"));   // (recently watched sits on top as a row; recommended is the main area)
     $("#ytForm").addEventListener("submit", e => { e.preventDefault(); this.search($("#ytQ").value.trim()); });
     v.addEventListener("click", e => {
       const chip = e.target.closest("[data-ytq]"); if (chip) { $("#ytQ").value = chip.dataset.ytq; return this.search(chip.dataset.ytq); }
-      const card = e.target.closest("[data-yt]"); if (card) { const [list, i] = card.dataset.yt.split(":"), item = (list === "r" ? this.results : D.youtube[list === "s" ? "saved" : "recent"])[+i]; if (item) this.play(item); return; }
+      const card = e.target.closest("[data-yt]"); if (card) { const [list, i] = card.dataset.yt.split(":"), item = (list === "r" ? this.results : list === "c" ? this.recs : D.youtube[list === "s" ? "saved" : "recent"])[+i]; if (item) this.play(item); return; }
       if (e.target.closest("[data-yt-clear]")) { this.gen++; this.results = []; this.more = ""; this.q = ""; $("#ytQ").value = ""; return this.render(); }
       if (e.target.closest("[data-yt-retry]")) return this.fill();
+      if (e.target.closest("[data-yt-recs]")) return this.recommend(true);
       const a = e.target.closest("[data-yta]"); if (!a || !this.playing) return;
       if (a.dataset.yta === "close") this.stop();
       if (a.dataset.yta === "full") { const f = $("#ytPlayer iframe"); if (f) f.requestFullscreen().catch(er => toast("Couldn't go full screen: " + er.message, true)); }
@@ -200,8 +202,28 @@ const YouTube = {
     $("#ytResults").innerHTML = searching ? `<div class="pg-h">Results for “${esc(this.q)}” <span class="sp"></span><button class="btn xs ghost" data-yt-clear>Clear search</button></div>`
       + (this.results.length ? `<div class="yt-grid">${this.results.map((x, i) => this.card(x, "r:" + i)).join("")}</div>` : `<div class="pg-empty">No videos found. Try different words.</div>`) : "";
     if (searching) { $("#ytSaved").innerHTML = $("#ytRecent").innerHTML = ""; return; }   // saved and recent come back when the search is cleared
-    $("#ytSaved").innerHTML = d.saved.length ? `<h3 class="pg-h">Saved</h3><div class="yt-grid">${d.saved.map((x, i) => this.card(x, "s:" + i)).join("")}</div>` : "";
-    $("#ytRecent").innerHTML = d.recent.length ? `<h3 class="pg-h">Recently watched</h3><div class="yt-grid">${d.recent.slice(0, 12).map((x, i) => this.card(x, "h:" + i)).join("")}</div>` : "";
+    $("#ytRecent").innerHTML = d.recent.length ? `<h3 class="pg-h">Recently watched</h3><div class="yt-row">${d.recent.slice(0, 16).map((x, i) => this.card(x, "h:" + i)).join("")}</div>` : "";
+    $("#ytResults").innerHTML = `<div class="pg-h">${d.recent.length ? "Recommended for you" : "Popular right now"}<span class="sp"></span><button class="btn xs ghost" data-yt-recs title="New picks">${icon("refresh")}Refresh</button></div>`
+      + (this.recs.length ? `<div class="yt-grid">${this.recs.map((x, i) => this.card(x, "c:" + i)).join("")}</div>`
+        : this.recsBusy ? `<div class="g-loading"><i></i><i></i><i></i><span>Finding videos for you…</span></div>` : `<div class="pg-empty">${this.recsErr ? "Couldn't load recommendations. " : "Watch a few videos and Skyline picks more like them. "}<button class="btn xs" data-yt-recs>Try again</button></div>`);
+    $("#ytSaved").innerHTML = d.saved.length ? `<h3 class="pg-h">Saved</h3><div class="yt-row">${d.saved.map((x, i) => this.card(x, "s:" + i)).join("")}</div>` : "";
+    if (!this.recsBusy && (!this.recs.length && !this.recsErr || Date.now() - this.recsAt > 30 * 60e3 || this.recsFor !== this.recsKey())) this.recommend();
+  },
+  // recommended: picks related to what you watched lately (from YouTube's own "up next"); with no history yet, what's popular
+  recsKey() { return (D.youtube.recent || []).slice(0, 4).map(x => x.id).join(","); },
+  async recommend(fresh) {
+    if (this.recsBusy || !sky) return;
+    this.recsBusy = true; this.recsErr = false; if (fresh) this.recs = [];
+    const key = this.recsKey(); this.recsFor = key; this.recsAt = Date.now();
+    if (!this.q) this.render();
+    try {
+      const d = D.youtube, skip = d.recent.map(x => x.id);
+      let items = key ? await sky.pages.ytRelated(key.split(","), skip) : [];
+      if (!items.length) items = ((await sky.pages.ytSearch("popular music videos this week")).items || []).filter(x => !skip.includes(x.id));
+      if (fresh) items = items.sort(() => Math.random() - .5);   // (Refresh: a different order)
+      this.recs = items;
+    } catch (e) { this.recsErr = true; }
+    this.recsBusy = false; if (!this.q) this.render();
   },
 };
 
