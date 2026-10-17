@@ -111,7 +111,7 @@ const Classroom = {
     if (!sky || !sky.classroom) return;
     this.st = await sky.classroom.status().catch(() => this.st);
     linkCourses();
-    sky.classroom.onStatus(s => { const was = this.st; this.st = s; linkCourses(); newWork(s, was); newGrades(s, was); if (School.visible()) School.render(); phoneSoon(); });
+    sky.classroom.onStatus(s => { const was = this.st; this.st = s; linkCourses(); newWork(s, was); newGrades(s, was); trackGrades(); if (School.visible()) School.render(); phoneSoon(); });
   },
   shown() { if (this.st.connected && !this.st.expired && !this.st.syncing && Date.now() - (this.st.at || 0) > 15 * 60e3) sky.classroom.sync().catch(() => {}); },   // fresh when you look
 };
@@ -225,6 +225,50 @@ function trend(c) {
 }
 // slipping: the average now vs. before the last few grades
 function slipping(c) { const t = trend(c); if (t.length < 4) return 0; const before = t[Math.max(0, t.length - 4)], now = t[t.length - 1]; return before - now >= 3 ? before - now : 0; }
+// ---------- grade history: every change to a class's average, and why ----------
+// Regrades: a teacher changing a score after the fact. Skyline remembers the score it last saw for each grade and
+// writes down any change (D.gradeLog); new grades need no log, they're in the grades themselves.
+function trackGrades() {
+  const all = crGrades().concat(D.grades).filter(g => g.outOf > 0 && g.classId), snap = D.gradeSnap || null, now = Date.now();
+  const next = {}; for (const g of all) next[g.id] = [g.score, g.outOf];
+  if (snap) {
+    let changed = false;
+    for (const g of all) { const was = snap[g.id]; if (was && (was[0] !== g.score || was[1] !== g.outOf)) { (D.gradeLog = D.gradeLog || []).push({ t: now, id: g.id, classId: g.classId, name: g.name || "Grade", from: was, to: [g.score, g.outOf] }); changed = true; } }
+    if (D.gradeLog && D.gradeLog.length > 300) D.gradeLog = D.gradeLog.slice(-300);
+    if (changed || Object.keys(snap).length !== Object.keys(next).length) { D.gradeSnap = next; save(); }
+  } else { D.gradeSnap = next; save(); }
+}
+// the timeline for one class, newest first: each grade as it came in (what the average was before and after it),
+// plus regrades. The average is worked out the same way as everywhere else (weights included).
+function history(c) {
+  const g = gradesOf(c.id).filter(x => x.outOf > 0).sort((a, b) => (a.at || a.seen || 0) - (b.at || b.seen || 0)), out = [];
+  for (let i = 0; i < g.length; i++) {
+    const before = i ? classAvgOf(c, g.slice(0, i)) : null, after = classAvgOf(c, g.slice(0, i + 1));
+    out.push({ kind: "grade", at: g[i].at || g[i].seen || 0, g: g[i], before, after, delta: before == null ? 0 : after - before });
+  }
+  for (const r of (D.gradeLog || []).filter(r => r.classId === c.id)) {
+    const cur = g.find(x => x.id === r.id); if (!cur) continue;
+    const old = g.map(x => x.id === r.id ? { ...x, score: r.from[0], outOf: r.from[1] } : x), now = g.map(x => x.id === r.id ? { ...x, score: r.to[0], outOf: r.to[1] } : x);
+    const before = classAvgOf(c, old), after = classAvgOf(c, now);
+    out.push({ kind: "regrade", at: r.t, g: cur, from: r.from, to: r.to, before, after, delta: after - before });
+  }
+  return out.sort((a, b) => b.at - a.at);
+}
+function historyHtml(c) {
+  const h = history(c); if (!h.length) return "";
+  const worst = h.filter(x => x.delta < -0.05).sort((a, b) => a.delta - b.delta)[0];
+  const day = t => t ? new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "No date";
+  const row = x => {
+    const p = x.kind === "regrade" ? x.to[0] / x.to[1] * 100 : pct(x.g), d = x.delta, cls = Math.abs(d) < 0.05 ? "" : d < 0 ? "down" : "up";
+    const what = x.kind === "regrade" ? `<b>${esc(x.g.name || "Grade")}</b> regraded ${fmtPct(x.from[0] / x.from[1] * 100)} → ${fmtPct(p)}` : `<b>${esc(x.g.name || "Grade")}</b> · ${fmtPct(p)} (${x.g.score}/${x.g.outOf})`;
+    return `<div class="sc-hi ${cls}${x === worst ? " worst" : ""}"><span class="sc-hd">${day(x.at)}</span><span class="sc-hw"><span>${what}</span><small>${x.before == null ? `First grade: average ${fmtPct(x.after)}` : `Average ${fmtPct(x.before)} → ${fmtPct(x.after)}`}</small></span>
+      <span class="sc-hc" title="${cls ? "How much this moved your average" : "No change to your average"}">${x.before == null ? "" : cls ? icon(d < 0 ? "trendDown" : "trendUp") + (d > 0 ? "+" : "−") + Math.abs(Math.round(d * 10) / 10) : "–"}</span></div>`;
+  };
+  const shown = S.histAll ? h : h.slice(0, 8);
+  return `<div class="sc-hist"><div class="pg-sub">Grade history<span class="sp"></span>${h.length > 8 ? `<button class="btn xs ghost" data-hist>${S.histAll ? "Show less" : `Show all ${h.length}`}</button>` : ""}</div>
+    ${worst ? `<p class="sc-hwhy">Biggest drop: <b>${esc(worst.g.name || "a grade")}</b> on ${day(worst.at)} took your average down ${Math.abs(Math.round(worst.delta * 10) / 10)} points.</p>` : ""}
+    <div class="sc-hl">${shown.map(row).join("")}</div></div>`;
+}
 function classAvgOf(c, g) {
   const w = c.weights && Object.values(c.weights).some(v => v > 0) ? c.weights : null;
   if (!w) return sum(g, x => x.score) / sum(g, x => x.outOf) * 100;
@@ -294,6 +338,7 @@ export const School = {
     if (!D.links.length && !D.linksSet) D.links = [{ name: "Google Classroom", url: "https://classroom.google.com" }, { name: "Google Docs", url: "https://docs.google.com" }, { name: "Quizlet", url: "https://quizlet.com" }, { name: "Khan Academy", url: "https://www.khanacademy.org" }];
     D.reminded.tests = D.reminded.tests || {};
     await Classroom.init();
+    trackGrades();   // (remembers today's scores, so a regrade later shows up in the grade history)
     const v = $("#view-school");
     v.addEventListener("click", e => this.click(e));
     v.addEventListener("submit", e => { e.preventDefault(); this.submit(e.target, e); });
@@ -489,7 +534,7 @@ export const School = {
       const chart = tr.length >= 2 ? (() => { let lo = Math.min(...tr) - 5, hi = Math.max(...tr) + 5; if (hi - lo < 24) { const mid = (hi + lo) / 2; lo = mid - 12; hi = mid + 12; } const X = i => (i / (tr.length - 1) * 560 + 20).toFixed(1), Y = v => (110 - (v - lo) / (hi - lo || 1) * 90).toFixed(1);
         return `<svg class="sc-trend" viewBox="0 0 600 130" preserveAspectRatio="none"><defs><linearGradient id="scTrendFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c.color}" stop-opacity=".22"/><stop offset="1" stop-color="${c.color}" stop-opacity="0"/></linearGradient></defs><path d="M${tr.map((v, i) => X(i) + " " + Y(v)).join(" L")} L${X(tr.length - 1)} 125 L20 125Z" fill="url(#scTrendFill)"/><polyline points="${tr.map((v, i) => X(i) + "," + Y(v)).join(" ")}" fill="none" stroke="${c.color}" stroke-width="3" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>${[100, 90, 80, 70].filter(v => v > lo + 2 && v < hi - 2).map(v => `<line x1="20" x2="556" y1="${Y(v)}" y2="${Y(v)}" stroke="rgba(255,255,255,.12)" stroke-dasharray="4 6"/><text x="562" y="${(+Y(v) + 4).toFixed(1)}" fill="rgba(255,255,255,.45)" font-size="11">${v}</text>`).join("")}<circle cx="${X(tr.length - 1)}" cy="${Y(tr[tr.length - 1])}" r="5" fill="${c.color}"/></svg>`; })() : "";
       detail = `<div class="pg-h" style="--c:${c.color}"><i class="dot"></i>${esc(c.name)}<span class="sp"></span>${avg != null ? `<span class="sc-big" style="color:${gradeColor(avg)}">${avg.toFixed(1)}% · ${letter(avg)[1]}</span>` : ""}</div>
-        ${slip ? `<div class="sc-warn">Your ${esc(c.name)} average dropped ${slip.toFixed(1)} points over the last few grades. A study session or a chat with your teacher could help.</div>` : ""}${chart ? `<div class="sc-trendw"><small>Your average over time</small>${chart}</div>` : ""}
+        ${slip ? `<div class="sc-warn">Your ${esc(c.name)} average dropped ${slip.toFixed(1)} points over the last few grades. A study session or a chat with your teacher could help.</div>` : ""}${chart ? `<div class="sc-trendw"><small>Your average over time</small>${chart}</div>` : ""}${historyHtml(c)}
         <form class="pg-add" id="scGradeAdd"><input name="name" placeholder="What was it? e.g. Unit 2 test" maxlength="60" autocomplete="off"><input name="score" type="number" step="0.5" min="0" placeholder="Score" class="w-amt"><span class="muted">/</span><input name="outOf" type="number" step="0.5" min="0.5" placeholder="Out of" value="100" class="w-amt">
           <select name="cat">${Object.entries(CATS).map(([k, n]) => `<option value="${k}">${n}</option>`).join("")}</select><button class="btn primary">Add</button></form>
         <div class="sc-gl">${g.length ? g.map(x => { const p = x.outOf ? x.score / x.outOf * 100 : 0; return `<div class="sc-gr"><span class="p" style="color:${gradeColor(p)}">${Math.round(p)}%</span><span class="t"><b>${x.cr ? CR_ICON + " " : ""}${esc(x.name || "Grade")}</b><small>${CATS[x.cat] || "Other"}${x.at ? " · " + (x.cr ? "due " : "") + new Date(x.at).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : ""}${x.late ? " · late" : ""}${x.cr ? " · from Classroom" : ""}</small></span><span class="s">${x.score} / ${x.outOf}</span>${x.cr ? `<span class="sc-gsp"></span>` : `<button class="ibtn xs" data-gdel="${x.id}" title="Remove">${icon("x")}</button>`}</div>`; }).join("") : `<div class="pg-empty">No grades in ${esc(c.name)} yet.${Classroom.st.connected ? " Grades from Google Classroom show up here by themselves." : ""} You can add scores yourself above.</div>`}</div>
@@ -500,7 +545,7 @@ export const School = {
     }
     const st = Classroom.st, recent = crGrades().concat(D.grades.map(g => ({ ...g, seen: g.at }))).filter(g => g.outOf > 0).sort((a, b) => (b.seen || 0) - (a.seen || 0) || (b.at || 0) - (a.at || 0));
     const newIds = new Set((st.freshGrades || []).map(id => "cr:" + id)), more = S.allGrades ? recent : recent.slice(0, 8);
-    const recentCard = `<section class="glass pg-card sc-rgc"><div class="pg-h">🆕 Recent grades<span class="sp"></span>${st.connected ? `<span class="ct-note">${st.syncing && st.phase ? `<span class="sc-spin"></span>${esc(st.phase)}` : st.gradesAt ? "from Google Classroom · " + esc(ago(st.gradesAt)) : ""}</span>` : ""}</div>
+    const recentCard = `<section class="glass pg-card sc-rgc"><div class="pg-h">Recent grades<span class="sp"></span>${st.connected ? `<span class="ct-note">${st.syncing && st.phase ? `<span class="sc-spin"></span>${esc(st.phase)}` : st.gradesAt ? "from Google Classroom · " + esc(ago(st.gradesAt)) : ""}</span>` : ""}</div>
       <div class="sc-rg">${recent.length ? more.map(g => { const p = pct(g); return `<button class="sc-rgr ${newIds.has(g.id) ? "new" : ""}" data-gcls="${g.classId}" style="--c:${clsColor(g.classId)}"><span class="sc-pct" style="color:${gradeColor(p)}">${fmtPct(p)}</span><span class="t"><b>${esc(g.name || "Grade")}</b><small><i class="dot"></i>${esc(clsName(g.classId) || "Class")} · ${g.score}/${g.outOf}${g.late ? " · late" : ""}</small></span>${newIds.has(g.id) ? `<em>NEW</em>` : ""}</button>`; }).join("")
         : `<div class="pg-empty">${st.connected ? (st.syncing ? "Reading your grades from Google Classroom…" : "No grades yet. When a teacher grades something in Classroom, it shows up here, like “Math HW 4 · 95%”.") : "Connect Google Classroom (Agenda tab) and your grades show up here by themselves, like “Math HW 4 · 95%”. Or add scores yourself below."}</div>`}</div>
       ${recent.length > 8 ? `<button class="btn xs ghost sc-rgm" data-allgrades>${S.allGrades ? "Show less" : `Show all ${recent.length}`}</button>` : ""}</section>`;
@@ -675,6 +720,7 @@ export const School = {
     // grades
     if ((b = at("[data-gcls]"))) { if (b.dataset.gcls) S.gradeCls = b.dataset.gcls; this.render(); if (b.classList.contains("sc-rgr")) $(".sc-cols")?.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
     if (at("[data-allgrades]")) { S.allGrades = !S.allGrades; return this.render(); }
+    if (at("[data-hist]")) { S.histAll = !S.histAll; return this.render(); }
     if ((b = at("[data-gdel]"))) { D.grades = D.grades.filter(g => g.id !== b.dataset.gdel); save(); return this.render(); }
     // study
     if ((b = at("[data-deck]"))) { S.deck = b.dataset.deck || null; return this.render(); }

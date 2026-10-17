@@ -11,6 +11,7 @@ import { pickEmoji, EMOJI_QUICK, closeEmoji } from "./emoji.js";
 import { pickSticker, stickerSrc, stickerName, closeStickers } from "./stickers.js";
 import { pickGif, closeGifs, gifHtml, starFromChat } from "./gifs.js";
 import { Servers } from "./servers.js";
+import { THEME_RE, themeCard } from "./themeshare.js";
 
 const PAGE = 60, GROUP_MS = 5 * 60e3, MAX_FILES = 6, MAX_FILE = 25 * 1048576;
 let cur = null, el = null, reply = null, editing = null, pending = [], menuEl = null, mention = null;
@@ -208,6 +209,7 @@ function textHtml(body, t) {
     const known = you || (t.kind === "dm" ? t.f.username.toLowerCase() === low : Servers.memberByName(t.sv.id, low));
     return known ? `${pre}<span class="sx-mention${you ? " you" : ""}">@${name}</span>` : all;
   });
+  h = h.replace(THEME_RE, "").replace(/:\s*$/, "");   // (a shared theme's code shows as its card, not as text)
   return h.replace(/sky:invite\/([A-Za-z0-9]{8})/g, `<span class="sx-invlink">sky:invite/$1</span>`);
 }
 function bodyHtml(m, t) {
@@ -220,6 +222,7 @@ function bodyHtml(m, t) {
   let h = m.body ? `<div class="sx-msg-t selectable${prefs().bigEmoji !== false && EMOJI_ONLY.test(m.body.trim()) ? " big" : ""}">${textHtml(m.body, t)}${m.edited_at ? ` <span class="sx-edited" title="Edited ${esc(new Date(m.edited_at).toLocaleString())}">(edited)</span>` : ""}</div>` : "";
   const codes = [...new Set([...(m.body || "").matchAll(INVITE)].map(x => x[1]))].slice(0, 2);
   h += codes.map(code => `<div class="sx-invite" data-invite="${code}">${Servers.inviteCard(code)}</div>`).join("");
+  h += [...new Set([...(m.body || "").matchAll(THEME_RE)].map(x => x[1]))].slice(0, 2).map(c => themeCard(c, m.sender === S.me.id)).join("");
   const files = (m.meta && m.meta.files) || [];
   if (files.length) h += `<div class="sx-files${files.length > 1 ? " many" : ""}">${files.map(f => {
     const url = fileUrl(f.path) || (m._local && f._blob) || "";

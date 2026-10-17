@@ -470,3 +470,9 @@ body.resting .resting-note { opacity: 1; }
   .lrow { grid-template-columns: 1fr; }
   .tour-themes { grid-template-columns: repeat(2, 1fr); }
 }
+/* the friend picker when sending a theme */
+.th-send { display: grid; gap: 2px; max-height: 260px; overflow-y: auto; margin: 2px -4px; }
+.th-send label { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; cursor: pointer; }
+.th-send label:hover { background: rgba(255,255,255,.05); }
+.th-send input { accent-color: var(--a1); }
+.th-send small { color: var(--faint); margin-left: auto; }

@@ -5,6 +5,9 @@ import { Scene } from "./scene/scene.js";
 import { photoReady } from "./scene/engine.js";
 import { $, $$, esc, sky, toast, dialog, setSeg, fromHsl } from "./util.js";
 import { FX } from "./fx.js";
+import { S as Social } from "./social/state.js";
+import { api } from "./social/api.js";
+import { encodeTheme } from "./social/themeshare.js";
 
 const ANIM = "image photo";
 const COLOR_LABELS = {
@@ -60,6 +63,7 @@ function build() {
       <span class="sp"></span>
       <button class="btn sm ghost" data-th="import" title="Add themes from .skytheme files">Import</button>
       <button class="btn sm ghost" data-th="export" title="Save this theme as a file you can share">Export</button>
+      <button class="btn sm" data-th="send" title="Send this theme to a friend in Social">Send to a friend</button>
     </div>
     <div class="th-gallery" id="thGallery"></div>
     <div class="th-bar">
@@ -249,6 +253,20 @@ async function act(a) {
     if (await sky.exportTheme(out)) toast(`Exported “${d.name}”`);
     return;
   }
+  if (a === "send") {   // a DM with the theme inside; your friend gets a card with "Use this theme"
+    if (!Social.me) return toast("Sign in to Social first, then you can send themes to friends.", true);
+    if (!Social.friends.length) return toast("Add a friend in Social first.", true);
+    const list = Social.friends.slice().sort((x, y) => String(x.display_name).localeCompare(String(y.display_name)));
+    const ok = await dialog({ title: `Send “${d.name}”`, ok: "Send", text: "They get a card in your chat and can switch to it with one click.",
+      html: `<div class="th-send">${list.map((f, i) => `<label><input type="radio" name="thf" value="${esc(f.id)}" ${i ? "" : "checked"}><span>${esc(f.display_name)}</span><small>@${esc(f.username)}</small></label>`).join("")}</div>` });
+    const pick = ok && document.querySelector('#dlg input[name="thf"]:checked'); if (!pick) return;
+    const f = list.find(x => x.id === pick.value);
+    try {
+      await api.rpc("send_message", { p_to: f.id, p_body: `My Skyline theme “${d.name}”: ${encodeTheme(d)}`, p_client_id: "th" + Date.now().toString(36) });
+      toast(`Sent “${d.name}” to ${f.display_name}`);
+    } catch (e) { toast(e.message || "Couldn't send it", true); }
+    return;
+  }
   if (a === "import") {
     if (!sky) return;
     const list = await sky.importThemes(); if (!list || !list.length) return;
@@ -343,6 +361,18 @@ async function paintPhotoChips() {   // little previews of each photo in the pic
   }
 }
 function stopPreview(card) { clearTimeout(card._timer); if (card._stop) card._stop(); }
+
+// a theme a friend sent in Social: added to your themes and switched to (Social's "Use this theme" calls this)
+window.skyThemes = {
+  async add(raw) {
+    const t = Themes.normTheme({ ...raw, id: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) });
+    t.builtin = false; t.name = uniqueName(String(raw.name || "Shared theme").slice(0, 40));
+    Themes.doc.custom.push(t);
+    await Themes.select(t.id, { quiet: true }); Themes.persist();
+    if ($("#thGallery")) gallery();
+    toast(`Now using “${t.name}”. It's in Theme Studio under Yours.`);
+  },
+};
 
 export const Studio = {
   show(on) {
