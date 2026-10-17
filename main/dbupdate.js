@@ -64,10 +64,25 @@ class DbUpdate {
   async applyAuth() {
     const ref = this.ref(); if (!ref) throw new Error("Social isn't connected to a server.");
     const w = this.authWanted(), cur = await this.api("GET", `/projects/${ref}/config/auth`) || {};
+    { const d0 = this.read(); d0.customEmail = !!cur.smtp_host; this.write(d0); }   // (whether the server has its own email sender, even if the next step fails)
     const list = String(cur.uri_allow_list || "").split(",").map(x => x.trim()).filter(Boolean);
     if (!list.includes(w.allow)) list.push(w.allow);
     await this.api("PATCH", `/projects/${ref}/config/auth`, { mailer_otp_length: w.mailer_otp_length, mailer_subjects_recovery: w.mailer_subjects_recovery, mailer_templates_recovery_content: w.mailer_templates_recovery_content, uri_allow_list: list.join(",") });
     const d = this.read(); d.authApplied = this.authHash(); d.customEmail = !!cur.smtp_host; delete d.authError; this.write(d);   // (only whether the server has its own email sender: no settings are kept)
+  }
+  // the server's own email sender (SMTP), typed into Admin once: Supabase's built-in email only reaches your
+  // Supabase team, so friends never got their codes. Sent straight to Supabase; nothing is kept on this PC.
+  async setSmtp(m) {
+    const ref = this.ref(); if (!ref) throw new Error("Social isn't connected to a server.");
+    const host = String(m.host || "").trim(), port = String(parseInt(m.port, 10) || ""), user = String(m.user || "").trim(), pass = String(m.pass || ""), sender = String(m.sender || "").trim();
+    if (!/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(host)) throw new Error("That server name doesn't look right (like smtp.gmail.com).");
+    if (!/^\d{2,5}$/.test(port)) throw new Error("The port is a number, usually 465 or 587.");
+    if (!user || !pass) throw new Error("Fill in the username and password.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sender)) throw new Error("The \"from\" address has to be an email address.");
+    await this.api("PATCH", `/projects/${ref}/config/auth`, { smtp_host: host, smtp_port: port, smtp_user: user, smtp_pass: pass, smtp_admin_email: sender, smtp_sender_name: String(m.name || "Skyline").slice(0, 60), rate_limit_email_sent: 30 });
+    const d = this.read(); d.customEmail = true; delete d.authApplied; this.write(d);
+    await this.applyAuth();   // (now the code email can go in)
+    return this.status();
   }
   async auto() {
     const s = this.status(); if (!s.hasToken) return;
@@ -79,6 +94,7 @@ class DbUpdate {
     h("db:status", () => this.status());
     h("db:setToken", tok => this.setToken(tok));
     h("db:forget", () => this.forget());
+    h("db:setSmtp", m => this.setSmtp(m || {}));
     h("db:apply", async () => { await this.apply(); if (this.read().authApplied !== this.authHash()) await this.applyAuth().catch(() => {}); return this.status(); });
     // Supabase's token page in a Skyline window (its sign-in is remembered here, separate from your browsers)
     h("db:tokenPage", () => {

@@ -162,3 +162,10 @@ b.sx-live-pill { cursor: default; }
 .sx-theme-sw { width: 44px; height: 44px; flex: none; border-radius: 8px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.1); }
 .sx-theme-t { flex: 1; min-width: 0; display: grid; gap: 2px; } .sx-theme-t b { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .sx-theme-t small { color: var(--muted); font-size: 12px; }
 .sx-theme-note { color: var(--faint); font-size: 12px; flex: none; }
+/* Admin: the server's email sender */
+.ad-mail { margin: 10px 0 0; font-size: 13px; color: var(--muted); } .ad-mail .ad-ok, .ad-mail .ad-warn { margin-right: 6px; }
+.ad-smtp { margin-top: 8px; font-size: 13px; color: var(--muted); } .ad-smtp summary { cursor: pointer; color: var(--a-soft); font-weight: 550; }
+.ad-smtp p { margin: 8px 0; } .ad-smtp b { color: var(--text); }
+.ad-smtp-g { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 8px 0; }
+.ad-smtp-g label { display: grid; gap: 4px; font-size: 12px; } .ad-smtp-g label:first-child { grid-column: 1 / -1; }
+.ad-smtp-g input { height: 32px; border-radius: var(--r-sm); border: 1px solid var(--line2); background: rgba(0,0,0,.28); padding: 0 10px; color: var(--text); outline: none; }

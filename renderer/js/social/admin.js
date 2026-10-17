@@ -76,8 +76,19 @@ async function dbBox() {
       <div class="ad-db-row">${s.upToDate ? "" : `<button class="btn sm primary" data-ad="dbapply">Update the database now</button>`}<button class="btn sm ghost" data-ad="dbforget">Remove token</button></div>
       <p class="ad-mail">${s.authError ? `<span class="ad-warn">Sign-in email</span> Couldn't set up the "forgot password" email: ${esc(s.authError)}`
         : !s.authReady ? `<span class="ad-warn">Sign-in email</span> Skyline sets up the "forgot password" email (a 6-digit code) on the server shortly.`
-        : s.customEmail === false ? `<span class="ad-warn">Sign-in email</span> Your server sends with Supabase's built-in email, which only reaches people on your Supabase team and only a few an hour. For friends to get their codes, add an email sender (SMTP) in Supabase › Authentication › Emails.`
-        : `<span class="ad-ok">Sign-in email</span> "Forgot password" sends a 6-digit code.`}</p>`;
+        : s.customEmail === false ? `<span class="ad-warn">Sign-in email</span> Your server sends with Supabase's built-in email, which only reaches people on your Supabase team.`
+        : `<span class="ad-ok">Sign-in email</span> "Forgot password" sends a 6-digit code.`}</p>
+      ${!s.authReady || s.customEmail === false ? `<details class="ad-smtp" ${s.authError ? "open" : ""}><summary>Set up the email sender, so friends get their codes</summary>
+        <p>Use any email account. With Gmail: turn on 2-Step Verification, make an <b>app password</b> at myaccount.google.com/apppasswords, and use it below (not your normal password).</p>
+        <div class="ad-smtp-g">
+          <label><span>From address</span><input id="adSmFrom" placeholder="you@gmail.com" autocomplete="off" spellcheck="false"></label>
+          <label><span>Server</span><input id="adSmHost" value="smtp.gmail.com" spellcheck="false"></label>
+          <label><span>Port</span><input id="adSmPort" value="465" inputmode="numeric"></label>
+          <label><span>Username</span><input id="adSmUser" placeholder="you@gmail.com" autocomplete="off" spellcheck="false"></label>
+          <label><span>Password</span><input id="adSmPass" type="password" placeholder="app password" autocomplete="new-password"></label>
+        </div>
+        <div class="ad-db-row"><button class="btn sm primary" data-ad="smtp">Save and set up the code email</button></div>
+        <small>It goes straight to your Supabase project; Skyline doesn't keep it.</small></details>` : ""}`;
 }
 async function loadBadges() { try { A.badges = await api.rpc("admin_badges") || []; } catch (e) { A.badges = []; toast(e.message, true); } if (A.tab === "badges" || A.tab === "people") draw(); if (A.open) loadHolders(A.open); }
 async function loadHolders(id) { A.holders = null; draw(); try { A.holders = await api.rpc("admin_badge_holders", { p_badge: id }) || []; } catch (e) { A.holders = []; } if (A.open === id) draw(); }
@@ -183,6 +194,12 @@ async function click(e) {
     b.textContent = "Updating…"; const u = await sky.db.apply(); toast(u.ok ? "Database updated" : u.error, !u.ok); dbBox(); return true; }
   if (a === "dbapply") { b.disabled = true; b.textContent = "Updating…"; const u = await sky.db.apply(); toast(u.ok ? "Database updated" : u.error, !u.ok); dbBox(); return true; }
   if (a === "dbforget") { await sky.db.forget(); dbBox(); return true; }
+  if (a === "smtp") {
+    const v = id => ($("#" + id) || {}).value || "";
+    b.disabled = true; b.textContent = "Setting up…";
+    const r = await sky.db.setSmtp({ sender: v("adSmFrom"), host: v("adSmHost"), port: v("adSmPort"), user: v("adSmUser") || v("adSmFrom"), pass: v("adSmPass"), name: "Skyline" });
+    toast(r.ok ? "Email sender set up. Friends now get a 6-digit code." : r.error, !r.ok); dbBox(); return true;
+  }
   if (a === "refresh") { A.stats = null; draw(); loadStats(); return true; }
   if (a === "newbadge") { badgeEditor(); return true; }
   if (a === "openbadge") { A.open = A.open === x ? null : x; draw(); if (A.open) loadHolders(x); return true; }
