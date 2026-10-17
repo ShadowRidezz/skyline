@@ -2,6 +2,7 @@
 // set up through the server's call signals (ring → accept → offer/answer/ICE) and torn down cleanly.
 // Three fixed lanes (sound, camera, screen) are agreed once, so turning the camera or screen on and off
 // later never needs renegotiation: a lane just gets a track or loses it.
+import { openMic, tuneOpus, tuneVoiceSender, preferRed, voiceKbps } from "./audio.js";
 const RING_MS = 30000;
 
 export class Call {
@@ -19,17 +20,11 @@ export class Call {
   /* ---------- your microphone and camera ---------- */
   async media(video) {
     const d = this.devices, v = this.voice || {};
-    try {
-      const s = await navigator.mediaDevices.getUserMedia({
-        audio: { deviceId: d.mic ? { ideal: d.mic } : undefined, echoCancellation: v.echo !== false, noiseSuppression: v.noise !== false, autoGainControl: v.agc !== false, channelCount: 1 },
-        video: video ? { deviceId: d.cam ? { ideal: d.cam } : undefined, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } } : false,
-      });
-      this.local.mic = s.getAudioTracks()[0] || null;
-      this.local.cam = s.getVideoTracks()[0] || null;
-    } catch (e) {
-      if (video) { this.camError = permissionWords(e, "camera"); return this.media(false); }   // no camera: still call with your voice
-      // no microphone (or not allowed): still call; you hear them, they can't hear you
-      this.noMic = permissionWords(e, "microphone"); this.local.mic = null; this.local.cam = null;
+    // no microphone (or not allowed): still call; you hear them, they can't hear you
+    try { this.local.mic = await openMic(d.mic, v); } catch (e) { this.noMic = permissionWords(e, "microphone"); this.local.mic = null; }
+    if (video) {   // no camera: still call with your voice
+      try { this.local.cam = (await navigator.mediaDevices.getUserMedia({ video: { deviceId: d.cam ? { ideal: d.cam } : undefined, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } } })).getVideoTracks()[0] || null; }
+      catch (e) { this.camError = permissionWords(e, "camera"); this.local.cam = null; }
     }
     if (this.local.mic) this.local.mic.enabled = !this.muted;
     if (this.joinMuted && this.local.mic && !this.mutedOnce) { this.mutedOnce = true; this.muted = true; this.local.mic.enabled = false; }
@@ -120,7 +115,7 @@ export class Call {
           pc.addTransceiver(this.local.cam || "video", { direction: "sendrecv" }),
           pc.addTransceiver("video", { direction: "sendrecv" }),
         ];
-        preferGpuCodec(this.tx[2]);
+        preferRed(this.tx[0]); preferGpuCodec(this.tx[2]);
         this.useChannel(pc.createDataChannel("state"));
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
@@ -128,18 +123,20 @@ export class Call {
         this.connectTimer = setTimeout(() => { if (this.state === "connecting") this.hangup("failed"); }, 25000);
       } else if (sig.kind === "offer" && this.role === "callee" && this.state === "connecting" && !this.pc) {
         const pc = this.makePc();
-        await pc.setRemoteDescription(boostScreen(p.sdp));
+        await pc.setRemoteDescription(tuneOpus(boostScreen(p.sdp), voiceKbps(this.voice)));
         this.tx = pc.getTransceivers();
         this.tx.forEach(t => { t.direction = "sendrecv"; });
-        preferGpuCodec(this.tx[2]);
+        preferRed(this.tx[0]); preferGpuCodec(this.tx[2]);
         if (this.tx[0]) await this.tx[0].sender.replaceTrack(this.local.mic);
         if (this.tx[1] && this.local.cam) await this.tx[1].sender.replaceTrack(this.local.cam);
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
         await this.send("answer", { sdp: pc.localDescription.toJSON() });
+        if (this.tx[0]) tuneVoiceSender(this.tx[0].sender, voiceKbps(this.voice));
         await this.flushIce();
       } else if (sig.kind === "answer" && this.pc && !this.pc.currentRemoteDescription) {
-        await this.pc.setRemoteDescription(boostScreen(p.sdp));
+        await this.pc.setRemoteDescription(tuneOpus(boostScreen(p.sdp), voiceKbps(this.voice)));
+        if (this.tx && this.tx[0]) tuneVoiceSender(this.tx[0].sender, voiceKbps(this.voice));
         await this.flushIce();
       } else if (sig.kind === "ice" && p.c) {
         this.pending.push(p.c); await this.flushIce();
@@ -159,8 +156,7 @@ export class Call {
   // after a microphone is plugged in during a call: try again
   async retryMic() {
     try {
-      const v = this.voice || {}, s = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: this.devices.mic ? { ideal: this.devices.mic } : undefined, echoCancellation: v.echo !== false, noiseSuppression: v.noise !== false, autoGainControl: v.agc !== false } });
-      this.local.mic = s.getAudioTracks()[0]; this.local.mic.enabled = !this.muted; this.noMic = null;
+      this.local.mic = await openMic(this.devices.mic, this.voice || {}); this.local.mic.enabled = !this.muted; this.noMic = null;
       if (this.tx && this.tx[0]) await this.tx[0].sender.replaceTrack(this.local.mic);
       this.sendState(); this.onChange(this); return true;
     } catch (e) { this.noMic = permissionWords(e, "microphone"); this.onChange(this); return false; }

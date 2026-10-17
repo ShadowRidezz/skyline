@@ -2,6 +2,7 @@
 // "pause", "switch to Tokyo", "remember that I use Modrinth App for Minecraft"... It understands
 // everyday commands offline, asks Claude for the rest (when connected), and remembers what you teach it.
 import { $, $$, esc, sky, toast, dialog, store, fpsLoop, setSeg } from "./util.js";
+import { icon } from "./social/icons.js";
 import { Settings, Widgets } from "./widgets.js";
 import { Themes } from "./themes.js";
 import { Music } from "./music.js";
@@ -121,21 +122,21 @@ export async function ask(text, spoken) {
   if (r.quiet) setTimeout(() => openPanel(false), 700);
 }
 async function act(a) {
-  if (a.type === "media") { Music.cmd(a.cmd === "shuffle" ? "shuffle" : a.cmd, a.cmd === "shuffle" ? 1 : undefined); return a.cmd === "pause" ? "⏸ Paused" : a.cmd === "next" ? "⏭ Next song" : a.cmd === "prev" ? "⏮ Previous" : "▶ Playing"; }
+  if (a.type === "media") { Music.cmd(a.cmd === "shuffle" ? "shuffle" : a.cmd, a.cmd === "shuffle" ? 1 : undefined); return a.cmd === "pause" ? "Paused" : a.cmd === "next" ? "Next song" : a.cmd === "prev" ? "Previous" : "▶ Playing"; }
   if (a.type === "volume") {
-    if (a.mute != null) { Music.cmd("mute", a.mute ? 1 : 0); return a.mute ? "🔇 Muted" : "🔊 Unmuted"; }
+    if (a.mute != null) { Music.cmd("mute", a.mute ? 1 : 0); return a.mute ? "Muted" : "Unmuted"; }
     const cur = Music.vol && Music.vol.vol >= 0 ? Music.vol.vol : 50, v = Math.max(0, Math.min(100, a.value != null ? a.value : cur + (a.delta || 0)));
-    Music.cmd("vol", v); return `🔊 Volume ${v}%`;
+    Music.cmd("vol", v); return `Volume ${v}%`;
   }
-  if (a.type === "playLocal") { const ok = await Songs.play(a); return ok ? "🎵 Playing your songs" : ""; }
-  if (a.type === "theme") { await Themes.select(a.id, { quiet: true }); Themes.persist(); A.nav.studioRefresh && A.nav.studioRefresh(); return "🌃 " + (Themes.find(a.id) || {}).name; }
+  if (a.type === "playLocal") { const ok = await Songs.play(a); return ok ? "Playing your songs" : ""; }
+  if (a.type === "theme") { await Themes.select(a.id, { quiet: true }); Themes.persist(); A.nav.studioRefresh && A.nav.studioRefresh(); return "" + (Themes.find(a.id) || {}).name; }
   if (a.type === "go") { const [v, sec] = String(a.view).split(":"); A.nav.go(v, sec); return ""; }
   if (a.type === "ambient") { A.nav.ambient(!!a.on); return ""; }
-  if (a.type === "timer") { Widgets.timer(a.minutes || 0, !!a.stop); return a.stop ? "⏹ Timer stopped" : "⏱ Focus timer"; }
-  if (a.type === "task") { Widgets.addTask(a.text); return "✓ Task added"; }
-  if (a.type === "memory") { refreshMemoryViews(); return a.item ? "🧠 Remembered" : "🧠 Memory updated"; }
-  if (a.type === "opened") { FX.sound("success"); return `🚀 ${esc(a.name)}`; }
-  if (a.type === "spotify") return `🎧 ${esc(a.title)}`;
+  if (a.type === "timer") { Widgets.timer(a.minutes || 0, !!a.stop); return a.stop ? "Timer stopped" : "Focus timer"; }
+  if (a.type === "task") { Widgets.addTask(a.text); return "Task added"; }
+  if (a.type === "memory") { refreshMemoryViews(); return a.item ? "Remembered" : "Memory updated"; }
+  if (a.type === "opened") { FX.sound("success"); return `${esc(a.name)}`; }
+  if (a.type === "spotify") return `${esc(a.title)}`;
   return "";
 }
 
@@ -174,7 +175,7 @@ function loop() {
     if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
     const g = cv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
     const t = now / 1000, st = A.state, css = getComputedStyle(document.documentElement);
-    const c1 = css.getPropertyValue("--a1").trim() || "#8b5cf6", c2 = css.getPropertyValue("--a2").trim() || "#3b82f6";
+    const c1 = css.getPropertyValue("--a1").trim() || "#5b9cff", c2 = css.getPropertyValue("--a2").trim() || "#5b9cff";
     if (st === "speaking") A.level = Math.max(A.level, P().engine !== "windows" && Voice.speaking && Voice.usable() ? Voice.level() : Voice.windowsLevel());
     const target = st === "listening" ? A.level : st === "speaking" ? A.level * .9 : st === "thinking" ? .25 + .15 * Math.sin(t * 6) : .08 + .04 * Math.sin(t * 1.4);
     A.lv += (target - A.lv) * .18; A.level *= .9;
@@ -208,14 +209,14 @@ async function renderMemory(box, cached) {
   if (!box || !sky) return;
   if (!cached) memCache = await sky.assistant.memory().catch(() => []);
   if (!A.targets.length) sky.assistant.targets().then(t => { A.targets = t; fillTargets(); }).catch(() => {});
-  box.innerHTML = `<div class="mem-head"><b>🧠 What Sky remembers</b><small>Teach it how you do things. Links make a phrase open the app you actually use.</small></div>
+  box.innerHTML = `<div class="mem-head"><b>What Sky remembers</b><small>Teach it how you do things. Links make a phrase open the app you actually use.</small></div>
     <form class="mem-add" data-memform>
       <input name="text" placeholder="e.g. I use Modrinth instead of the normal Minecraft launcher" maxlength="300" autocomplete="off">
       <div class="mem-link"><span>When I say</span><input name="say" placeholder="minecraft" maxlength="60" autocomplete="off"><span>open</span><select name="target"><option value="">(nothing, just remember)</option></select></div>
       <div class="row"><button class="btn sm primary">Remember</button><span class="muted">Or just tell the assistant: “remember that…”</span></div></form>
     <div class="mem-list">${memCache.length ? memCache.slice().reverse().map(m => `<div class="mem" data-mem="${m.id}">
         <div class="mem-t"><span>${esc(m.text)}</span>${m.say ? `<small class="mem-chip">“${esc(m.say)}” → ${esc(m.target.name)}</small>` : ""}</div>
-        ${m.say ? `<button class="btn xs ghost" data-memtry title="Open it now">Try</button>` : ""}<button class="ibtn xs" data-memdel title="Forget this">✕</button></div>`).join("")
+        ${m.say ? `<button class="btn xs ghost" data-memtry title="Open it now">Try</button>` : ""}<button class="ibtn xs" data-memdel title="Forget this">${icon("x")}</button></div>`).join("")
       : `<div class="ly-empty">Nothing yet. Try: “remember that I use Modrinth App for Minecraft”.</div>`}</div>`;
   fillTargets(box);
 }
@@ -254,26 +255,26 @@ export function renderAssistantSettings() {
   if (!box.dataset.built) {
     box.dataset.built = "1";
     box.innerHTML = `
-      <div class="glass sbox"><h3>🎙️ Assistant</h3>
+      <div class="glass sbox"><h3>Assistant</h3>
         <label class="toggle"><input type="checkbox" data-ap="on"><span class="sw"></span><span class="t"><b>Show the assistant button</b><small>The glowing mic in the side bar. Click it and talk (right-click to type).</small></span></label>
         <label class="toggle"><input type="checkbox" data-ap="hotkeyOn"><span class="sw"></span><span class="t"><b>Talk from anywhere</b><small>A shortcut that opens Skyline and starts listening</small></span></label>
         <label class="field">Shortcut (click, then press the keys)<input id="asHotkey" readonly></label>
         <label class="toggle"><input type="checkbox" data-ap="wake"><span class="sw"></span><span class="t"><b>Say “Hey Sky”</b><small>Listens for its name while Skyline runs. Off by default.</small></span></label>
         <p class="muted">Speech is understood by Windows' own speech recognizer, right on this PC: your voice never leaves it. If it can't hear you, allow desktop apps to use the microphone in Windows Settings › Privacy & security › Microphone.</p>
-        <div class="row"><button class="btn sm" id="asTry">🎙️ Try it now</button></div>
+        <div class="row"><button class="btn sm" id="asTry">Try it now</button></div>
       </div>
-      <div class="glass sbox wide vbox"><h3>🔊 Sky's voice <span class="badge" id="vStatus"></span></h3>
+      <div class="glass sbox wide vbox"><h3>Sky's voice <span class="badge" id="vStatus"></span></h3>
         <div class="row"><label class="toggle"><input type="checkbox" data-ap="speak"><span class="sw"></span><span class="t"><b>Speak replies out loud</b></span></label>
           <label class="toggle"><input type="checkbox" data-ap="chimes"><span class="sw"></span><span class="t"><b>Listening chimes</b></span></label>
-          <span class="sp"></span><div class="seg" id="vEngine"><button data-v="neural">✦ Natural voices</button><button data-v="windows">Windows voice</button></div></div>
+          <span class="sp"></span><div class="seg" id="vEngine"><button data-v="neural">Natural voices</button><button data-v="windows">Windows voice</button></div></div>
         <div class="vgrid" id="vGrid"></div>
         <div class="el-box" id="vEleven"></div>
         <label class="field hidden" id="vWinRow">Windows voice<select id="asVoice"></select></label>
         <div class="row"><label class="sl"><span>Speed</span><input type="range" class="rg" min="80" max="170" step="5" id="asRate"><output id="asRateV"></output></label>
-          <button class="btn sm primary" id="asHello">▶ Say hello</button></div>
+          <button class="btn sm primary" id="asHello">Say hello</button></div>
         <p class="muted">Sky's natural voices (Kokoro) are made right on this PC: free, no limits, no internet needed. Heart is the most natural. Add an ElevenLabs key for the most human voices of all. The &ldquo;classic&rdquo; ones at the bottom are the older, flatter voices.</p>
       </div>
-      <div class="glass sbox"><h3>✦ Smarter answers</h3>
+      <div class="glass sbox"><h3>Smarter answers</h3>
         <label class="toggle"><input type="checkbox" data-ap="ai"><span class="sw"></span><span class="t"><b>Ask Claude when I don't know</b><small>Everyday commands work offline. Anything else (questions, “put on something chill”, multi-step requests) goes to the AI: your Claude account on this PC, a Claude key, or Ollama.</small></span></label>
         <label class="field">Model<select id="asModel"></select></label>
         <p class="muted" id="asAiNote"></p>
@@ -308,7 +309,7 @@ export function renderAssistantSettings() {
         try { const st = await sky.voice.elevenKey(k); $("#vElKey").value = "";
           const pick = st.voices.filter(v => v.eleven), best = pick.find(v => /^(jessica|sarah|alice|lily|matilda|charlotte|laura)$/i.test(v.name)) || pick.find(v => v.gender === "female") || pick[0];
           if (best) { P().pvoice = best.id; P().engine = "neural"; Settings.save(); }
-          await Voice.refresh(); toast("✦ ElevenLabs connected" + (best ? `: ${best.name} is your voice now` : ""));
+          await Voice.refresh(); toast("ElevenLabs connected" + (best ? `: ${best.name} is your voice now` : ""));
           if (best) { openPanel(true); say(sample(best.id)); }
         } catch (er) { toast(String(er.message || er).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""), true); }
         b.disabled = false;
@@ -347,7 +348,7 @@ function renderVoiceBox() {
   grid.querySelectorAll("[data-vid]").forEach(b => b.classList.toggle("on", b.dataset.vid === p.pvoice));
   const el = $("#vEleven");
   if (el) el.innerHTML = st.eleven
-    ? `<div class="row"><b>✦ ElevenLabs is connected</b><span class="muted">${st.elevenError ? esc(st.elevenError) : "The ElevenLabs voices at the top are the most human ones. If its characters run out, Skyline uses Ava until they reset."}</span><span class="sp"></span><button class="btn xs ghost" data-el="clear">Remove key</button></div>`
+    ? `<div class="row"><b>ElevenLabs is connected</b><span class="muted">${st.elevenError ? esc(st.elevenError) : "The ElevenLabs voices at the top are the most human ones. If its characters run out, Skyline uses Ava until they reset."}</span><span class="sp"></span><button class="btn xs ghost" data-el="clear">Remove key</button></div>`
     : `<div class="el-pitch"><b>Want a voice that sounds like a real person?</b><p class="muted">ElevenLabs voices breathe, laugh and sound like they mean it (the top engine Jarvis supports). Make a free account, copy your API key, and paste it here. Free includes about 10,000 characters a month.</p>
        <div class="row"><input id="vElKey" type="password" placeholder="Paste your ElevenLabs API key" autocomplete="off" spellcheck="false"><button class="btn sm primary" data-el="save">Connect</button><button class="btn sm ghost" data-el="site">Get a key ↗</button></div></div>`;
   const badge = $("#vStatus"); badge.textContent = p.engine === "windows" ? "Windows voice" : st.state === "ready" ? (vs.find(v => v.id === p.pvoice) || vs[0] || {}).name + " · ready" : "Unavailable"; badge.className = "badge" + (st.state === "ready" && neural ? " ok" : st.state === "error" ? " warn" : "");

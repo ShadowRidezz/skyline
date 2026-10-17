@@ -23,8 +23,8 @@ export const Sleep = {
   // min > 0: pause after that long; "song": at the end of this song; 0: off
   set(min) {
     clearInterval(this.t); this.until = 0; this.endOfSong = "";
-    if (min === "song") { const m = Music.meta; if (!m.on) { toast("Nothing's playing"); this.paint(); return; } this.endOfSong = m.title + "|" + m.artist; toast(`🌙 Music stops after “${m.title}”`); }
-    else if (min > 0) { this.until = Date.now() + min * 60e3; toast(`🌙 Music stops in ${mins(min)}`); }
+    if (min === "song") { const m = Music.meta; if (!m.on) { toast("Nothing's playing"); this.paint(); return; } this.endOfSong = m.title + "|" + m.artist; toast(`Music stops after “${m.title}”`); }
+    else if (min > 0) { this.until = Date.now() + min * 60e3; toast(`Music stops in ${mins(min)}`); }
     else toast("Sleep timer off");
     if (this.active()) this.t = setInterval(() => this.tick(), 1000);
     this.paint();
@@ -40,14 +40,14 @@ export const Sleep = {
   stop() {
     clearInterval(this.t); this.until = 0; this.endOfSong = "";
     if (Music.meta.on && Music.meta.playing) Music.cmd("pause");
-    toast("🌙 Sleep timer: music paused. Good night"); this.paint();
+    toast("Sleep timer: music paused. Good night"); this.paint();
   },
   left() { return this.endOfSong ? "song" : this.until ? Math.max(1, Math.ceil((this.until - Date.now()) / 60e3)) + "m" : ""; },
   paint() { $$("[data-sleep]").forEach(b => { b.classList.toggle("on", this.active()); const l = b.querySelector("i"); if (l) l.textContent = this.left() === "song" ? "♪" : this.left(); b.title = this.active() ? `Sleep timer: ${this.endOfSong ? "after this song" : this.left().replace("m", " min") + " left"}. Click to change` : "Sleep timer"; }); },
   menu(btn) {
     $("#sleepMenu")?.remove();
     const m = document.createElement("div"); m.id = "sleepMenu"; m.className = "sleep-menu glass";
-    m.innerHTML = `<b>🌙 Stop the music…</b>${[15, 30, 45, 60, 90].map(n => `<button data-sl="${n}">in ${mins(n)}</button>`).join("")}<button data-sl="song">after this song</button>${this.active() ? `<button data-sl="0" class="off">Turn off</button>` : ""}`;
+    m.innerHTML = `<b>Stop the music…</b>${[15, 30, 45, 60, 90].map(n => `<button data-sl="${n}">in ${mins(n)}</button>`).join("")}<button data-sl="song">after this song</button>${this.active() ? `<button data-sl="0" class="off">Turn off</button>` : ""}`;
     document.body.appendChild(m);
     const r = btn.getBoundingClientRect(); m.style.left = Math.min(innerWidth - 200, Math.max(8, r.left - 80)) + "px"; m.style.top = (r.bottom + 6 + m.offsetHeight > innerHeight ? r.top - m.offsetHeight - 6 : r.bottom + 6) + "px";
     const close = e => { if (e && m.contains(e.target)) return; m.remove(); document.removeEventListener("mousedown", close, true); };
@@ -66,7 +66,7 @@ export const PlayTime = {
     const sum = l => l.reduce((a, g) => a + g.mins, 0), today = sum(s.today), week = sum(s.week), max = Math.max(1, ...s.days.map(d => d.mins));
     const label = k => { const d = new Date(k + "T12:00"); return k === ymd(Date.now()) ? "Today" : d.toLocaleDateString(undefined, { weekday: "short" }); };
     this.last = s;
-    const html = `<div class="g-sec-h"><h2>⏱ Play time</h2>${s.week.length ? `<button class="btn sm pt-share" data-ptshare title="Make a picture of your week and send it to a friend or a server">📤 Share my week</button>` : ""}<span class="ct-note">${s.now.length ? `<b class="pt-now"><i></i>Playing ${esc(s.now.join(", "))}</b>` : "Counts only while the game is the window you're in, not when it's just open in the background. Nothing leaves your PC."}</span></div>
+    const html = `<div class="g-sec-h"><h2>Play time</h2>${s.week.length ? `<button class="btn sm pt-share" data-ptshare title="Make a picture of your week and send it to a friend or a server">Share my week</button>` : ""}<span class="ct-note">${s.now.length ? `<b class="pt-now"><i></i>Playing ${esc(s.now.join(", "))}</b>` : "Counts only while the game is the window you're in, not when it's just open in the background. Nothing leaves your PC."}</span></div>
       <div class="pt">
         <div class="pt-stats"><div><b>${mins(today)}</b><span>today</span></div><div><b>${mins(week)}</b><span>last 7 days</span></div><div><b class="pt-top">${s.week[0] ? esc(s.week[0].name) : "–"}</b><span>most played</span></div></div>
         <div class="pt-chart">${s.days.map(d => `<span title="${esc(label(d.day))}: ${mins(d.mins)}" class="${d.day === ymd(Date.now()) ? "on" : ""}"><em>${d.mins ? mins(d.mins).replace(" min", "m").replace(" h", "h") : ""}</em><i style="height:${Math.max(2, d.mins / max * 100)}%"></i><small>${esc(label(d.day))}</small></span>`).join("")}</div>
@@ -80,7 +80,7 @@ export const PlayTime = {
   async card() {
     const s = this.last || await sky.playtime.stats().catch(() => null); if (!s || !s.week.length) return null;
     const W = 1200, H = 675, cv = new OffscreenCanvas(W, H), g = cv.getContext("2d");
-    const css = getComputedStyle(document.documentElement), a1 = css.getPropertyValue("--a1").trim() || "#8b5cf6", a2 = css.getPropertyValue("--a2").trim() || "#3b82f6";
+    const css = getComputedStyle(document.documentElement), a1 = css.getPropertyValue("--a1").trim() || "#5b9cff", a2 = css.getPropertyValue("--a2").trim() || "#5b9cff";
     const bg = g.createLinearGradient(0, 0, W, H); bg.addColorStop(0, "#0b0a18"); bg.addColorStop(1, "#141230"); g.fillStyle = bg; g.fillRect(0, 0, W, H);
     const glow = g.createRadialGradient(W * .85, H * .1, 10, W * .85, H * .1, 520); glow.addColorStop(0, a1 + "55"); glow.addColorStop(1, "transparent"); g.fillStyle = glow; g.fillRect(0, 0, W, H);
     for (let i = 0; i < 90; i++) { g.fillStyle = `rgba(255,255,255,${.15 + Math.random() * .5})`; g.fillRect(Math.random() * W, Math.random() * H * .55, 1.5, 1.5); }   // a few stars
@@ -111,7 +111,7 @@ export const PlayTime = {
   async share() {
     const blob = await this.card(); if (!blob) return toast("No game time yet this week", true);
     const { shareImage } = await import("./social/share.js");
-    shareImage({ title: "Share my week in games", blob, name: "my-week-in-games.png", text: "my week in games 🎮" });
+    shareImage({ title: "Share my week in games", blob, name: "my-week-in-games.png", text: "my week in games" });
   },
 };
 document.addEventListener("click", e => { if (e.target.closest("[data-ptshare]")) PlayTime.share(); });
@@ -124,16 +124,16 @@ export const ClipsUI = {
   async render() {
     const box = $("#gClips"); if (!box || !sky || !sky.clips) return;
     const r = await sky.clips.status().catch(() => null); if (!r || !r.ok) return; const s = this.st = r.data;
-    box.innerHTML = `<div class="g-sec-h"><h2>🎬 Clips</h2><span class="ct-note">${s.on ? (s.recording ? `<b class="pt-now"><i></i>Ready: press <kbd>${esc(s.key)}</kbd> to save the last 30-60 seconds</b>` : `Starts recording by itself when you open a game. Press <kbd>${esc(s.key)}</kbd> to save a clip.`) : "Save the last 30-60 seconds of your game with one key, then send it to a friend."}</span></div>
+    box.innerHTML = `<div class="g-sec-h"><h2>Clips</h2><span class="ct-note">${s.on ? (s.recording ? `<b class="pt-now"><i></i>Ready: press <kbd>${esc(s.key)}</kbd> to save the last 30-60 seconds</b>` : `Starts recording by itself when you open a game. Press <kbd>${esc(s.key)}</kbd> to save a clip.`) : "Save the last 30-60 seconds of your game with one key, then send it to a friend."}</span></div>
       <div class="cl-set">
         <label class="toggle"><input type="checkbox" data-clip="on" ${s.on ? "checked" : ""}><span class="sw"></span><span class="t"><b>Clip saver</b><small>Keeps the last minute of your screen and game sound in memory while you play. Uses some graphics power.</small></span></label>
         <label class="cl-opt"><span>Clip key</span><select data-clip="key">${KEYS.map(k => `<option ${k === s.key ? "selected" : ""}>${k}</option>`).join("")}</select></label>
         <label class="cl-opt"><span>Quality</span><select data-clip="quality"><option value="720" ${s.quality === "720" ? "selected" : ""}>720p (fits in a chat)</option><option value="1080" ${s.quality === "1080" ? "selected" : ""}>1080p (sharper, bigger)</option></select></label>
         <label class="cl-opt"><span>Smoothness</span><select data-clip="fps"><option value="60" ${s.fps == 60 ? "selected" : ""}>60 fps</option><option value="30" ${s.fps == 30 ? "selected" : ""}>30 fps</option></select></label>
-        <button class="btn sm ghost" data-clipopen>📂 Open clips folder</button>
+        <button class="btn sm ghost" data-clipopen>Open clips folder</button>
       </div>
-      <div class="cl-list">${s.list.length ? s.list.map(c => `<div class="cl-row"><span class="cl-ic">🎞</span><span class="cl-t"><b>${esc(c.name.replace(/\.(mp4|webm)$/i, ""))}</b><small>${size(c.size)} · ${new Date(c.at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</small></span>
-          <button class="btn xs primary" data-clipsend="${esc(c.name)}" ${c.size > 25 * 1048576 ? `disabled title="Over 25 MB: too big to send in a chat"` : ""}>📤 Send</button><button class="btn xs" data-clipshow="${esc(c.name)}">Show</button><button class="btn xs ghost" data-clipdel="${esc(c.name)}" title="Move to the Recycle Bin">🗑</button></div>`).join("")
+      <div class="cl-list">${s.list.length ? s.list.map(c => `<div class="cl-row"><span class="cl-ic">${icon("video")}</span><span class="cl-t"><b>${esc(c.name.replace(/\.(mp4|webm)$/i, ""))}</b><small>${size(c.size)} · ${new Date(c.at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</small></span>
+          <button class="btn xs primary" data-clipsend="${esc(c.name)}" ${c.size > 25 * 1048576 ? `disabled title="Over 25 MB: too big to send in a chat"` : ""}>Send</button><button class="btn xs" data-clipshow="${esc(c.name)}">Show</button><button class="btn xs ghost" data-clipdel="${esc(c.name)}" title="Move to the Recycle Bin" aria-label="Move to the Recycle Bin">${icon("trash")}</button></div>`).join("")
         : `<div class="pt-empty"><b>No clips yet</b><span>Turn the clip saver on, play, and press your clip key when something cool happens.</span></div>`}</div>`;
   },
   async send(name) {
@@ -147,7 +147,7 @@ export const ClipsUI = {
     document.addEventListener("change", async e => {
       const t = e.target.closest("[data-clip]"); if (!t || !t.closest("#gClips")) return;
       const k = t.dataset.clip, v = t.type === "checkbox" ? t.checked : t.value;
-      const r = await sky.clips.set({ [k]: v }); if (r && r.ok) { if (k === "on") toast(v ? "🎬 Clip saver on: it records while you play" : "Clip saver off"); this.render(); }
+      const r = await sky.clips.set({ [k]: v }); if (r && r.ok) { if (k === "on") toast(v ? "Clip saver on: it records while you play" : "Clip saver off"); this.render(); }
     });
     document.addEventListener("click", async e => {
       const b = e.target.closest("[data-clipsend], [data-clipshow], [data-clipdel], [data-clipopen]"); if (!b || !b.closest("#gClips, #toast, .clip-toast")) return;
@@ -157,7 +157,7 @@ export const ClipsUI = {
       if (b.dataset.clipdel && await dialog({ title: "Delete this clip?", text: "It goes to the Recycle Bin.", ok: "Delete", danger: true })) { await sky.clips.del(b.dataset.clipdel); this.render(); }
     });
     sky.clips.onStatus(() => { if ($("#gClips") && !$("#view-games").classList.contains("hidden")) this.render(); });
-    sky.clips.onSaved(c => { this.render(); toast(`🎬 Clip saved${c.game ? " · " + c.game : ""}`); });
+    sky.clips.onSaved(c => { this.render(); toast(`Clip saved${c.game ? " · " + c.game : ""}`); });
   },
 };
 ClipsUI.init();
@@ -168,7 +168,7 @@ const Backup = {
     const save = $("#bkSave"), restore = $("#bkRestore"); if (!save || !sky || !sky.backup) return;
     save.onclick = async () => {
       save.disabled = true;
-      try { const r = await sky.backup.save(); if (r) { $("#bkNote").textContent = `✓ Saved ${r.files} files${r.games ? ` (including ${r.games} game${r.games > 1 ? "s" : ""} you made)` : ""} to ${r.path}`; toast("💾 Backup saved"); } }
+      try { const r = await sky.backup.save(); if (r) { $("#bkNote").textContent = `Saved ${r.files} files${r.games ? ` (including ${r.games} game${r.games > 1 ? "s" : ""} you made)` : ""} to ${r.path}`; toast("Backup saved"); } }
       catch (e) { toast(clean(e), true); } finally { save.disabled = false; }
     };
     restore.onclick = async () => {

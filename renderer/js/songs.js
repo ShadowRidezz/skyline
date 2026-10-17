@@ -110,7 +110,7 @@ function render() {
         <div class="sg-art">${r.art ? `<img src="${esc(r.art)}" alt="" loading="lazy">` : NOTE}</div>
         <div class="sg-t"><b>${esc(r.title)}${r.explicit ? ` <i class="ex">E</i>` : ""}</b><small>${esc([r.artist, r.album, r.year].filter(Boolean).join(" · "))}</small></div>
         <div class="sg-web">${S.hasSp ? `<button class="btn xs sp-btn" data-sgw="spotify" title="Play it in your Spotify app">${SpotifyUI.icon}Play</button><button class="btn xs ghost" data-sgw="youtube" title="Play it on YouTube in your browser">YouTube</button>`
-          : `<button class="btn xs primary" data-sgw="youtube" title="Play it on YouTube in your browser">▶ YouTube</button><button class="btn xs" data-sgw="spotify" title="Open it in Spotify">Spotify</button>`}</div></div>`).join("")
+          : `<button class="btn xs primary" data-sgw="youtube" title="Play it on YouTube in your browser">YouTube</button><button class="btn xs" data-sgw="spotify" title="Open it in Spotify">Spotify</button>`}</div></div>`).join("")
       : `<div class="sg-empty slim"><b>Find any song</b><p>${S.hasSp ? "Search a song or artist and press Play: it starts right away in your Spotify app. Nothing to set up." : "Search a song or artist, then play it on YouTube."}</p>
           ${S.setup ? "" : `<button class="btn xs ghost" data-sg="spsetup">More Spotify features (your playlists, queue, likes)…</button>`}</div>`);
   }
@@ -125,7 +125,7 @@ async function addPaths(paths) {
 function afterAdd(added) {
   if (!added) return;
   if (!added.length) return toast("Those songs are already in your music (or weren't songs Skyline can play)");
-  toast(`Added ${added.length} song${added.length > 1 ? "s" : ""} ✦`); FX.sound("success");
+  toast(`Added ${added.length} song${added.length > 1 ? "s" : ""}`); FX.sound("success");
   S.tab = "mine"; render();
   if (!Player.cur) Player.start(added.map(s => s.id), 0);
 }
@@ -145,8 +145,8 @@ async function find(q) {
 }
 function songMenu(anchor, s) {
   const m = $("#gMenu"); if (!m) return;
-  const items = [["▶ Play", () => Player.start(rows().map(x => x.id), rows().findIndex(x => x.id === s.id))], ["⤷ Play next", () => { if (!Player.cur) return Player.start([s.id]); Player.queue.splice(Player.idx + 1, 0, s.id); toast(`“${s.title}” plays next`); }],
-    ["📁 Show in folder", () => sky.songs.reveal(s.id)], null, ["✕ Remove from Skyline", async () => { if (Player.cur && Player.cur.id === s.id) Player.stop(); await sky.songs.remove([s.id]); refresh(); toast("Removed. The file itself is untouched"); }, "danger"]];
+  const items = [["Play", () => Player.start(rows().map(x => x.id), rows().findIndex(x => x.id === s.id))], ["Play next", () => { if (!Player.cur) return Player.start([s.id]); Player.queue.splice(Player.idx + 1, 0, s.id); toast(`“${s.title}” plays next`); }],
+    ["Show in folder", () => sky.songs.reveal(s.id)], null, ["Remove from Skyline", async () => { if (Player.cur && Player.cur.id === s.id) Player.stop(); await sky.songs.remove([s.id]); refresh(); toast("Removed. The file itself is untouched"); }, "danger"]];
   m.innerHTML = items.map((it, i) => it ? `<button data-mi="${i}" class="${it[2] || ""}">${esc(it[0])}</button>` : "<hr>").join("");
   const r = anchor.getBoundingClientRect(); m.classList.remove("hidden");
   m.style.left = Math.min(innerWidth - m.offsetWidth - 10, r.right - m.offsetWidth) + "px";
@@ -180,8 +180,8 @@ export const Songs = {
         const r = S.found[+fr.dataset.foundSong], q = `${r.title} ${r.artist}`;
         if (w.dataset.sgw === "youtube") { toast(`Opening “${r.title}” on YouTube…`); sky.songs.youtube(q).catch(er => toast(er.message, true)); }
         else {
-          toast(`🎧 Finding “${r.title}” on Spotify…`); w.disabled = true;
-          sky.songs.spotify(q, r.title).then(res => toast(res.how === "played" ? `▶ Playing “${res.title || r.title}” on Spotify` : res.how === "opened" ? `Opened “${res.title || r.title}” in Spotify` : `Couldn't find it exactly, so Spotify is searching for it`))
+          toast(`Finding “${r.title}” on Spotify…`); w.disabled = true;
+          sky.songs.spotify(q, r.title).then(res => toast(res.how === "played" ? `Playing “${res.title || r.title}” on Spotify` : res.how === "opened" ? `Opened “${res.title || r.title}” in Spotify` : `Couldn't find it exactly, so Spotify is searching for it`))
             .catch(er => toast(er.message, true)).finally(() => { w.disabled = false; });
         }
       }

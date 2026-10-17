@@ -7,6 +7,7 @@ import { toast } from "../util.js";
 import { api } from "./api.js";
 import { S, emit } from "./state.js";
 import { permissionWords, SHARE_QUALITY, boostScreen } from "./call.js";
+import { openMic, tuneOpus, tuneVoiceSender, preferRed, voiceKbps } from "./audio.js";
 
 const V = { live: null, viewers: new Set(), watching: null, channel: null, server: null, peers: new Map(), mic: null, noMic: "", muted: false, deafened: false, hb: 0, ctx: null, gain: null, meAn: null, meSrc: null, timer: 0, last: new Map(), seen: new Set() };
 const sig = (to, kind, payload) => api.rpc("send_voice_signal", { p_channel: V.channel, p_to: to, p_kind: kind, p_payload: payload || null }).catch(() => {});
@@ -18,12 +19,15 @@ function audio() {
   const out = (S.settings.devices || {}).out; if (out && V.ctx.setSinkId) V.ctx.setSinkId(out).catch(() => {});
   return V.ctx;
 }
+// the voice lane (after an offer arrives, the microphone's lane is the one it matched)
+const audioTx = p => p.pc.getTransceivers().find(t => t.receiver && t.receiver.track && t.receiver.track.kind === "audio") || null;
 function peer(uid, initiator) {
   let p = V.peers.get(uid); if (p) return p;
   const pc = new RTCPeerConnection({ iceServers: S.ice });
   p = { uid, pc, pending: [], el: null, src: null, an: null, made: Date.now(), vtx: null, video: null };
   V.peers.set(uid, p);
   if (V.mic) pc.addTrack(V.mic, new MediaStream([V.mic])); else pc.addTransceiver("audio", { direction: initiator ? "sendrecv" : "recvonly" });
+  if (initiator) preferRed(audioTx(p));
   if (initiator) p.vtx = pc.addTransceiver("video", { direction: "sendrecv" });   // the Go Live lane (the other side gets it from the offer)
   pc.onicecandidate = e => { if (e.candidate) sig(uid, "ice", { c: e.candidate.toJSON() }); };
   pc.ontrack = e => {
@@ -55,14 +59,15 @@ async function onSignal(row) {
     if (row.kind === "offer") {
       const old = V.peers.get(from); if (old && old.pc.remoteDescription) close(from);   // they reconnected: start fresh (one made just for early candidates is kept)
       const p = peer(from);
-      await p.pc.setRemoteDescription(boostScreen(d.sdp, 2)); await flush(p);
+      await p.pc.setRemoteDescription(tuneOpus(boostScreen(d.sdp, 2), voiceKbps(S.settings.voice))); preferRed(audioTx(p)); await flush(p);
       p.vtx = p.pc.getTransceivers().find(t => t.receiver && t.receiver.track && t.receiver.track.kind === "video") || null;
       if (p.vtx) p.vtx.direction = "sendrecv";
       if (V.live && V.viewers.has(from)) sendTo(p);
       const ans = await p.pc.createAnswer(); await p.pc.setLocalDescription(ans);
       sig(from, "answer", { sdp: p.pc.localDescription.toJSON() });
+      { const a = audioTx(p); if (a) tuneVoiceSender(a.sender, voiceKbps(S.settings.voice)); }
     } else if (row.kind === "answer") {
-      const p = V.peers.get(from); if (p && !p.pc.currentRemoteDescription) { await p.pc.setRemoteDescription(boostScreen(d.sdp, 2)); await flush(p); }
+      const p = V.peers.get(from); if (p && !p.pc.currentRemoteDescription) { await p.pc.setRemoteDescription(tuneOpus(boostScreen(d.sdp, 2), voiceKbps(S.settings.voice))); { const a = audioTx(p); if (a) tuneVoiceSender(a.sender, voiceKbps(S.settings.voice)); } await flush(p); }
     } else if (row.kind === "ice" && d.c) {
       const p = V.peers.get(from) || peer(from);
       if (p.pc.remoteDescription) await p.pc.addIceCandidate(d.c).catch(() => {}); else p.pending.push(d.c);
@@ -83,7 +88,7 @@ async function join(cid, sid) {
   if (V.channel) await leave(true);
   const vo = S.settings.voice || {}, dev = (S.settings.devices || {}).mic;
   V.noMic = "";
-  try { const s = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: dev ? { ideal: dev } : undefined, noiseSuppression: vo.noise !== false, echoCancellation: vo.echo !== false, autoGainControl: vo.agc !== false } }); V.mic = s.getAudioTracks()[0]; }
+  try { V.mic = await openMic(dev, vo); }
   catch (e) { V.mic = null; V.noMic = permissionWords(e, "microphone"); toast("No microphone: you can listen, but nobody hears you. " + V.noMic, true); }
   V.channel = cid; V.server = sid; V.muted = !!vo.joinMuted; V.deafened = false; if (V.mic) V.mic.enabled = !V.muted;
   let others = [];
@@ -118,7 +123,7 @@ async function goLive() {
     V.live = { track, quality }; track.onended = () => { if (V.live && V.live.track === track) stopLive(); };
     for (const uid of V.viewers) { const p = V.peers.get(uid); if (p) sendTo(p); }
     api.rpc("voice_state", { p_live: true }).catch(() => {});
-    toast("🔴 You're live. Friends in the channel can click LIVE to watch."); emit("voice"); emit("voicelist");
+    toast("You're live. Friends in the channel can click LIVE to watch."); emit("voice"); emit("voicelist");
   }, "Go Live: share your screen");
 }
 function stopLive() {

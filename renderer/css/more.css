@@ -264,3 +264,4 @@ body:not(.music-on) .pl-backdrop, body:not(.music-on) .mu-backdrop { opacity: 0;
 .pl-line.wl .w.now { background: linear-gradient(90deg, var(--a-soft) 0 50%, color-mix(in srgb, var(--a-soft) 40%, transparent) 50% 100%) 100% 0 / 200% 100% no-repeat; -webkit-background-clip: text; background-clip: text; color: transparent; }
 body[data-asst="thinking"] .asst-orb .ao-core svg { animation: aoThink 1.2s ease-in-out infinite; }
 @keyframes aoThink { 50% { opacity: .4; } }
+.sg-go svg { width: 16px; height: 16px; } .sp-img i svg, .sp-play svg { width: 14px; height: 14px; margin-left: 2px; }

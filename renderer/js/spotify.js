@@ -1,6 +1,7 @@
 // Spotify inside Skyline's "Find a song": connect once, then search all of Spotify and play, queue,
 // like or add to a playlist without leaving the app.
 import { $, esc, sky, toast, mmss, dialog, store } from "./util.js";
+import { icon } from "./social/icons.js";
 import { FX } from "./fx.js";
 
 const SPOT = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm4.6 14.4a.6.6 0 0 1-.9.2c-2.4-1.5-5.4-1.8-8.9-1a.6.6 0 1 1-.3-1.2c3.9-.9 7.2-.5 9.9 1.1.3.2.4.6.2.9zm1.2-2.8a.8.8 0 0 1-1.1.3c-2.7-1.7-6.9-2.2-10.2-1.2a.8.8 0 1 1-.4-1.5c3.7-1.1 8.4-.6 11.5 1.3.4.2.5.7.2 1.1zm.1-2.9C14.7 8.8 9.3 8.6 6.2 9.6a.9.9 0 1 1-.6-1.8c3.6-1.1 9.6-.9 13.3 1.4a.9.9 0 0 1-1 1.5z"/></svg>`;
@@ -53,27 +54,27 @@ export const SpotifyUI = {
     if (!r) return SP.lists ? this.cardsHTML("Your playlists", SP.lists) : this.recentHTML();
     if (!r.tracks.length && !r.artists.length && !r.albums.length && !r.playlists.length) return `<div class="sg-empty slim"><b>Nothing on Spotify for that.</b><p>Check the spelling, or try the artist's name.</p></div>`;
     return (r.tracks.length ? `<div class="sp-sec">Songs</div>` + r.tracks.map((t, i) => `<div class="sg-row sp-row" data-spt="${i}" style="--i:${i}">
-        <div class="sg-art">${t.art ? `<img src="${esc(t.art)}" alt="" loading="lazy">` : SPOT}<span class="sg-go">▶</span></div>
+        <div class="sg-art">${t.art ? `<img src="${esc(t.art)}" alt="" loading="lazy">` : SPOT}<span class="sg-go"><svg class="ic" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M8 5.5v13a.8.8 0 0 0 1.2.7l10.4-6.5a.8.8 0 0 0 0-1.4L9.2 4.8A.8.8 0 0 0 8 5.5z"/></svg></span></div>
         <div class="sg-t"><b>${esc(t.title)}${t.explicit ? ` <i class="ex">E</i>` : ""}</b><small>${esc([t.artist, t.album].filter(Boolean).join(" · "))}</small></div>
         <span class="sg-d">${t.dur ? mmss(t.dur) : ""}</span>
-        <div class="sp-acts"><button class="ibtn xs" data-spa="queue" title="Add to queue">＋</button><button class="ibtn xs" data-spa="like" title="Save to Liked Songs">♥</button><button class="ibtn xs" data-spa="add" title="Add to a playlist">⋯</button></div></div>`).join("") : "")
+        <div class="sp-acts"><button class="ibtn xs" data-spa="queue" title="Add to queue">${icon("plus")}</button><button class="ibtn xs" data-spa="like" title="Save to Liked Songs">${icon("heart")}</button><button class="ibtn xs" data-spa="add" title="Add to a playlist">⋯</button></div></div>`).join("") : "")
       + this.cardsHTML("Artists", r.artists) + this.cardsHTML("Albums", r.albums) + this.cardsHTML("Playlists", r.playlists);
   },
   // before you search: your recent searches and the songs you played from search
   recentHTML() {
     if (!RECENT.q.length && !RECENT.t.length) return `<div class="sg-empty slim"><b>Search all of Spotify</b><p>Songs, artists, albums and playlists. Tip: the assistant plays Spotify too: “play Blinding Lights”.</p></div>`;
     return (RECENT.q.length ? `<div class="sp-sec sp-sec-row"><span>Recent searches</span><button class="link" data-sprc="q">Clear</button></div>
-        <div class="sp-chips">${RECENT.q.map((q, i) => `<span class="sp-chip"><button data-spq="${i}" title="Search “${esc(q)}” again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>${esc(q)}</button><button class="x" data-spqx="${i}" title="Remove" aria-label="Remove “${esc(q)}”">✕</button></span>`).join("")}</div>` : "")
+        <div class="sp-chips">${RECENT.q.map((q, i) => `<span class="sp-chip"><button data-spq="${i}" title="Search “${esc(q)}” again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>${esc(q)}</button><button class="x" data-spqx="${i}" title="Remove" aria-label="Remove “${esc(q)}”">${icon("x")}</button></span>`).join("")}</div>` : "")
       + (RECENT.t.length ? `<div class="sp-sec sp-sec-row"><span>Recently played from search</span><button class="link" data-sprc="t">Clear</button></div>` + RECENT.t.map((t, i) => `<div class="sg-row sp-row" data-spr="${i}" style="--i:${i}">
-        <div class="sg-art">${t.art ? `<img src="${esc(t.art)}" alt="" loading="lazy">` : SPOT}<span class="sg-go">▶</span></div>
+        <div class="sg-art">${t.art ? `<img src="${esc(t.art)}" alt="" loading="lazy">` : SPOT}<span class="sg-go"><svg class="ic" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M8 5.5v13a.8.8 0 0 0 1.2.7l10.4-6.5a.8.8 0 0 0 0-1.4L9.2 4.8A.8.8 0 0 0 8 5.5z"/></svg></span></div>
         <div class="sg-t"><b>${esc(t.title)}${t.explicit ? ` <i class="ex">E</i>` : ""}</b><small>${esc([t.artist, t.album].filter(Boolean).join(" · "))}</small></div>
         <span class="sg-d">${t.dur ? mmss(t.dur) : ""}</span>
-        <div class="sp-acts"><button class="ibtn xs" data-spa="queue" title="Add to queue">＋</button><button class="ibtn xs" data-spa="like" title="Save to Liked Songs">♥</button><button class="ibtn xs" data-spa="add" title="Add to a playlist">⋯</button></div></div>`).join("") : "");
+        <div class="sp-acts"><button class="ibtn xs" data-spa="queue" title="Add to queue">${icon("plus")}</button><button class="ibtn xs" data-spa="like" title="Save to Liked Songs">${icon("heart")}</button><button class="ibtn xs" data-spa="add" title="Add to a playlist">⋯</button></div></div>`).join("") : "");
   },
   cardsHTML(title, list) {
     if (!list || !list.length) return "";
     return `<div class="sp-sec">${title}</div><div class="sp-cards">${list.map(c => `<button class="sp-card ${c.kind}" data-spc="${esc(c.uri)}" title="Play ${esc(c.title)}">
-      <span class="sp-img">${c.art ? `<img src="${esc(c.art)}" alt="" loading="lazy">` : SPOT}<i>▶</i></span><b>${esc(c.title)}</b><small>${esc(c.sub || c.artist || "")}</small></button>`).join("")}</div>`;
+      <span class="sp-img">${c.art ? `<img src="${esc(c.art)}" alt="" loading="lazy">` : SPOT}<i><svg class="ic" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M8 5.5v13a.8.8 0 0 0 1.2.7l10.4-6.5a.8.8 0 0 0 0-1.4L9.2 4.8A.8.8 0 0 0 8 5.5z"/></svg></i></span><b>${esc(c.title)}</b><small>${esc(c.sub || c.artist || "")}</small></button>`).join("")}</div>`;
   },
   async search(q) {
     remember.q(q); SP.busy = true; SP.res = null; this.paint();
@@ -84,7 +85,7 @@ export const SpotifyUI = {
   paint() { const fd = $("#sgFound"); if (fd && this.connected()) fd.innerHTML = this.resultsHTML(); },
   async play(item) {
     if (item && item.kind === "track") remember.t(item);
-    try { const r = await sky.spotify.play(item); toast(r.how === "played" ? `▶ Playing “${item.title}” on Spotify` : `Opened “${item.title}” in Spotify`); FX.sound("success"); }
+    try { const r = await sky.spotify.play(item); toast(r.how === "played" ? `Playing “${item.title}” on Spotify` : `Opened “${item.title}” in Spotify`); FX.sound("success"); }
     catch (e) { toast(clean(e), true); }
   },
   // clicks inside the Find tab (returns true when handled)
@@ -111,7 +112,7 @@ export const SpotifyUI = {
       if (!act) { this.play(t); return true; }
       try {
         if (act.dataset.spa === "queue") { await sky.spotify.queue(t.uri); toast(`Added “${t.title}” to your queue`); }
-        if (act.dataset.spa === "like") { await sky.spotify.like(t.id); toast(`♥ Saved “${t.title}” to Liked Songs`); act.classList.add("on"); }
+        if (act.dataset.spa === "like") { await sky.spotify.like(t.id); toast(`Saved “${t.title}” to Liked Songs`); act.classList.add("on"); }
         if (act.dataset.spa === "add") this.addMenu(act, t);
       } catch (er) { toast(clean(er), true); }
       return true;
@@ -124,7 +125,7 @@ export const SpotifyUI = {
       if (!act) { this.play(t); return true; }
       try {
         if (act.dataset.spa === "queue") { await sky.spotify.queue(t.uri); toast(`Added “${t.title}” to your queue`); }
-        if (act.dataset.spa === "like") { await sky.spotify.like(t.id); toast(`♥ Saved “${t.title}” to Liked Songs`); act.classList.add("on"); }
+        if (act.dataset.spa === "like") { await sky.spotify.like(t.id); toast(`Saved “${t.title}” to Liked Songs`); act.classList.add("on"); }
         if (act.dataset.spa === "add") this.addMenu(act, t);
       } catch (er) { toast(clean(er), true); }
       return true;
@@ -151,7 +152,7 @@ export const SpotifyUI = {
       btn.disabled = true; btn.innerHTML = `${SPOT}Finish in your browser…`;
       toast("Sign in on Spotify's page in your browser, then come back");
       SP.status = await sky.spotify.connect();
-      toast(`🎧 Spotify connected${SP.status.user ? ": hi " + SP.status.user.name : ""}!`); FX.confetti(innerWidth * .7, innerHeight * .5);
+      toast(`Spotify connected${SP.status.user ? ": hi " + SP.status.user.name : ""}!`); FX.confetti(innerWidth * .7, innerHeight * .5);
       return true;
     } catch (e) { toast(clean(e), true); btn.disabled = false; btn.innerHTML = `${SPOT}Connect Spotify`; return false; }
   },
@@ -174,7 +175,7 @@ export const SpotifyLib = {
     else if (!list) body = "";
     else if (LIB.section === "liked") body = this.tracksHTML(list, true);
     else body = list.length ? `<div class="sp-lib">${list.map((c, i) => `<div class="sp-lc ${c.kind}" data-lc="${i}" title="${esc(c.title)}">
-        <span class="sp-img">${c.art ? `<img src="${esc(c.art)}" alt="" loading="lazy">` : SPOT}<button class="sp-play" data-lplay="${i}" title="Play">▶</button></span><b>${esc(c.title)}</b><small>${esc(c.sub || "")}</small></div>`).join("")}</div>`
+        <span class="sp-img">${c.art ? `<img src="${esc(c.art)}" alt="" loading="lazy">` : SPOT}<button class="sp-play" data-lplay="${i}" title="Play" aria-label="Play"><svg class="ic" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M8 5.5v13a.8.8 0 0 0 1.2.7l10.4-6.5a.8.8 0 0 0 0-1.4L9.2 4.8A.8.8 0 0 0 8 5.5z"/></svg></button></span><b>${esc(c.title)}</b><small>${esc(c.sub || "")}</small></div>`).join("")}</div>`
       : `<div class="sg-empty slim"><b>Nothing here yet.</b><p>${LIB.section === "artists" ? "Follow artists on Spotify and they'll show up here." : "Save some on Spotify and they'll show up here."}</p></div>`;
     if (!list && !LIB.busy) this.load(LIB.section);
     return head + seg + body;
@@ -191,10 +192,10 @@ export const SpotifyLib = {
     if (!list.length) return `<div class="sg-empty slim"><b>No songs.</b></div>`;
     return (liked ? `<div class="row sp-likedbar"><button class="btn sm sp-btn" data-spl="playliked">${SPOT}Play liked songs</button><span class="muted">${list.length} most recent</span></div>` : "")
       + list.map((t, i) => `<div class="sg-row sp-row" data-ltk="${i}" style="--i:${Math.min(i, 30)}">
-        <div class="sg-art">${t.art ? `<img src="${esc(t.art)}" alt="" loading="lazy">` : SPOT}<span class="sg-go">▶</span></div>
+        <div class="sg-art">${t.art ? `<img src="${esc(t.art)}" alt="" loading="lazy">` : SPOT}<span class="sg-go"><svg class="ic" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M8 5.5v13a.8.8 0 0 0 1.2.7l10.4-6.5a.8.8 0 0 0 0-1.4L9.2 4.8A.8.8 0 0 0 8 5.5z"/></svg></span></div>
         <div class="sg-t"><b>${esc(t.title)}${t.explicit ? ` <i class="ex">E</i>` : ""}</b><small>${esc([t.artist, t.album].filter(Boolean).join(" · "))}</small></div>
         <span class="sg-d">${t.dur ? mmss(t.dur) : ""}</span>
-        <div class="sp-acts"><button class="ibtn xs" data-ltq title="Add to queue">＋</button><button class="ibtn xs" data-ltl title="Save to Liked Songs">♥</button></div></div>`).join("");
+        <div class="sp-acts"><button class="ibtn xs" data-ltq title="Add to queue">${icon("plus")}</button><button class="ibtn xs" data-ltl title="Save to Liked Songs">${icon("heart")}</button></div></div>`).join("");
   },
   async load(section) {
     LIB.busy = true; LIB.err = ""; this.paint();
@@ -214,9 +215,9 @@ export const SpotifyLib = {
       const k = a.dataset.spl;
       if (k === "back") { LIB.detail = null; this.paint(); }
       if (k === "refresh") { LIB.lists = {}; LIB.detail = null; this.paint(); }
-      if (k === "reconnect") { try { toast("Sign in on Spotify's page in your browser, then come back"); SP.status = await sky.spotify.connect(); LIB.lists = {}; this.paint(); toast("🎧 Reconnected"); } catch (er) { toast(clean(er), true); } }
+      if (k === "reconnect") { try { toast("Sign in on Spotify's page in your browser, then come back"); SP.status = await sky.spotify.connect(); LIB.lists = {}; this.paint(); toast("Reconnected"); } catch (er) { toast(clean(er), true); } }
       if (k === "playall" && LIB.detail) SpotifyUI.play(LIB.detail);
-      if (k === "playliked") { const l = LIB.lists.liked || []; try { const r = await sky.spotify.playList(l.map(t => t.uri)); toast(r.how === "played" ? "▶ Playing your liked songs" : "Opened in Spotify"); } catch (er) { toast(clean(er), true); } }
+      if (k === "playliked") { const l = LIB.lists.liked || []; try { const r = await sky.spotify.playList(l.map(t => t.uri)); toast(r.how === "played" ? "Playing your liked songs" : "Opened in Spotify"); } catch (er) { toast(clean(er), true); } }
       return true;
     }
     const pl = e.target.closest("[data-lplay]"); if (pl) { const c = (LIB.lists[LIB.section] || [])[+pl.dataset.lplay]; if (c) SpotifyUI.play(c); return true; }
@@ -226,7 +227,7 @@ export const SpotifyLib = {
       const list = LIB.detail ? LIB.tracks : LIB.lists.liked || [], t = list[+row.dataset.ltk]; if (!t) return true;
       try {
         if (e.target.closest("[data-ltq]")) { await sky.spotify.queue(t.uri); toast(`Added “${t.title}” to your queue`); }
-        else if (e.target.closest("[data-ltl]")) { await sky.spotify.like(t.id); toast(`♥ Saved “${t.title}”`); }
+        else if (e.target.closest("[data-ltl]")) { await sky.spotify.like(t.id); toast(`Saved “${t.title}”`); }
         else SpotifyUI.play(LIB.detail && LIB.detail.kind !== "artist" ? t : { ...t, solo: true });
       } catch (er) { toast(clean(er), true); }
       return true;

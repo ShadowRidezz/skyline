@@ -255,8 +255,7 @@ const ICON = { prev: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5
 const mmss = ms => { const s = Math.floor(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
 function playerCard() {
   if (!Music.available()) return "";
-  if (!Music.connected()) return store.get("spHide", false) ? "" : `<section class="m-card m-spconnect"><header><h2>Your music, here</h2><button class="m-x" data-m="hidesp" aria-label="Hide">${X}</button></header>
-    <p class="m-muted">Connect Spotify to see what's playing on your phone or PC, and play, pause or skip from Home.</p><button class="btn primary" data-m="spconnect">Connect Spotify</button></section>`;
+  if (!Music.connected()) return "";   // (no Spotify sign-in on the phone: you said so)
   const n = Music.now; if (!n) return "";
   const pct = n.dur ? Math.min(100, Music.position() / n.dur * 100) : 0;
   return `<section class="m-card m-player${n.playing ? " on" : ""}">
@@ -311,9 +310,7 @@ const Settings = {
       <div class="m-list">${(() => { const w = Weather.settings(); return `<button data-m="wxcity"><span class="t"><b>Your city</b><small>${w.city ? esc(w.city.name + (w.city.region ? ", " + w.city.region : "")) : "Not set: search for it, or use this phone's location"}</small></span>${chev}</button>
         <div class="m-li"><span class="t"><b>Temperature</b></span><div class="seg"><button class="${w.units === "c" ? "" : "on"}" data-m="wxu:f">°F</button><button class="${w.units === "c" ? "on" : ""}" data-m="wxu:c">°C</button></div></div>
         <label class="m-li"><span class="t"><b>Show on Home</b><small>The weather window at the top right</small></span><span class="toggle"><input type="checkbox" data-wxshow ${w.show ? "checked" : ""}><span class="sw"></span></span></label>`; })()}</div>
-      ${Music.available() ? `<h3 class="m-h3">Music</h3><div class="m-list">${Music.connected()
-        ? `<div class="m-li"><span class="t"><b>Spotify</b><small>Connected: what you play shows on Home</small></span><button class="btn sm" data-m="spoff">Disconnect</button></div>`
-        : `<div class="m-li"><span class="t"><b>Spotify</b><small>See what's playing and control it from Home</small></span><button class="btn sm primary" data-m="spconnect">Connect</button></div>`}</div>` : ""}
+      ${Music.available() && Music.connected() ? `<h3 class="m-h3">Music</h3><div class="m-list"><div class="m-li"><span class="t"><b>Spotify</b><small>Connected: what you play shows on Home</small></span><button class="btn sm" data-m="spoff">Disconnect</button></div></div>` : ""}
       <h3 class="m-h3">Background</h3>
       <div class="m-bgs">${PHOTOS.map(([k, n]) => `<button class="m-bg${b === k ? " on" : ""}" data-bg="${k}" aria-label="${esc(n)}"><img src="img/bg/${k}-s.jpg" alt=""><span>${esc(n)}</span></button>`).join("")}
         <button class="m-bg plain${b === "none" ? " on" : ""}" data-bg="none" aria-label="Plain"><i></i><span>Plain</span></button></div>

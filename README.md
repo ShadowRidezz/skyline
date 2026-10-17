@@ -12,11 +12,11 @@ Your desktop becomes a city at night, and its lights move with whatever you're l
   user only (no admin needed). After that Skyline **updates itself**: new versions download in the background and
   install the next time it restarts.
 - **iPhone and Android:** open **https://shadowridezz.github.io/skyline/** on your phone.
-  - iPhone: Safari â€º Share â€º **Add to Home Screen**.
-  - Android: Chrome â€º â‹® â€º **Install app**.
+  - iPhone: Safari › Share › **Add to Home Screen**.
+  - Android: Chrome › ⋮ › **Install app**.
 
-  It opens like a normal app and is always the newest version. On the phone you get Home (the time, your
-  city's weather with an hourly and 5-day forecast, and your music), Social (messages, friends, servers, GIFs) and
+  It opens like a normal app and is always the newest version. On the phone you get Home (the time and
+  your city's weather with an hourly and 5-day forecast), Social (messages, friends, servers, GIFs) and
   School (your grades and homework, sent there by your PC's Skyline).
 
 ## What's in it
@@ -25,7 +25,7 @@ Your desktop becomes a city at night, and its lights move with whatever you're l
 network graphs; a calendar, countdown, focus timer, tasks, a notes box, and quick links. Drag widgets by their title
 to reorder them, or turn them off.
 
-**Music:** whatever Windows says is playing (Spotify, a YouTube tab, Apple Musicâ€¦).
+**Music:** whatever Windows says is playing (Spotify, a YouTube tab, Apple Music…).
 - Play/pause, skip, seek, shuffle, repeat, volume, synced lyrics, recently played and a pop-out mini player.
 - A real frequency spectrum from your speakers drives the visualisers and the city lights.
 - **Your own songs:** drop in MP3, M4A, FLAC, WAV, OGG or Opus files and they play inside Skyline.
@@ -38,6 +38,9 @@ to reorder them, or turn them off.
   indicators. Right-click a sticker to delete it.
 - **Servers** with text and voice channels, invites, and roles for the owner.
 - Voice and video calls, screen sharing (full screen, high quality), and **Go Live** in voice channels.
+- **Clear voice on calls:** your mic is sent at full quality (64 kbps Opus, or 128 kbps in Studio) with rumble taken
+  out and a steady volume, and it holds up on a bad connection. Settings › Voice & video has the quality setting and
+  a **Hear yourself** test.
 - **Watch together:** watch YouTube or listen along on Spotify with a friend.
 - Profiles with badges, a status, and "Playing Fortnite" style activity.
 
@@ -54,13 +57,16 @@ quizzes, an assignment planner). Grade alerts and spoken homework reminders. Eve
 
 **YouTube:** search and watch without leaving Skyline.
 
-**Sky, the assistant** (the glowing mic, or Ctrl+Space / Alt+Shift+A from anywhere):
+**Sky, the assistant** (Ask Sky in the side bar, or Ctrl+Space / Alt+Shift+A from anywhere):
 - Talk to it: "open Minecraft", "play Blinding Lights", "volume 40", "set a timer for 25 minutes", "what's due tomorrow?".
 - It answers out loud, with a choice of voices.
 - It remembers how you do things ("remember that I use Modrinth for Minecraft").
 - Questions it can't answer go to Claude or ChatGPT if you've connected one.
 
-**Themes and looks:** live photos of real cities at night whose lights twinkle with your music, plus Theme Studio
+**The look:** a calm, readable interface over a city at night: one card style, one accent colour, clear type and
+line icons, the same on the PC and the phone.
+
+**Themes:** live photos of real cities at night whose lights twinkle with your music, plus Theme Studio
 for colours, effects, rain, snow, your own photos, fonts, glass styles and layouts. Themes can change by time of
 day, and live weather appears in the sky.
 

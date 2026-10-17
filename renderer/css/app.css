@@ -5,7 +5,7 @@
   --panel: rgba(11,14,21,.84); --panel2: rgba(22,26,36,.9); --panel3: rgba(32,37,50,.94);
   --side: rgba(8,10,16,.8); --sheet: rgba(13,16,24,.98); --line: rgba(255,255,255,.07); --line2: rgba(255,255,255,.12);
   --text: #eceff4; --muted: #9ba3b1; --faint: #6b7383;
-  --a1: #5b9cff; --a2: #5b9cff; --grad: var(--a1); --a-soft: #a9c8ff; --on-a: #fff;
+  --a1: #5b9cff; --a2: #5b9cff; --grad: var(--a1); --a-soft: #a9c8ff; --on-a: #0b0c10;
   --glass: 20px; --win: #ffcf94; --np-color: var(--a1); --np-color2: var(--a2);
   --ok: #3dd68c; --warn: #f5b83d; --bad: #f2555a;
   --r: 14px; --r-sm: 8px; --tb: 38px;
@@ -92,7 +92,7 @@ main { min-width: 0; overflow: auto; position: relative; }
 .ibtn:hover { background: rgba(255,255,255,.07); color: var(--text); }
 .ibtn svg { width: 16px; height: 16px; }
 .ibtn.xs { width: 22px; height: 22px; font-size: 13px; }
-.seg { display: inline-flex; padding: 2px; gap: 2px; background: rgba(0,0,0,.25); border: 1px solid var(--line); border-radius: calc(var(--r-sm) + 2px); flex-wrap: wrap; width: max-content; max-width: 100%; }
+.seg { display: inline-flex; padding: 2px; gap: 2px; background: color-mix(in srgb, var(--bg) 72%, transparent); border: 1px solid var(--line); border-radius: calc(var(--r-sm) + 2px); flex-wrap: wrap; width: max-content; max-width: 100%; }
 .seg button { height: 28px; padding: 0 12px; border: 0; border-radius: var(--r-sm); background: none; color: var(--muted); cursor: pointer; font-size: 13px; font-weight: 550; transition: color .12s, background .12s; }
 .seg.sm button { height: 24px; padding: 0 9px; font-size: 12px; }
 .seg button:hover { color: var(--text); }

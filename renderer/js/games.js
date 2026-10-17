@@ -1,6 +1,7 @@
 // The Games page: search, the AI Game Builder, My Games, your library (browser, local and web games),
 // Find Games, and the player / builder workspace. Games run in a sandboxed frame with no network.
 import { $, $$, esc, sky, toast, dialog, setSeg, store, debounce } from "./util.js";
+import { icon } from "./social/icons.js";
 import { Scene } from "./scene/scene.js";
 import { FX } from "./fx.js";
 
@@ -11,8 +12,7 @@ const styles = () => Array.isArray(G.opts.style) ? G.opts.style : G.opts.style ?
 const EXAMPLES = ["A Geometry Dash-style platformer with 3 levels", "A horror game in an abandoned school at night", "A 2D top-down racing game with drifting",
   "A Minecraft-style block building game", "A neon arena shooter with waves of enemies", "A cosy farming clicker"];
 const TWEAKS = ["Make the player faster", "Add three more enemies", "Add a boss fight", "Make it harder", "Add a main menu", "Change the colours to purple", "Add sound effects"];
-const KIND = { browser: ["🌐", "Browser game"], local: ["💻", "Local game"], web: ["🔗", "Web game"] };
-const GENRE_ICON = { Platformer: "🏃", Racing: "🏎️", Horror: "👻", Shooter: "🎯", Puzzle: "🧩", RPG: "🗡️", Clicker: "👆", Simulator: "🏗️", Arcade: "🕹️", Other: "🎮" };
+const KIND = { browser: ["globe", "Browser game"], local: ["window", "Local game"], web: ["link", "Web game"] };
 
 const G = {
   projects: [], library: [], found: [], ai: { configured: false }, opts: { type: "", style: "", custom: "", difficulty: "Medium" },
@@ -30,16 +30,16 @@ const host = u => { try { return new URL(u).hostname.replace(/^www\./, ""); } ca
 
 /* ---------- cards ---------- */
 function thumbHTML(src, name, genre) {
-  return src ? `<img src="${esc(src)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'gc-ph',textContent:'${GENRE_ICON[genre] || "🎮"}'}))">`
-    : `<span class="gc-ph">${GENRE_ICON[genre] || "🎮"}</span>`;
+  return src ? `<img src="${esc(src)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'gc-ph'}))">`
+    : `<span class="gc-ph"></span>`;
 }
 function projectCard(p) {
   return `<article class="gcard" data-proj="${p.id}">
-    <div class="gc-thumb" data-act="play">${thumbHTML(p.thumb, p.name, p.genre)}<span class="gc-kind" title="${KIND.browser[1]} · made with AI">${KIND.browser[0]} Browser</span>${p.saved ? "" : `<span class="gc-draft">Draft</span>`}
-      <span class="gc-play">▶</span></div>
+    <div class="gc-thumb" data-act="play">${thumbHTML(p.thumb, p.name, p.genre)}<span class="gc-kind" title="${KIND.browser[1]} · made with AI">${icon(KIND.browser[0])}Browser</span>${p.saved ? "" : `<span class="gc-draft">Draft</span>`}
+      <span class="gc-play">${icon("play")}</span></div>
     <div class="gc-body"><b title="${esc(p.name)}">${esc(p.name)}</b><p>${esc(p.description || "")}</p>
       <div class="gc-meta"><span>${esc(p.genre || "Game")}</span><span>·</span><span title="Created ${new Date(p.created).toLocaleString()}">Edited ${when(p.modified)}</span></div>
-      <div class="gc-acts"><button class="btn sm primary" data-act="play">▶ Play</button><button class="btn sm" data-act="edit">✦ Edit with AI</button><button class="ibtn" data-act="menu" title="More">⋯</button></div></div>
+      <div class="gc-acts"><button class="btn sm primary" data-act="play">Play</button><button class="btn sm" data-act="edit">Edit with AI</button><button class="ibtn" data-act="menu" title="More">⋯</button></div></div>
   </article>`;
 }
 function libThumb(it) {   // the real cover when Skyline found one, else the game's own big logo, with its icon in the corner
@@ -50,21 +50,21 @@ function libThumb(it) {   // the real cover when Skyline found one, else the gam
   return { cls: "", html: thumbHTML(it.thumb, it.name, it.genre) };
 }
 function libCard(it) {
-  const [icon, label] = KIND[it.kind] || KIND.web, th = libThumb(it);
+  const [kic, label] = KIND[it.kind] || KIND.web, th = libThumb(it);
   return `<article class="gcard" data-lib="${it.id}">
-    <div class="gc-thumb ${th.cls}" data-act="play" ${th.style ? `style='${th.style}'` : ""}>${th.html}<span class="gc-kind" title="${label}">${icon} ${label.split(" ")[0]}</span><span class="gc-play">${it.kind === "web" ? "↗" : "▶"}</span></div>
+    <div class="gc-thumb ${th.cls}" data-act="play" ${th.style ? `style='${th.style}'` : ""}>${th.html}${it.kind === "local" ? "" : `<span class="gc-kind" title="${label}">${icon(kic)}${label.split(" ")[0]}</span>`}<span class="gc-play">${icon(it.kind === "web" ? "external" : "play")}</span></div>
     <div class="gc-body"><b title="${esc(it.name)}">${esc(it.name)}</b><p>${esc(it.description || (it.kind === "local" ? "Installed on this PC" : ""))}</p>
       <div class="gc-meta"><span>${esc(it.source || "")}</span>${it.genre ? `<span>·</span><span>${esc(it.genre)}</span>` : ""}${it.played ? `<span>·</span><span>Played ${when(it.played)}</span>` : ""}</div>
-      <div class="gc-acts"><button class="btn sm primary" data-act="play">${it.kind === "web" ? "Open ↗" : "▶ Play"}</button><button class="ibtn" data-act="libmenu" title="More">⋯</button></div></div>
+      <div class="gc-acts"><button class="btn sm primary" data-act="play">${it.kind === "web" ? "Open" : "Play"}</button><button class="ibtn" data-act="libmenu" title="More">⋯</button></div></div>
   </article>`;
 }
 function foundCard(r, i) {
   const inLib = G.library.some(x => x.url === r.url);
   return `<article class="gcard found" data-found="${i}">
-    <div class="gc-thumb" data-act="open">${thumbHTML(r.thumb, r.name, r.genre)}<span class="gc-kind" title="Opens the game's website">🔗 Web</span><span class="gc-src">${esc(r.source)}</span></div>
+    <div class="gc-thumb" data-act="open">${thumbHTML(r.thumb, r.name, r.genre)}<span class="gc-kind" title="Opens the game's website">Web</span><span class="gc-src">${esc(r.source)}</span></div>
     <div class="gc-body"><b title="${esc(r.name)}">${esc(r.name)}</b><p>${esc(r.description || "")}</p>
       <div class="gc-meta"><span>${esc(r.platform || "")}</span>${r.genre ? `<span>·</span><span>${esc(r.genre)}</span>` : ""}</div>
-      <div class="gc-acts"><button class="btn sm" data-act="open" title="Opens ${esc(host(r.url))} in your browser">Open ↗</button><button class="btn sm ${inLib ? "" : "primary"}" data-act="add" ${inLib ? "disabled" : ""}>${inLib ? "✓ In library" : "+ Library"}</button></div></div>
+      <div class="gc-acts"><button class="btn sm" data-act="open" title="Opens ${esc(host(r.url))} in your browser">Open ↗</button><button class="btn sm ${inLib ? "" : "primary"}" data-act="add" ${inLib ? "disabled" : ""}>${inLib ? "In library" : "+ Library"}</button></div></div>
   </article>`;
 }
 function renderMine() {
@@ -76,7 +76,7 @@ function renderMine() {
 function renderLib() {
   const box = $("#gLib"); if (!box) return;
   box.innerHTML = G.library.length ? G.library.slice().sort((a, b) => (b.played || b.added) - (a.played || a.added)).map(libCard).join("")
-    : `<div class="g-empty"><span>💻</span><b>Add the games you already have</b><p>Find installed Steam, Epic and desktop games, or save web games from Find Games.</p></div>`;
+    : `<div class="g-empty"><span>${icon("gamepad")}</span><b>Add the games you already have</b><p>Find installed Steam, Epic and desktop games, or save web games from Find Games.</p></div>`;
 }
 
 /* ---------- search ---------- */
@@ -86,7 +86,7 @@ function renderResults() {
   if (!q) return;
   const match = x => `${x.name} ${x.description || ""} ${x.genre || ""} ${x.source || ""}`.toLowerCase().includes(q);
   const mine = G.projects.filter(match), lib = G.library.filter(match);
-  box.innerHTML = `<div class="g-sec-h"><h2>Results for “${esc(q)}”</h2><span class="sp"></span><button class="btn sm" data-gfind="${esc(q)}">🔎 Find “${esc(q)}” online</button></div>
+  box.innerHTML = `<div class="g-sec-h"><h2>Results for “${esc(q)}”</h2><span class="sp"></span><button class="btn sm" data-gfind="${esc(q)}">Find “${esc(q)}” online</button></div>
     ${mine.length || lib.length ? `<div class="g-grid">${mine.map(projectCard).join("")}${lib.map(libCard).join("")}</div>`
       : `<div class="g-empty slim"><b>Nothing saved matches.</b><p>Try Find Games to search legitimate game sites, or build it with AI.</p></div>`}`;
 }
@@ -114,16 +114,16 @@ function renderBuilder() {
   const box = $("#gBuilder"); if (!box) return;
   if (G.job && G.job.mode === "create") return renderProgress(box);
   if (!G.ai.canBuild && G.ai.claudeInstalled) {   // the builder runs on Claude: sign in once with your Claude account
-    box.innerHTML = `<div class="gb-head"><span class="gb-badge">✦ AI GAME BUILDER · CLAUDE</span><h2>Sign in with Claude to build games</h2>
+    box.innerHTML = `<div class="gb-head"><span class="gb-badge">AI GAME BUILDER · CLAUDE</span><h2>Sign in with Claude to build games</h2>
       <p>The builder uses Claude (Opus 5.5) through your Claude account: no API key, nothing to pay extra. Claude writes the game, Skyline test-plays it, and Claude looks at screenshots of its own game to fix and polish it before you play.</p></div>
-      <div class="gb-claude"><button class="btn primary lg" data-gb="signin" ${G.signingIn ? "disabled" : ""}>${G.signingIn ? "Waiting for you to sign in…" : "✦ Sign in with Claude"}</button>
+      <div class="gb-claude"><button class="btn primary lg" data-gb="signin" ${G.signingIn ? "disabled" : ""}>${G.signingIn ? "Waiting for you to sign in…" : "Sign in with Claude"}</button>
         <span class="muted">${G.signingIn ? "Finish signing in in the window that opened (it opens your browser). Skyline switches over by itself." : "Opens Claude's own sign-in. You sign in yourself; Skyline never sees your password."}</span></div>
       <details class="gb-more"><summary>Other ways</summary>
         <p>Use an Anthropic API key instead (Settings › AI builder)${G.ai.localAvailable ? `, or <button class="link" data-gb="local">use the free AI on this PC</button> (much weaker: simple games only)` : ""}.</p></details>`;
     return;
   }
   if (!G.ai.canBuild) {
-    box.innerHTML = `<div class="gb-head"><span class="gb-badge">✦ AI GAME BUILDER</span><h2>Turn an idea into a game you can play</h2>
+    box.innerHTML = `<div class="gb-head"><span class="gb-badge">AI GAME BUILDER</span><h2>Turn an idea into a game you can play</h2>
       <p>The builder uses Claude. Install Claude Code and sign in with your Claude account (no key needed), or connect your own API key:</p></div>
       <ol class="gb-steps"><li>Open <button class="link" data-gb="console">console.anthropic.com</button>, sign in, and create an API key (you pay Anthropic directly for what you use).</li>
         <li>Paste the key here. It's stored encrypted on this PC and only Skyline's background process ever sees it.</li></ol>
@@ -131,8 +131,8 @@ function renderBuilder() {
       <p class="muted">You can change the key and the model later in Settings › AI builder.</p>`;
     return;
   }
-  const chip = (list, sel, attr) => list.map(v => `<button class="gchip ${(Array.isArray(sel) ? sel.includes(v) : sel === v) ? "on" : ""}" data-${attr}="${v}">${attr === "gtype" ? (GENRE_ICON[v] || "") + " " : ""}${v}</button>`).join("");
-  box.innerHTML = `<div class="gb-head"><span class="gb-badge">✦ AI GAME BUILDER</span><h2>What game do you want to create?</h2></div>
+  const chip = (list, sel, attr) => list.map(v => `<button class="gchip ${(Array.isArray(sel) ? sel.includes(v) : sel === v) ? "on" : ""}" data-${attr}="${v}">${v}</button>`).join("");
+  box.innerHTML = `<div class="gb-head"><span class="gb-badge">AI GAME BUILDER</span><h2>What game do you want to create?</h2></div>
     <div class="gb-idea"><textarea id="gbIdea" rows="3" placeholder="Describe your game… what you do, the setting, the vibe. The more detail, the better." maxlength="2000">${esc(store.local("idea") || "")}</textarea>
       <div class="gb-ex">${EXAMPLES.map(e => `<button class="gex" data-gex="${esc(e)}">${esc(e)}</button>`).join("")}</div></div>
     <div class="gb-opts">
@@ -141,8 +141,8 @@ function renderBuilder() {
         <input id="gbCustom" class="gb-custom ${styles().includes("Custom") ? "" : "hidden"}" placeholder="Describe the look, e.g. watercolour, retro CRT, low-poly…" value="${esc(G.opts.custom)}" maxlength="120"></div>
       <div class="gb-opt"><span>Difficulty</span><div class="seg" id="gbDiff"><button data-v="Easy">Easy</button><button data-v="Medium">Medium</button><button data-v="Hard">Hard</button></div></div>
     </div>
-    <div class="gb-warn hidden" id="gbWarn">⚠ The free AI on your PC isn't good at 3D or realistic games. <b>Sign in to Claude</b> (free with your Claude account, no key) and the builder uses Claude instead: far better games. <button class="btn xs" data-gb="signin">Sign in with Claude</button></div>
-    <div class="gb-go"><button class="btn primary lg" data-gb="create">✦ CREATE GAME</button><span class="muted" id="gbModel"></span></div>`;
+    <div class="gb-warn hidden" id="gbWarn">The free AI on your PC isn't good at 3D or realistic games. <b>Sign in to Claude</b> (free with your Claude account, no key) and the builder uses Claude instead: far better games. <button class="btn xs" data-gb="signin">Sign in with Claude</button></div>
+    <div class="gb-go"><button class="btn primary lg" data-gb="create">CREATE GAME</button><span class="muted" id="gbModel"></span></div>`;
   setSeg($("#gbDiff"), G.opts.difficulty);
   const hard = styles().some(v => /3D|Realistic/.test(v));
   $("#gbWarn") && $("#gbWarn").classList.toggle("hidden", !(G.ai.via === "ollama" && hard));
@@ -175,8 +175,8 @@ async function runJob(mode, { id, request, error } = {}) {
     const r = await sky.games.build({ jobId, mode, id, request, error, options: { type: G.opts.type, style, difficulty: G.opts.difficulty } });
     G.job = null; clearInterval(tick); document.body.classList.remove("ai-busy");
     await refresh();
-    if (mode === "create") { store.local("idea", ""); renderBuilder(); openStage(r.id, "build", true); toast("Your game is ready ✦"); FX.confetti(); }
-    else if (G.stage && G.stage.id === r.id) { await loadStage(r.unchanged ? false : true); if (!r.unchanged) toast("Updated ✦"); }
+    if (mode === "create") { store.local("idea", ""); renderBuilder(); openStage(r.id, "build", true); toast("Your game is ready"); FX.confetti(); }
+    else if (G.stage && G.stage.id === r.id) { await loadStage(r.unchanged ? false : true); if (!r.unchanged) toast("Updated"); }
   } catch (e) {
     G.job = null; clearInterval(tick); document.body.classList.remove("ai-busy");
     if (mode === "create") renderBuilder(); else if (G.stage) renderChat();
@@ -204,8 +204,8 @@ function closeStage() {
 async function loadStage(reload) {
   const s = G.stage; if (!s) return;
   const p = await sky.games.project(s.id); s.meta = p.meta; s.files = p.files;
-  $("#gsName").textContent = p.meta.name; $("#gsGenre").textContent = `${GENRE_ICON[p.meta.genre] || "🎮"} ${p.meta.genre || "Game"}`;
-  $("#gsSaved").textContent = p.meta.saved ? "✓ Saved" : "Draft"; $("#gsSaved").className = "badge " + (p.meta.saved ? "ok" : "warn");
+  $("#gsName").textContent = p.meta.name; $("#gsGenre").textContent = p.meta.genre || "Game";
+  $("#gsSaved").textContent = p.meta.saved ? "Saved" : "Draft"; $("#gsSaved").className = "badge " + (p.meta.saved ? "ok" : "warn");
   $("#gsUndo").disabled = !(p.meta.undo > 0);
   renderChat(); renderCode();
   if (reload) restart();
@@ -216,13 +216,13 @@ function restart() {
   $("#gFrame").src = `sky://play/${s.id}/index.html?r=${Date.now()}`;
 }
 function cmd(c) { try { $("#gFrame").contentWindow.postMessage({ skyline: "player", cmd: c }, "*"); } catch (e) {} }
-function setPauseBtn() { const p = G.stage && G.stage.paused; $("#gsPause").innerHTML = p ? "▶ Play" : "⏸ Pause"; $("#gStage").classList.toggle("paused", !!p); }
+function setPauseBtn() { const p = G.stage && G.stage.paused; $("#gsPause").innerHTML = p ? "Resume" : "Pause"; $("#gStage").classList.toggle("paused", !!p); }
 function renderError() {
   const s = G.stage, box = $("#gsError"); if (!s) return;
   const e = s.errors[0];
   box.classList.toggle("hidden", !e);
-  if (e) box.innerHTML = `<span>⚠ The game hit an error: <b>${esc(e.message)}</b>${e.file ? ` <span class="muted">(${esc(e.file)}${e.line ? ":" + e.line : ""})</span>` : ""}${s.errors.length > 1 ? ` <span class="muted">+${s.errors.length - 1} more</span>` : ""}</span>
-    <span class="sp"></span><button class="btn sm primary" data-gs="fix">✦ Fix with AI</button><button class="ibtn" data-gs="dismiss" title="Dismiss">✕</button>`;
+  if (e) box.innerHTML = `<span>The game hit an error: <b>${esc(e.message)}</b>${e.file ? ` <span class="muted">(${esc(e.file)}${e.line ? ":" + e.line : ""})</span>` : ""}${s.errors.length > 1 ? ` <span class="muted">+${s.errors.length - 1} more</span>` : ""}</span>
+    <span class="sp"></span><button class="btn sm primary" data-gs="fix">Fix with AI</button><button class="ibtn" data-gs="dismiss" title="Dismiss">${icon("x")}</button>`;
 }
 function renderChat() {
   const s = G.stage, box = $("#gsChat"); if (!s || !box) return;
@@ -296,7 +296,7 @@ function stageEvents() {
 function toggleExpand() {
   const s = G.stage; s.expanded = !s.expanded;
   document.body.classList.toggle("stage-expanded", s.expanded);
-  $("[data-gs=expand]").innerHTML = s.expanded ? "⤡ Shrink" : "⛶ Expand";
+  $("[data-gs=expand]").innerHTML = s.expanded ? "Shrink" : "Expand";
   setTimeout(() => { $("#gFrame").focus(); cmd("focus"); }, 50);
   if (s.expanded) toast("Expanded · Esc or ⤡ to shrink");
 }
@@ -309,7 +309,7 @@ async function renameProject(id) {
   await sky.games.update(id, { name }); await refresh();
 }
 function exportMenu(anchor, id) {
-  menu(anchor, [["📁 Download project (index.html, style.css, script.js, assets/)", () => doExport(id, "folder")], ["📄 Download as one HTML file", () => doExport(id, "html")]]);
+  menu(anchor, [["Download project (index.html, style.css, script.js, assets/)", () => doExport(id, "folder")], ["Download as one HTML file", () => doExport(id, "html")]]);
 }
 async function doExport(id, mode) {
   try { const r = await sky.games.exportGame(id, mode); if (r) toast("Exported to " + r); } catch (e) { toast(e.message, true); }
@@ -331,7 +331,7 @@ async function scanPC() {
   try { list = await sky.games.scanLocal(); } catch (e) { return toast(e.message, true); }
   const fresh = list.filter(x => !x.inLibrary);
   if (!fresh.length) return dialog({ title: "No new games found", text: list.length ? "Everything Skyline found is already in your library." : "Skyline looked in Steam, Epic Games and your desktop and Start menu shortcuts. Use “Add game…” to pick one yourself.", ok: "OK", cancel: "" });
-  const html = `<div class="scan">${fresh.map((g, i) => `<label class="scan-row"><input type="checkbox" data-si="${i}" checked><span class="scan-ic">${g.thumb ? `<img src="${esc(g.thumb)}" alt="">` : "🎮"}</span>
+  const html = `<div class="scan">${fresh.map((g, i) => `<label class="scan-row"><input type="checkbox" data-si="${i}" checked><span class="scan-ic">${g.thumb ? `<img src="${esc(g.thumb)}" alt="">` : icon("gamepad")}</span>
     <span class="scan-t"><b>${esc(g.name)}</b><small>${esc(g.source)}</small></span></label>`).join("")}</div>`;
   if (!(await dialog({ title: `Found ${fresh.length} game${fresh.length > 1 ? "s" : ""} on this PC`, text: "Choose which to add to your library. They launch through Steam, Epic or their own shortcut.", html, ok: "Add selected" }))) return;
   const picked = $$("#dlg [data-si]").filter(c => c.checked).map(c => fresh[+c.dataset.si]);
@@ -357,14 +357,14 @@ function events() {
         G.signingIn = true; renderBuilder(); clearInterval(G.signPoll); let n = 0;
         G.signPoll = setInterval(async () => {
           G.ai = await sky.ai.status(true).catch(() => G.ai);
-          if (G.ai.canBuild || ++n > 60) { clearInterval(G.signPoll); G.signingIn = false; renderBuilder(); if (G.ai.via === "claude") toast("✦ Signed in. The builder now uses Claude"); }
+          if (G.ai.canBuild || ++n > 60) { clearInterval(G.signPoll); G.signingIn = false; renderBuilder(); if (G.ai.via === "claude") toast("Signed in. The builder now uses Claude"); }
         }, 5000);
       }
       if (a === "local") { await sky.ai.allowLocal(true); G.ai = await sky.ai.status(true); renderBuilder(); toast("Using the AI on this PC (simple games only). Sign in with Claude any time for real ones."); }
       if (a === "key") {
         gb.disabled = true; gb.textContent = "Checking…";
         try { await sky.ai.setKey($("#gbKey").value); G.ai = await sky.ai.status(); renderBuilder();
-          sky.ai.test().then(() => toast("Claude is connected and saved ✦"), er => toast("Key saved, but Claude didn't answer the test: " + er.message.replace(/^Error invoking remote method '[^']+': (Error: )?/, ""), true)); }
+          sky.ai.test().then(() => toast("Claude is connected and saved"), er => toast("Key saved, but Claude didn't answer the test: " + er.message.replace(/^Error invoking remote method '[^']+': (Error: )?/, ""), true)); }
         catch (er) { gb.disabled = false; gb.textContent = "Connect"; toast(er.message.replace(/^Error invoking remote method '[^']+': (Error: )?/, ""), true); }
       }
       if (a === "create") {
@@ -386,20 +386,20 @@ function events() {
       const id = pc.dataset.proj, b = e.target.closest("[data-act]"); if (!b) return;
       if (b.dataset.act === "play") return openStage(id, "play");
       if (b.dataset.act === "edit") return openStage(id, "build");
-      if (b.dataset.act === "menu") return menu(b, [["▶ Open", () => openStage(id, "play")], ["✦ Edit with AI", () => openStage(id, "build")], ["✎ Rename", () => renameProject(id)],
+      if (b.dataset.act === "menu") return menu(b, [["Open", () => openStage(id, "play")], ["Edit with AI", () => openStage(id, "build")], ["Rename", () => renameProject(id)],
         ["⧉ Duplicate", async () => { await sky.games.duplicate(id); refresh(); toast("Duplicated"); }], ["⬇ Export project", () => doExport(id, "folder")], ["⬇ Export as one HTML file", () => doExport(id, "html")], null,
-        ["🗑 Delete", async () => { const p = G.projects.find(x => x.id === id); if (await dialog({ title: `Delete “${p.name}”?`, text: "The game and its history are removed. This can't be undone.", ok: "Delete", danger: true })) { await sky.games.remove(id); refresh(); toast("Deleted"); } }, "danger"]]);
+        ["Delete", async () => { const p = G.projects.find(x => x.id === id); if (await dialog({ title: `Delete “${p.name}”?`, text: "The game and its history are removed. This can't be undone.", ok: "Delete", danger: true })) { await sky.games.remove(id); refresh(); toast("Deleted"); } }, "danger"]]);
     }
     const lc = e.target.closest("[data-lib]");
     if (lc) {
       const it = G.library.find(x => x.id === lc.dataset.lib), b = e.target.closest("[data-act]"); if (!it || !b) return;
       if (b.dataset.act === "play") return playLib(it);
       if (b.dataset.act === "remove") { await sky.games.libRemove(it.id); refresh(); toast(`Removed ${it.name}`); }
-      if (b.dataset.act === "libmenu") return menu(b, [[it.kind === "web" ? "↗ Open" : "▶ Play", () => playLib(it)],
-        ["🖼 Change picture…", async () => { try { const r = await sky.games.setArt(it.id, "pick"); if (r) { toast("Picture changed"); refresh(); } } catch (er) { toast(er.message, true); } }],
-        ...(it.kind === "local" ? [["✨ Find the real cover again", async () => { toast(`Looking for ${it.name}'s cover…`); await sky.games.setArt(it.id, "reset").catch(() => {}); refresh(); }]] : []),
-        ["✎ Rename", async () => { const n = await dialog({ title: "Rename", input: it.name, ok: "Rename" }); if (n) { await sky.games.rename(it.id, n); refresh(); } }],
-        null, ["✕ Remove from library", async () => { await sky.games.libRemove(it.id); refresh(); toast(`Removed ${it.name}`); }, "danger"]]);
+      if (b.dataset.act === "libmenu") return menu(b, [[it.kind === "web" ? "Open" : "Play", () => playLib(it)],
+        ["Change picture…", async () => { try { const r = await sky.games.setArt(it.id, "pick"); if (r) { toast("Picture changed"); refresh(); } } catch (er) { toast(er.message, true); } }],
+        ...(it.kind === "local" ? [["Find the real cover again", async () => { toast(`Looking for ${it.name}'s cover…`); await sky.games.setArt(it.id, "reset").catch(() => {}); refresh(); }]] : []),
+        ["Rename", async () => { const n = await dialog({ title: "Rename", input: it.name, ok: "Rename" }); if (n) { await sky.games.rename(it.id, n); refresh(); } }],
+        null, ["Remove from library", async () => { await sky.games.libRemove(it.id); refresh(); toast(`Removed ${it.name}`); }, "danger"]]);
     }
     const fc = e.target.closest("[data-found]");
     if (fc) {

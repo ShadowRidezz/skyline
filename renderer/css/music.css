@@ -113,3 +113,8 @@
 /* Settings › Music: Spotify without Premium (Spicetify) */
 .sp-spice { margin: 10px 0 0; padding: 10px 12px; border-radius: 10px; background: rgba(30,215,96,.06); border: 1px solid rgba(30,215,96,.2); font-size: 13px; color: var(--muted); line-height: 1.5; }
 .sp-spice b { color: var(--text); } .sp-spice .ok { color: #3dd68c; } .sp-spice .btn { margin: 6px 6px 0 0; } .sp-spice small { color: var(--faint); }
+
+/* the ring around the cover only shows while music plays (paused, it was a dotted circle) */
+.mu-art canvas { transition: opacity .4s; }
+body:not(.music-playing) .mu-art canvas { opacity: 0; }
+.mu-right, body.lib-open .mu-right { border-radius: var(--r); background: color-mix(in srgb, var(--bg) 80%, transparent); }

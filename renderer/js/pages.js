@@ -1,5 +1,6 @@
 // The side-bar pages: AI chat, School, Money, YouTube and Minecraft. Everything is saved on this PC.
 import { $, $$, esc, sky, toast, dialog, store, debounce, mmss } from "./util.js";
+import { icon } from "./social/icons.js";
 import { Settings, Widgets } from "./widgets.js";
 import { FX } from "./fx.js";
 import { Assistant } from "./assistant.js";
@@ -20,8 +21,8 @@ const clean = e => String((e && e.message) || e).replace(/^Error invoking remote
 const COLORS = ["#60a5fa", "#a78bfa", "#f472b6", "#34d399", "#fbbf24", "#fb7185", "#22d3ee", "#f97316"];
 
 /* ================= Money ================= */
-const CATS = { food: ["🍔", "Food"], games: ["🎮", "Games"], fun: ["🎉", "Fun"], clothes: ["👕", "Clothes"], tech: ["💻", "Tech"], transport: ["🚌", "Transport"], subs: ["🔁", "Subscriptions"], gifts: ["🎁", "Gifts"], other: ["📦", "Other"],
-  job: ["💼", "Job"], allowance: ["🪙", "Allowance"], sold: ["🏷️", "Sold something"], gift_in: ["🎁", "Gift"] };
+const CATS = { food: ["coffee", "Food"], games: ["gamepad", "Games"], fun: ["star", "Fun"], clothes: ["tag", "Clothes"], tech: ["window", "Tech"], transport: ["globe", "Transport"], subs: ["repeat", "Subscriptions"], gifts: ["gift", "Gifts"], other: ["layers", "Other"],
+  job: ["wallet", "Job"], allowance: ["dollar", "Allowance"], sold: ["tag", "Sold something"], gift_in: ["gift", "Gift"] };
 const money = n => (n < 0 ? "-" : "") + new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(Math.abs(n));
 const Money = {
   type: "out",
@@ -47,7 +48,7 @@ const Money = {
     const g = D.money.goals.find(x => x.id === id); if (!g) return;
     const v = await dialog({ title: `Add to “${g.name}”`, text: "How much did you put aside? (Use a minus to take some out.)", input: "", ok: "Add" }); if (v == null) return;
     const n = parseFloat(v); if (!n) return; g.saved = Math.max(0, Math.round((g.saved + n) * 100) / 100); save("money"); this.render();
-    if (g.saved >= g.target) { FX.confetti(innerWidth / 2, innerHeight / 3); toast(`🎉 You reached “${g.name}”!`); }
+    if (g.saved >= g.target) { FX.confetti(innerWidth / 2, innerHeight / 3); toast(`You reached “${g.name}”!`); }
   },
   render() {
     const d = D.money; if (!d) return;
@@ -58,19 +59,19 @@ const Money = {
       <div class="pg-stat ok"><b>${money(mIn)}</b><span>In this month</span></div><div class="pg-stat ${mOut > mIn && mIn ? "warn" : ""}"><b>${money(mOut)}</b><span>Out this month</span></div>`;
     $$("[data-mtype]").forEach(b => b.classList.toggle("on", b.dataset.mtype === this.type));
     const f = $("#mAdd"), cats = (this.type === "in" ? ["job", "allowance", "sold", "gift_in", "other"] : Object.keys(CATS).filter(k => !["job", "allowance", "sold", "gift_in"].includes(k))).map(k => [k, CATS[k]]);
-    const keep = f.cat.value; f.cat.innerHTML = cats.map(([k, [i, n]]) => `<option value="${k}">${i} ${n}</option>`).join(""); if (cats.some(c => c[0] === keep)) f.cat.value = keep;
+    const keep = f.cat.value; f.cat.innerHTML = cats.map(([k, [, n]]) => `<option value="${k}">${n}</option>`).join(""); if (cats.some(c => c[0] === keep)) f.cat.value = keep;
     if (!f.date.value) f.date.value = ymd(Date.now());
     // where it went this month
     const by = {}; for (const e of month.filter(e => e.type === "out")) by[e.cat] = (by[e.cat] || 0) + e.amt;
     const rows = Object.entries(by).sort((a, b) => b[1] - a[1]), max = rows.length ? rows[0][1] : 1;
-    $("#mCats").innerHTML = rows.length ? rows.map(([k, v], i) => `<div class="m-bar" style="--w:${(v / max * 100).toFixed(1)}%;--c:${COLORS[i % COLORS.length]}"><span>${(CATS[k] || CATS.other)[0]} ${(CATS[k] || CATS.other)[1]}</span><i></i><b>${money(v)}</b></div>`).join("")
+    $("#mCats").innerHTML = rows.length ? rows.map(([k, v], i) => `<div class="m-bar" style="--w:${(v / max * 100).toFixed(1)}%;--c:${COLORS[i % COLORS.length]}"><span>${icon((CATS[k] || CATS.other)[0])}${(CATS[k] || CATS.other)[1]}</span><i></i><b>${money(v)}</b></div>`).join("")
       : `<div class="pg-empty">Nothing spent this month yet.</div>`;
     const list = d.entries.slice().sort((a, b) => b.date - a.date).slice(0, 40);
-    $("#mList").innerHTML = list.length ? list.map(e => `<div class="m-row ${e.type}"><span class="m-ic">${(CATS[e.cat] || CATS.other)[0]}</span><span class="m-t"><b>${esc(e.note || (CATS[e.cat] || CATS.other)[1])}</b><small>${new Date(e.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })} · ${(CATS[e.cat] || CATS.other)[1]}</small></span>
-      <b class="m-amt">${e.type === "in" ? "+" : "−"}${money(e.amt)}</b><button class="ibtn xs" data-edel="${e.id}" title="Remove">✕</button></div>`).join("") : `<div class="pg-empty">Log what you earn and spend, and see where your money goes.</div>`;
+    $("#mList").innerHTML = list.length ? list.map(e => `<div class="m-row ${e.type}"><span class="m-ic">${icon((CATS[e.cat] || CATS.other)[0])}</span><span class="m-t"><b>${esc(e.note || (CATS[e.cat] || CATS.other)[1])}</b><small>${new Date(e.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })} · ${(CATS[e.cat] || CATS.other)[1]}</small></span>
+      <b class="m-amt">${e.type === "in" ? "+" : "−"}${money(e.amt)}</b><button class="ibtn xs" data-edel="${e.id}" title="Remove">${icon("x")}</button></div>`).join("") : `<div class="pg-empty">Log what you earn and spend, and see where your money goes.</div>`;
     $("#mGoals").innerHTML = d.goals.length ? d.goals.map((g, i) => { const p = Math.min(1, g.saved / g.target);
-      return `<div class="m-goal ${p >= 1 ? "reached" : ""}" style="--p:${(p * 100).toFixed(1)}%;--c:${COLORS[(i + 3) % COLORS.length]}"><div class="row"><b>${p >= 1 ? "🎉 " : "🎯 "}${esc(g.name)}</b><span class="sp"></span><span>${money(g.saved)} of ${money(g.target)}</span></div>
-        <div class="m-prog"><i></i></div><div class="row"><small>${p >= 1 ? "Goal reached!" : money(g.target - g.saved) + " to go"}</small><span class="sp"></span><button class="btn xs" data-gadd="${g.id}">＋ Add money</button><button class="ibtn xs" data-gdel="${g.id}" title="Remove goal">✕</button></div></div>`; }).join("")
+      return `<div class="m-goal ${p >= 1 ? "reached" : ""}" style="--p:${(p * 100).toFixed(1)}%;--c:${COLORS[(i + 3) % COLORS.length]}"><div class="row"><b>${esc(g.name)}</b><span class="sp"></span><span>${money(g.saved)} of ${money(g.target)}</span></div>
+        <div class="m-prog"><i></i></div><div class="row"><small>${p >= 1 ? "Goal reached!" : money(g.target - g.saved) + " to go"}</small><span class="sp"></span><button class="btn xs" data-gadd="${g.id}">Add money</button><button class="ibtn xs" data-gdel="${g.id}" title="Remove goal">${icon("x")}</button></div></div>`; }).join("")
       : `<div class="pg-empty">Saving up for something? Add a goal.</div>`;
   },
 };
@@ -109,7 +110,7 @@ const YouTube = {
       if (a.dataset.yta === "close") this.stop();
       if (a.dataset.yta === "full") { const f = $("#ytPlayer iframe"); if (f) f.requestFullscreen().catch(er => toast("Couldn't go full screen: " + er.message, true)); }
       if (a.dataset.yta === "open") sky.openUrl("https://www.youtube.com/watch?v=" + this.playing.id);
-      if (a.dataset.yta === "save") { const s = D.youtube.saved, at = s.findIndex(x => x.id === this.playing.id); if (at >= 0) s.splice(at, 1); else s.unshift(this.playing); save("youtube"); this.render(); toast(at >= 0 ? "Removed from saved" : "Saved ✦"); }
+      if (a.dataset.yta === "save") { const s = D.youtube.saved, at = s.findIndex(x => x.id === this.playing.id); if (at >= 0) s.splice(at, 1); else s.unshift(this.playing); save("youtube"); this.render(); toast(at >= 0 ? "Removed from saved" : "Saved"); }
     });
     // endless results: when the end of the list comes near the bottom of the screen, the next page loads
     new IntersectionObserver(es => { if (es.some(x => x.isIntersecting)) this.fill(); }, { rootMargin: "0px 0px 900px 0px" }).observe($("#ytMore"));
@@ -175,7 +176,7 @@ const YouTube = {
     if (this.playing && this.playing.id !== item.id) this.remember(true);
     this.playing = item; this.at = 0; this.dur = 0; this.sure = false;
     const resume = D.youtube.pos[item.id], start = resume && resume.t > 10 && (!resume.d || resume.t < resume.d - 20) ? resume.t : 0;
-    if (start) { this.at = start; toast(`▶ Picking up where you left off: ${mmss(start)}`); }
+    if (start) { this.at = start; toast(`Picking up where you left off: ${mmss(start)}`); }
     const r = D.youtube.recent.filter(x => x.id !== item.id); r.unshift(item); D.youtube.recent = r.slice(0, 24); save("youtube");
     // the same ad-free privacy embed as before (youtube-nocookie); enablejsapi lets it report its position and take the next video
     const iframe = $("#ytPlayer iframe"), next = { videoId: item.id, startSeconds: start };
@@ -189,18 +190,18 @@ const YouTube = {
   },
   stop() { this.remember(true); this.playing = null; this.pending = null; if (this.ready) this.cmd("stopVideo"); else $("#ytPlayer").innerHTML = ""; $("#ytNow").classList.add("hidden"); this.render(); },
   card(x, key) { const r = D.youtube.pos[x.id], pct = r && r.d ? Math.min(100, r.t / r.d * 100) : 0;
-    return `<button class="yt-card" data-yt="${key}" title="${esc(x.title)}${r ? " · left off at " + mmss(r.t) : ""}"><span class="yt-th"><img src="${esc(x.thumb)}" alt="" loading="lazy">${x.live ? `<i class="live">LIVE</i>` : x.length ? `<i>${esc(x.length)}</i>` : ""}<span class="yt-go">▶</span>${r ? `<span class="yt-resume"><em style="width:${pct || 8}%"></em></span>` : ""}</span>
+    return `<button class="yt-card" data-yt="${key}" title="${esc(x.title)}${r ? " · left off at " + mmss(r.t) : ""}"><span class="yt-th"><img src="${esc(x.thumb)}" alt="" loading="lazy">${x.live ? `<i class="live">LIVE</i>` : x.length ? `<i>${esc(x.length)}</i>` : ""}<span class="yt-go"><svg class="ic" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M8 5.5v13a.8.8 0 0 0 1.2.7l10.4-6.5a.8.8 0 0 0 0-1.4L9.2 4.8A.8.8 0 0 0 8 5.5z"/></svg></span>${r ? `<span class="yt-resume"><em style="width:${pct || 8}%"></em></span>` : ""}</span>
       <b>${esc(x.title)}</b><small>${esc([x.channel, x.views, x.age].filter(Boolean).join(" · "))}</small></button>`; },
   render() {
     const d = D.youtube; if (!d) return;
     const p = this.playing;
-    if (p) { $("#ytNowT").innerHTML = `<b>${esc(p.title)}</b><small>${esc(p.channel || "")}</small>`; $("[data-yta=save]").textContent = d.saved.some(x => x.id === p.id) ? "★ Saved" : "☆ Save"; }
+    if (p) { $("#ytNowT").innerHTML = `<b>${esc(p.title)}</b><small>${esc(p.channel || "")}</small>`; $("[data-yta=save]").textContent = d.saved.some(x => x.id === p.id) ? "Saved" : "Save"; }
     const searching = !!this.q;
-    $("#ytResults").innerHTML = searching ? `<div class="pg-h">🔎 Results for “${esc(this.q)}” <span class="sp"></span><button class="btn xs ghost" data-yt-clear>✕ Clear search</button></div>`
+    $("#ytResults").innerHTML = searching ? `<div class="pg-h">Results for “${esc(this.q)}” <span class="sp"></span><button class="btn xs ghost" data-yt-clear>Clear search</button></div>`
       + (this.results.length ? `<div class="yt-grid">${this.results.map((x, i) => this.card(x, "r:" + i)).join("")}</div>` : `<div class="pg-empty">No videos found. Try different words.</div>`) : "";
     if (searching) { $("#ytSaved").innerHTML = $("#ytRecent").innerHTML = ""; return; }   // saved and recent come back when the search is cleared
-    $("#ytSaved").innerHTML = d.saved.length ? `<h3 class="pg-h">★ Saved</h3><div class="yt-grid">${d.saved.map((x, i) => this.card(x, "s:" + i)).join("")}</div>` : "";
-    $("#ytRecent").innerHTML = d.recent.length ? `<h3 class="pg-h">🕘 Recently watched</h3><div class="yt-grid">${d.recent.slice(0, 12).map((x, i) => this.card(x, "h:" + i)).join("")}</div>` : "";
+    $("#ytSaved").innerHTML = d.saved.length ? `<h3 class="pg-h">Saved</h3><div class="yt-grid">${d.saved.map((x, i) => this.card(x, "s:" + i)).join("")}</div>` : "";
+    $("#ytRecent").innerHTML = d.recent.length ? `<h3 class="pg-h">Recently watched</h3><div class="yt-grid">${d.recent.slice(0, 12).map((x, i) => this.card(x, "h:" + i)).join("")}</div>` : "";
   },
 };
 
@@ -215,7 +216,7 @@ const Minecraft = {
         const b = e.target.closest("[data-mc=play]"); b.disabled = true;
         const last = this.lastPack();
         try {
-          if (last) { await sky.pages.mcLaunch(last.name); toast(`⛏️ Starting “${last.title || last.name}”`); FX.sound("success"); D.minecraft.last = last.name; save("minecraft"); }
+          if (last) { await sky.pages.mcLaunch(last.name); toast(`Starting “${last.title || last.name}”`); FX.sound("success"); D.minecraft.last = last.name; save("minecraft"); }
           else { const r = await sky.assistant.handle("open minecraft", { name: Settings.data.name }, { ai: false }); toast(r.reply.replace(/[“”]/g, "")); }
         } catch (er) { toast(clean(er), true); }
         setTimeout(() => b.disabled = false, 4000); return;
@@ -227,7 +228,7 @@ const Minecraft = {
       const fo = e.target.closest("[data-mcfolder]"); if (fo) { e.stopPropagation(); return sky.pages.mcFolder(fo.dataset.mcfolder).catch(er => toast(clean(er), true)); }
       const pr = e.target.closest("[data-mcprof]"); if (pr && !pr.disabled) {
         const name = pr.dataset.mcprof; pr.disabled = true; pr.classList.add("going");
-        try { await sky.pages.mcLaunch(name); toast(`⛏️ Starting “${name}”: Minecraft is loading`); FX.sound("success"); D.minecraft.last = name; save("minecraft"); this.paintPlay(); }
+        try { await sky.pages.mcLaunch(name); toast(`Starting “${name}”: Minecraft is loading`); FX.sound("success"); D.minecraft.last = name; save("minecraft"); this.paintPlay(); }
         catch (er) { toast(clean(er), true); }
         setTimeout(() => { pr.disabled = false; pr.classList.remove("going"); }, 4000);
       }
@@ -242,19 +243,19 @@ const Minecraft = {
     this.refresh(false); this.timer = setInterval(() => this.refresh(false), 60e3);
     const prof = this.prof = await sky.pages.mcProfiles().catch(() => []);
     this.paintPlay();
-    $("#mcProfiles").innerHTML = prof.length ? prof.map(p => `<button class="mc-prof ${p.name === D.minecraft.last ? "last" : ""}" data-mcprof="${esc(p.name)}" title="Play ${esc(p.name)}"><span class="mc-pic">${p.icon ? `<img src="${p.icon}" alt="">` : "⛏️"}</span><span class="mc-pt"><b>${esc(p.title || p.name)}</b><small>${p.mods} mods${p.worlds ? ` · ${p.worlds} world${p.worlds > 1 ? "s" : ""}` : ""}${p.shaders ? ` · shaders` : ""}</small></span>
-        <span class="mc-when">${p.played ? ago(p.played) : ""}</span><span class="ibtn xs" data-mcfolder="${esc(p.name)}" title="Open its folder (mods, worlds, screenshots)">📁</span><span class="mc-go">▶ Play</span></button>`).join("")
+    $("#mcProfiles").innerHTML = prof.length ? prof.map(p => `<button class="mc-prof ${p.name === D.minecraft.last ? "last" : ""}" data-mcprof="${esc(p.name)}" title="Play ${esc(p.name)}"><span class="mc-pic">${p.icon ? `<img src="${p.icon}" alt="">` : icon("cube")}</span><span class="mc-pt"><b>${esc(p.title || p.name)}</b><small>${p.mods} mods${p.worlds ? ` · ${p.worlds} world${p.worlds > 1 ? "s" : ""}` : ""}${p.shaders ? ` · shaders` : ""}</small></span>
+        <span class="mc-when">${p.played ? ago(p.played) : ""}</span><span class="ibtn xs" data-mcfolder="${esc(p.name)}" title="Open its folder (mods, worlds, screenshots)">${icon("folder")}</span><span class="mc-go">Play</span></button>`).join("")
       : `<div class="pg-empty">No Modrinth profiles found on this PC.</div>`;
   },
   lastPack() { const l = this.prof || []; return l.find(p => p.name === D.minecraft.last) || l[0] || null; },   // the list is newest-played first
-  paintPlay() { const b = $("[data-mc=play]"), p = this.lastPack(); if (b) { b.innerHTML = p ? `▶ Play <small>${esc(p.title || p.name)}</small>` : "▶ Play"; b.title = p ? "Start " + (p.title || p.name) : "Open Minecraft"; } },
+  paintPlay() { const b = $("[data-mc=play]"), p = this.lastPack(); if (b) { b.innerHTML = p ? `Play <small>${esc(p.title || p.name)}</small>` : "Play"; b.title = p ? "Start " + (p.title || p.name) : "Open Minecraft"; } },
   render() {
     const d = D.minecraft; if (!d) return;
     $("#mcServers").innerHTML = d.servers.length ? d.servers.map(h => { const s = this.status[h] || {};
-      return `<div class="mc-srv ${s.online ? "on" : s.online === false ? "off" : ""}">${s.icon ? `<img src="${s.icon}" alt="">` : `<span class="mc-sic">🌍</span>`}
+      return `<div class="mc-srv ${s.online ? "on" : s.online === false ? "off" : ""}">${s.icon ? `<img src="${s.icon}" alt="">` : `<span class="mc-sic">${icon("server")}</span>`}
         <span class="mc-st"><b>${esc(h)}</b><small>${s.loading ? "Checking…" : s.error ? esc(s.error) : s.online ? esc(s.motd || "Online") : s.online === false ? "Offline / not answering" : "…"}</small></span>
         <span class="mc-pl">${s.online && s.players ? `<i class="dot"></i>${s.players.online.toLocaleString()} / ${s.players.max.toLocaleString()}` : s.online === false ? `<i class="dot"></i>offline` : ""}${s.version ? `<small>${esc(s.version)}</small>` : ""}</span>
-        <button class="ibtn xs" data-srvcopy="${esc(h)}" title="Copy address">⧉</button><button class="ibtn xs" data-srvdel="${esc(h)}" title="Remove">✕</button></div>`; }).join("")
+        <button class="ibtn xs" data-srvcopy="${esc(h)}" title="Copy address">⧉</button><button class="ibtn xs" data-srvdel="${esc(h)}" title="Remove">${icon("x")}</button></div>`; }).join("")
       : `<div class="pg-empty">Add a server to see if it's online and who's playing.</div>`;
   },
 };
@@ -277,10 +278,10 @@ const AIPage = {
     const gpt = !b.chatgpt ? ` <button class="btn xs" data-ai="gpt" ${b.chatgptInstalling || this.gptBusy ? "disabled" : ""}>${b.chatgptInstalling || this.gptBusy ? "Setting up ChatGPT…" : "Connect ChatGPT"}</button>` : "";
     const ready = [b.claude && "claude", b.chatgpt && "chatgpt", b.ollama && "ollama"].filter(Boolean);
     const pick = ready.length > 1 && !st.configured ? ` <select class="ai-pick" data-ai="pref" title="Sky's brain"><option value="auto">Auto</option>${ready.map(r => `<option value="${r}" ${b.pref === r ? "selected" : ""}>${r === "claude" ? "Claude" : r === "chatgpt" ? "ChatGPT" : "AI on this PC"}</option>`).join("")}</select>` : "";
-    $("#aiNote").innerHTML = st.configured ? `✦ Thinking with Claude (your API key). Ask anything.`
-      : b.which === "claude" ? `✦ Thinking with your Claude account. Ask anything, no key needed.${pick}${gpt}`
-      : b.which === "chatgpt" ? `✦ Thinking with your ChatGPT account. Ask anything, no key needed.${pick}${signIn}`
-      : b.which === "ollama" ? `✦ Thinking with ${esc(b.ollama)}, an AI running on this PC. For smarter answers:${gpt}${signIn}${pick}`
+    $("#aiNote").innerHTML = st.configured ? `Thinking with Claude (your API key). Ask anything.`
+      : b.which === "claude" ? `Thinking with your Claude account. Ask anything, no key needed.${pick}${gpt}`
+      : b.which === "chatgpt" ? `Thinking with your ChatGPT account. Ask anything, no key needed.${pick}${signIn}`
+      : b.which === "ollama" ? `Thinking with ${esc(b.ollama)}, an AI running on this PC. For smarter answers:${gpt}${signIn}${pick}`
       : `Commands work now (open a game, play a song, remember things). To really talk, give Sky a brain:${gpt}${signIn || ` <button class="btn xs" data-goto="settings:ai">Add a Claude key</button>`}`;
     const sel = $("#aiNote [data-ai=pref]"); if (sel) { sel.value = b.pref || "auto"; sel.onchange = async () => { await sky.ai.pref(sel.value); localStorage.setItem("sky-brain", sel.value); this.note(true); }; }
     return b;
@@ -292,13 +293,13 @@ const AIPage = {
     this.gptBusy = false;
     toast("Sign in with your ChatGPT account in the window that opened (it opens your browser). Sky switches over by itself.");
     clearInterval(this.poll); let n = 0;
-    this.poll = setInterval(async () => { const b = await this.note(true); if (b.chatgpt || ++n > 40) { clearInterval(this.poll); if (b.chatgpt) toast("✦ Connected. Sky is thinking with ChatGPT now"); } }, 6000);
+    this.poll = setInterval(async () => { const b = await this.note(true); if (b.chatgpt || ++n > 40) { clearInterval(this.poll); if (b.chatgpt) toast("Connected. Sky is thinking with ChatGPT now"); } }, 6000);
   },
   async signIn() {
     try { await sky.ai.signIn(); } catch (e) { return toast(String(e.message || e).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""), true); }
     toast("Sign in to Claude in the window that opened. Skyline switches over by itself.");
     clearInterval(this.poll); let n = 0;
-    this.poll = setInterval(async () => { const b = await this.note(true); if (b.which === "claude" || ++n > 40) { clearInterval(this.poll); if (b.which === "claude") toast("✦ Signed in. I'm thinking with Claude now"); } }, 6000);
+    this.poll = setInterval(async () => { const b = await this.note(true); if (b.which === "claude" || ++n > 40) { clearInterval(this.poll); if (b.which === "claude") toast("Signed in. I'm thinking with Claude now"); } }, 6000);
   },
   async send(text) {
     const m = D.aichat.msgs; m.push({ who: "me", text, at: Date.now() }); m.push({ who: "ai", text: "", busy: true, at: Date.now() }); this.render();

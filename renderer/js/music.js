@@ -1,6 +1,7 @@
 // Music: whatever Windows says is playing (Spotify, a YouTube tab, Apple Music...), its controls,
 // synced lyrics, recently played, and the audio analysis that makes the city move with the beat.
 import { Scene } from "./scene/scene.js";
+import { icon } from "./social/icons.js";
 import { Themes } from "./themes.js";
 import { $, $$, esc, sky, toast, clamp, mmss, palette, store, debounce, fpsLoop, toHsl, fromHsl } from "./util.js";
 import { Player } from "./songs.js";
@@ -241,7 +242,7 @@ export const Music = {
     else if (!this.lyricsOn) html = `<div class="ly-empty">Lyrics are turned off in Settings › Music.</div>`;
     else if (!this.meta.on) html = `<div class="ly-empty">Lyrics appear here when a song is playing.</div>`;
     else if (!L) html = `<div class="ly-empty">No lyrics found for this song.</div>`;
-    else if (L.instrumental) html = `<div class="ly-empty">♪ Instrumental</div>`;
+    else if (L.instrumental) html = `<div class="ly-empty">Instrumental</div>`;
     else if (L.lines.length) html = L.lines.map((l, i) => {   // long gaps (a solo, a bridge) show a quiet "• • •"
       const gap = i > 0 && l.t - L.lines[i - 1].t > 9 && !L.lines[i - 1].text;
       const body = l.words ? l.words.map((w, k) => `<span class="w" data-k="${k}">${esc(w.w)}</span>`).join("") : esc(l.text);
@@ -344,7 +345,7 @@ export const Music = {
   renderHistory() {
     const box = $("#history"); if (!box) return;
     box.innerHTML = this.history.length ? this.history.slice(0, 24).map(x => `<div class="hi">
-      <div class="hi-art">${x.art ? `<img src="${x.art}" alt="">` : "♪"}</div><div class="hi-t"><b>${esc(x.title)}</b><small>${esc(x.artist || appName(x.app))}</small></div>
+      <div class="hi-art">${x.art ? `<img src="${x.art}" alt="">` : icon("music")}</div><div class="hi-t"><b>${esc(x.title)}</b><small>${esc(x.artist || appName(x.app))}</small></div>
       <span class="hi-when">${ago(x.at)}</span></div>`).join("") : `<div class="ly-empty">Songs you play show up here.</div>`;
   },
 
@@ -388,7 +389,7 @@ export const Music = {
   paintViz(rest, a = {}, t = 0) {
     const bands = Audio.ok ? Audio.bands : null, lv = a.level || 0, now = performance.now();
     if (!this.vc || now - this.vcAt > 1000) {   // colours change rarely: don't ask for styles every frame
-      const root = getComputedStyle(document.documentElement), c1 = root.getPropertyValue("--np-color").trim() || "#8b5cf6";
+      const root = getComputedStyle(document.documentElement), c1 = root.getPropertyValue("--np-color").trim() || "#5b9cff";
       this.vc = [c1, root.getPropertyValue("--np-color2").trim() || c1]; this.vcAt = now;
     }
     const [c1, c2] = this.vc;

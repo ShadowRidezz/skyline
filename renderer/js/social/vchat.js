@@ -123,7 +123,7 @@ async function goLive() {
     V.live = { track, quality }; track.onended = () => { if (V.live && V.live.track === track) stopLive(); };
     for (const uid of V.viewers) { const p = V.peers.get(uid); if (p) sendTo(p); }
     api.rpc("voice_state", { p_live: true }).catch(() => {});
-    toast("🔴 You're live. Friends in the channel can click LIVE to watch."); emit("voice"); emit("voicelist");
+    toast("You're live. Friends in the channel can click LIVE to watch."); emit("voice"); emit("voicelist");
   }, "Go Live: share your screen");
 }
 function stopLive() {

@@ -1,6 +1,7 @@
 // Skyline's interface: the title bar, pages, ambient mode, the welcome tour, keyboard shortcuts and
 // the Settings sections. Themes, music and widgets live in their own modules.
 import { $, $$, esc, sky, toast, dialog, setSeg, store, debounce } from "./util.js";
+import { icon } from "./social/icons.js";
 import { Scene } from "./scene/scene.js";
 import { Themes, BUILTIN } from "./themes.js";
 import { Studio } from "./studio.js";
@@ -147,7 +148,7 @@ async function spiceBox(st) {
   if (st && st.connected && !st.spicetify && st.user && st.user.premium) { box.hidden = true; return; }   // (Premium linked: the normal connection, nothing to add)
   const s = await sky.spotify.spice().catch(() => null); if (!s) return;
   box.hidden = false;
-  box.innerHTML = `<b>No Spotify Premium?</b> ${s.live ? `<span class="ok">✓ Working through Spicetify${s.user ? ` (${esc(s.user.name)})` : ""}: search, play and your library work on the Music page.</span>`
+  box.innerHTML = `<b>No Spotify Premium?</b> ${s.live ? `<span class="ok">Working through Spicetify${s.user ? ` (${esc(s.user.name)})` : ""}: search, play and your library work on the Music page.</span>`
     : s.installed ? `The Skyline helper is in Spicetify. Open Spotify and it connects by itself.`
     : s.spicetify ? `Spicetify is installed. Add Skyline's helper to it and Skyline can search, play and show your library without Premium. <button class="btn sm primary" id="spSpiceAdd">Add Skyline to Spicetify</button><small>Spotify restarts once.</small>`
     : `Skyline can work without Premium through <a href="#" data-link="https://spicetify.app">Spicetify</a> (a free add-on for the Spotify desktop app; using mods is against Spotify's terms, so it's your call). Install it, then come back here.`}`;
@@ -173,7 +174,7 @@ function renderSettings() {
   if ($("#linkApps")) $("#linkApps").checked = s.linksApps !== false;
   $("#linkRows").innerHTML = (s.links || []).map((l, i) => `<div class="lrow">
       <input data-li="${i}" data-f="name" value="${esc(l.name)}" placeholder="Name" maxlength="24"><input data-li="${i}" data-f="url" value="${esc(l.url)}" placeholder="https://…" spellcheck="false">
-      <button class="btn sm ghost danger" data-ldel="${i}" title="Remove">✕</button></div>`).join("");
+      <button class="btn sm ghost danger" data-ldel="${i}" title="Remove">${icon("x")}</button></div>`).join("");
   $("#setLyrics").checked = s.lyrics !== false; $("#setViz").checked = s.visualizer !== false; $("#setNotify").checked = !!s.notifyTrack;
   $("#setAmbLyrics").checked = s.ambientLyrics !== false; $("#setTint").checked = d.albumTint;
   $("#setReduce").checked = Themes.reduceOn(); setSeg($("#setFps"), String(d.fps));
@@ -203,7 +204,7 @@ function settingsEvents() {
   bind("#setUnits", "click", e => { const b = e.target.closest("button"); if (!b) return; S().units = b.dataset.v; save(); renderSettings(); weather(true); });
   bind("#setRainy", "change", e => { Themes.doc.rainy = e.target.checked; Themes.persist(); Themes.apply(Themes.draft); });
   bind("#setHolidays", "change", e => { Themes.doc.holidays = e.target.checked; Themes.persist(); Themes.apply(Themes.draft); });
-  bind("#setCityTour", "change", e => { Themes.doc.cityTour = e.target.checked; Themes.persist(); Themes.scheduleTick(); if (e.target.checked) toast("🌆 City tour on: a new city every hour"); });
+  bind("#setCityTour", "change", e => { Themes.doc.cityTour = e.target.checked; Themes.persist(); Themes.scheduleTick(); if (e.target.checked) toast("City tour on: a new city every hour"); });
   bind("#setLiveWx", "change", e => { Themes.doc.liveWeather = e.target.checked; Themes.persist(); Themes.apply(Themes.draft); });
   bind("#widgetToggles", "change", e => { const id = e.target.dataset.wid; if (!id) return; S().widgets = { ...(S().widgets || {}), [id]: e.target.checked }; save(); layoutWidgets(); });
   bind("#setFocus", "change", e => { S().focusMin = Math.max(1, Math.min(180, +e.target.value || 25)); save(); Widgets.refresh(); });
@@ -241,9 +242,9 @@ function settingsEvents() {
   bind("#aiSave", "click", async () => {
     try { await sky.ai.setKey($("#aiKey").value); } catch (e) { return aiErr(e); }   // saved (encrypted) right away, and kept through updates
     $("#aiKey").value = ""; Games.aiChanged(await sky.ai.status()); renderSettings();
-    try { await sky.ai.test(); toast("Claude is connected and saved ✦"); } catch (e) { aiErr({ message: "Key saved, but Claude didn't answer the test: " + String(e.message || e).replace(/^Error invoking remote method '[^']+': (Error: )?/, "") }); }
+    try { await sky.ai.test(); toast("Claude is connected and saved"); } catch (e) { aiErr({ message: "Key saved, but Claude didn't answer the test: " + String(e.message || e).replace(/^Error invoking remote method '[^']+': (Error: )?/, "") }); }
   });
-  bind("#aiTest", "click", async () => { try { toast("Testing…"); await sky.ai.test(); toast("Claude is connected and ready ✦"); } catch (e) { aiErr(e); } });
+  bind("#aiTest", "click", async () => { try { toast("Testing…"); await sky.ai.test(); toast("Claude is connected and ready"); } catch (e) { aiErr(e); } });
   bind("#aiClear", "click", async () => { if (!(await dialog({ title: "Remove the API key?", text: "The AI Game Builder stops working until you add a key again. Your games stay.", ok: "Remove", danger: true }))) return;
     Games.aiChanged(await sky.ai.clearKey()); renderSettings(); });
   bind("#aiModel", "change", async e => { try { Games.aiChanged(await sky.ai.setModel(e.target.value)); toast("Model changed"); } catch (er) { aiErr(er); } });
@@ -281,7 +282,7 @@ async function tour(force) {
       <label class="field">What should Skyline call you?<input id="tName" placeholder="Your name (optional)" maxlength="30" value="${esc(S().name || "")}"></label>`,
     () => `<h2>Where are you?</h2><p>For the weather. If it rains outside, it can rain in your skyline too.</p>
       <label class="field">City<input id="tCity" placeholder="Type a city name…" autocomplete="off"></label><div class="cityres" id="tCityRes"></div>
-      <p class="muted" id="tCityNow">${S().city ? "✓ " + esc(S().city.name) : "You can skip this and add it later."}</p>`,
+      <p class="muted" id="tCityNow">${S().city ? "" + esc(S().city.name) : "You can skip this and add it later."}</p>`,
     () => `<h2>Pick your world</h2><p>Real photos of cities at night that come alive with your music. You can change everything later in Theme Studio.</p><div class="tour-themes">${TOUR_THEMES().map(t =>
       `<button class="tt ${t.id === picked ? "on" : ""}" data-tt="${t.id}"><canvas width="240" height="135"></canvas><span>${esc(t.name)}</span></button>`).join("")}</div>`,
     () => `<h2>You're all set</h2><p>A few things worth knowing:</p><ul class="tips">
@@ -296,7 +297,7 @@ async function tour(force) {
       <span class="sp"></span>${step ? `<button class="btn ghost" data-t="back">Back</button>` : `<button class="btn ghost" data-t="skip">Skip</button>`}
       <button class="btn primary" data-t="next">${step === steps.length - 1 ? "Start" : "Next"}</button></div></div>`;
     if (step === 1) { let t = 0; $("#tCity").addEventListener("input", e => { clearTimeout(t); const q = e.target.value.trim(); if (q.length < 2) return;
-      t = setTimeout(() => citySearch(q, $("#tCityRes"), () => { $("#tCityNow").textContent = "✓ " + S().city.name; $("#tCity").value = ""; }), 300); }); $("#tCity").focus(); }
+      t = setTimeout(() => citySearch(q, $("#tCityRes"), () => { $("#tCityNow").textContent = "" + S().city.name; $("#tCity").value = ""; }), 300); }); $("#tCity").focus(); }
     if (step === 0) $("#tName").focus();
     if (step === 2) $$(".tt").forEach(async b => { const cv = b.querySelector("canvas"), th = BUILTIN.find(x => x.id === b.dataset.tt);
       if (th.scene === "photo") await photoReady(th.photo.src);

@@ -1,6 +1,6 @@
 // Social settings: your profile, your own look (colours and badges, saved to your account), privacy,
 // notifications, microphone & camera, and blocked people.
-import { $, esc, toast, dialog, lum, mixHex } from "../util.js";
+import { $, esc, toast, dialog, lum, mixHex, onAccent } from "../util.js";
 import { icon, BADGE_ICONS } from "./icons.js";
 import { api } from "./api.js";
 import { S, emit, avatar, badgesHtml } from "./state.js";
@@ -16,7 +16,7 @@ const SECTIONS = () => [["profile", "Profile", "user"], ["badges", "Badges", "aw
 
 /* ---------- your colours: applied to your Skyline only ---------- */
 export const PRESETS = [
-  { name: "Skyline", accent: "#8b5cf6", highlight: "#3b82f6", button: "#7c6cf6", nav: "#8b5cf6", subtle: "#a78bfa" },
+  { name: "Skyline", accent: "#5b9cff", highlight: "#7fb2ff", button: "#4f8ff7", nav: "#5b9cff", subtle: "#a9c8ff" },
   { name: "Glacier", accent: "#5aa9e6", highlight: "#7fc8f8", button: "#4a98d8", nav: "#5aa9e6", subtle: "#9cd3f5" },
   { name: "Mint", accent: "#34c39a", highlight: "#5fd3b8", button: "#22a884", nav: "#34c39a", subtle: "#88e0c4" },
   { name: "Ember", accent: "#f0855a", highlight: "#f5b04c", button: "#e2703f", nav: "#f0855a", subtle: "#f7b48f" },
@@ -28,12 +28,14 @@ const COLOR_FIELDS = [["accent", "Accent", "Links, focus and highlights across S
 const HEX = /^#[0-9a-f]{6}$/i;
 export function applyAppearance(a) {
   let st = $("#sxPersonal");
+  // the old purple "Skyline" preset became the blue one (only when it's exactly those colours: your own picks stay)
+  if (a && a.accent === "#8b5cf6" && a.highlight === "#3b82f6" && a.button === "#7c6cf6") a = { ...a, ...(({ name, ...c }) => c)(PRESETS[0]) };
   const ok = a && COLOR_FIELDS.every(([k]) => HEX.test(a[k] || ""));
   document.body.classList.toggle("personal", !!ok);
   if (!ok) { if (st) st.remove(); return; }
   if (!st) { st = document.createElement("style"); st.id = "sxPersonal"; document.head.appendChild(st); }
-  const onBtn = lum(a.button) > .45 ? "#0b0b10" : "#ffffff";
-  st.textContent = `:root{--a1:${a.accent}!important;--a2:${a.highlight}!important;--grad:linear-gradient(135deg,${a.accent},${a.highlight})!important;--a-soft:${mixHex(a.subtle, "#ffffff", .35)}!important;--p-btn:${a.button};--p-on-btn:${onBtn};--p-nav:${a.nav};--p-hl:${a.subtle}}`;
+  const onBtn = onAccent(a.button);
+  st.textContent = `:root{--a1:${a.accent}!important;--a2:${a.highlight}!important;--grad:${a.accent}!important;--on-a:${onAccent(a.accent)}!important;--a-soft:${mixHex(a.subtle, "#ffffff", .35)}!important;--p-btn:${a.button};--p-on-btn:${onBtn};--p-nav:${a.nav};--p-hl:${a.subtle}}`;
 }
 
 /* ---------- drawing ---------- */
@@ -95,7 +97,7 @@ function body() {
       "Do not disturb mutes all of these. Incoming calls still show inside Skyline, silently.");
   const vo = set.voice || {};
   if (section === "devices") return block("Microphone", `<div id="sxDevMic">${row("Input device", "", `<select class="sx-select" data-dev="mic"><option>Loading…</option></select>`)}</div>
-      ${row("Test", "Speak: the bar should move. With headphones on, Hear yourself plays back exactly what friends hear.", `<div class="sx-meter"><i id="sxMeter"></i></div><button class="btn sm" data-sx="testmic">Test</button><button class="btn sm" data-sx="hearmic">Hear yourself</button>`)}
+      ${row("Test", "Hear yourself plays back what friends hear. Use headphones.", `<div class="sx-meter"><i id="sxMeter"></i></div><button class="btn sm" data-sx="testmic">Test</button><button class="btn sm" data-sx="hearmic">Hear yourself</button>`)}
       ${row("Voice quality", esc((VOICE_QUALITY[vo.quality] || VOICE_QUALITY.high).note), `<select class="sx-select" data-set="voice.quality">${Object.entries(VOICE_QUALITY).map(([k, q]) => `<option value="${k}" ${(VOICE_QUALITY[vo.quality] ? vo.quality : "high") === k ? "selected" : ""}>${q.label} · ${q.kbps} kbps</option>`).join("")}</select>`)}
       ${row("Clear voice", "Takes out rumble and desk bumps, and keeps you at one steady volume.", toggle("voice.clear", vo.clear !== false))}
       ${vo.quality === "studio" ? "" : row("Noise suppression", "Cuts fans, keyboards and background noise.", toggle("voice.noise", vo.noise !== false))}

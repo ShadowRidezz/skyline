@@ -1,5 +1,6 @@
 // The home screen's widgets: clock, weather, system, calendar, focus timer, tasks, notes and links.
 import { $, $$, esc, sky, toast, clamp, bytes, store, debounce } from "./util.js";
+import { icon } from "./social/icons.js";
 import { Themes } from "./themes.js";
 import { FX } from "./fx.js";
 
@@ -117,7 +118,7 @@ async function pollSystem() {
     $("#netVal").textContent = `↓ ${bytes(netNow.rx)}/s  ↑ ${bytes(netNow.tx)}/s`;
     drawSpark($("#cpuSpark"), spark.cpu, 100); drawSpark($("#netSpark"), spark.rx, null, spark.tx);
     if (navigator.getBattery) { const b = await navigator.getBattery(); const row = $("#batRow");
-      if (b && (b.chargingTime !== 0 || b.level < 1 || !b.charging)) { row.classList.remove("hidden"); setMeter("bat", b.level, Math.round(b.level * 100) + "%" + (b.charging ? " ⚡" : "")); } }
+      if (b && (b.chargingTime !== 0 || b.level < 1 || !b.charging)) { row.classList.remove("hidden"); setMeter("bat", b.level, Math.round(b.level * 100) + "%" + (b.charging ? " · charging" : "")); } }
   } catch (e) {}
   sysT = setTimeout(pollSystem, 2000);
 }
@@ -217,7 +218,7 @@ let tasks = [];
 function renderTasks() {
   const box = $("#taskList"); if (!box) return;
   box.innerHTML = tasks.length ? tasks.map((t, i) => `<label class="task ${t.done ? "done" : ""}"><input type="checkbox" data-task="${i}" ${t.done ? "checked" : ""}><span class="tk"></span>
-    <span class="tx">${esc(t.text)}</span><button class="ibtn" data-tdel="${i}" title="Remove">✕</button></label>`).join("") : `<div class="muted" style="padding:4px 2px">Nothing to do. Enjoy the view.</div>`;
+    <span class="tx">${esc(t.text)}</span><button class="ibtn" data-tdel="${i}" title="Remove">${icon("x")}</button></label>`).join("") : `<div class="muted" style="padding:4px 2px">Nothing to do. Enjoy the view.</div>`;
   const left = tasks.filter(t => !t.done).length; $("#taskCount").textContent = tasks.length ? `${left} left` : "";
 }
 const saveTasks = () => store.write("tasks", tasks);
@@ -255,9 +256,9 @@ export function renderCountdown() {
   if (!list.length) { box.innerHTML = form + `<div class="muted">Count down to a birthday, a game release or the last day of school. Press ＋.</div>`; return; }
   const days = t => Math.round((t - today) / 864e5);
   const [first, ...rest] = list, d0 = days(first.t);
-  box.innerHTML = form + `<div class="cd-main"><b>${d0 === 0 ? "🎉" : d0}</b><span>${d0 === 0 ? "It's today!" : d0 === 1 ? "day to go" : "days to go"}</span></div>
-    <div class="cd-name">${esc(first.name || "Countdown")} <small>${new Date(first.t).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}</small><button class="ibtn xs" data-cddel="${first.i}" title="Remove">✕</button></div>`
-    + rest.slice(0, 3).map(c => `<div class="cd-row"><span>${esc(c.name || "Countdown")}</span><b>${days(c.t) === 0 ? "today" : days(c.t) + " d"}</b><button class="ibtn xs" data-cddel="${c.i}" title="Remove">✕</button></div>`).join("");
+  box.innerHTML = form + `<div class="cd-main"><b>${d0 === 0 ? "Today" : d0}</b><span>${d0 === 0 ? "It's today!" : d0 === 1 ? "day to go" : "days to go"}</span></div>
+    <div class="cd-name">${esc(first.name || "Countdown")} <small>${new Date(first.t).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}</small><button class="ibtn xs" data-cddel="${first.i}" title="Remove">${icon("x")}</button></div>`
+    + rest.slice(0, 3).map(c => `<div class="cd-row"><span>${esc(c.name || "Countdown")}</span><b>${days(c.t) === 0 ? "today" : days(c.t) + " d"}</b><button class="ibtn xs" data-cddel="${c.i}" title="Remove">${icon("x")}</button></div>`).join("");
 }
 function countdownEvents() {
   $("#cdAddBtn").onclick = () => { S().cdForm = !S().cdForm; renderCountdown(); if (S().cdForm) $("#cdForm input[name=name]").focus(); };

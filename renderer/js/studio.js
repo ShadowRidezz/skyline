@@ -73,7 +73,7 @@ function build() {
     </div>
     <div class="th-edit" id="thEdit">
       <div class="th-col">
-        <div class="th-group"><h4>Scene <span class="sp"></span><button class="btn xs ghost" data-th="surprise" title="A random colour palette">✦ Surprise me</button></h4>
+        <div class="th-group"><h4>Scene <span class="sp"></span><button class="btn xs ghost" data-th="surprise" title="A random colour palette">Surprise me</button></h4>
           <div class="seg" id="thScene"><button data-v="photo">Photo</button><button data-v="minimal">Minimal</button></div>
         </div>
         <div class="th-group"><h4>Colours</h4>
@@ -280,10 +280,10 @@ function gallery() {
   const g = $("#thGallery"); if (!g) return;
   const d = Themes.draft;
   const card = t => `<div class="th-card ${t.id === Themes.doc.active ? "on" : ""}" data-pick="${t.id}" role="button" tabindex="0" title="${esc(t.desc || t.name)}">
-      <canvas width="384" height="216"></canvas>${t.scene === "photo" ? `<span class="th-live">● LIVE PHOTO</span>` : ""}<span class="nm"><span>${esc(t.id === d.id ? d.name : t.name)}</span><small>${t.builtin ? (t.scene === "photo" ? "Real photo" : "Built-in") : "Yours"}</small></span></div>`;
+      <canvas width="384" height="216"></canvas><span class="nm"><span>${esc(t.id === d.id ? d.name : t.name)}</span>${t.builtin ? "" : "<small>Yours</small>"}</span></div>`;
   const all = Themes.all(), photos = all.filter(t => t.builtin && t.scene === "photo"), rest = all.filter(t => !(t.builtin && t.scene === "photo"));
-  g.innerHTML = `<div class="th-sec"><b>📷 Live photos</b><span>Real cities at night. Their lights twinkle and pulse with your music.</span></div>` + photos.map(card).join("")
-    + `<div class="th-sec"><b>✨ Yours &amp; Minimal</b><span>Your saved themes, and a clean plain look.</span></div>` + rest.map(card).join("")
+  g.innerHTML = `<div class="th-sec"><b>Live photos</b><span>Real cities at night. Their lights twinkle and pulse with your music.</span></div>` + photos.map(card).join("")
+    + `<div class="th-sec"><b>Yours &amp; Minimal</b><span>Your saved themes, and a clean plain look.</span></div>` + rest.map(card).join("")
     + `<div class="th-card th-new" data-th="saveas" role="button" tabindex="0"><span>＋</span>New theme from this one</div>`;
   queue = $$("#thGallery [data-pick]"); pump();
 }

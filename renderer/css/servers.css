@@ -17,7 +17,7 @@
 .sx-rail-i > img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; display: block; }
 .sx-rail-i > .ic { width: 22px; height: 22px; }
 .sx-rail-i:hover, .sx-rail-i.on { border-radius: 15px; background: color-mix(in srgb, var(--a1) 75%, #1a1630); color: #fff; }
-.sx-rail-i.sx-rail-dms.on, .sx-rail-i.sx-rail-dms:hover { background: var(--grad); }
+.sx-rail-i.sx-rail-dms.on, .sx-rail-i.sx-rail-dms:hover { background: var(--a1); color: var(--on-a); }
 /* the pill on the left: tall for the server you're in, a dot for unread */
 .sx-rail-i::before { content: ""; position: absolute; left: -13px; top: 50%; width: 4px; height: 0; border-radius: 0 4px 4px 0; background: #fff; transform: translateY(-50%); transition: height .18s ease; }
 .sx-rail-i.unread::before { height: 8px; } .sx-rail-i:hover::before { height: 20px; } .sx-rail-i.on::before { height: 36px; }
@@ -62,7 +62,7 @@
 .sx-msg.mention:hover { background: rgba(250, 204, 21, .1); }
 .sx-mention-pop { position: absolute; left: 0; right: 0; bottom: calc(100% + 6px); z-index: 30; padding: 6px; border-radius: 12px; background: var(--sheet, #14121f); border: 1px solid var(--line2); box-shadow: 0 18px 40px -16px #000; display: grid; gap: 1px; }
 .sx-compose { position: relative; }
-.sx-mention-h { padding: 4px 8px 6px; font: 650 11px/1 var(--font); letter-spacing: .06em; text-transform: uppercase; color: var(--faint); }
+.sx-mention-h { padding: 4px 8px 6px; font: 600 12.5px/1 var(--font); color: var(--faint); }
 .sx-mention-pop button { display: flex; align-items: center; gap: 9px; height: 36px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; color: var(--text); cursor: pointer; text-align: left; }
 .sx-mention-pop button.on, .sx-mention-pop button:hover { background: rgba(255,255,255,.07); }
 .sx-mention-pop small { color: var(--faint); }
@@ -75,7 +75,7 @@
 .sx-inv-ic img { width: 100%; height: 100%; object-fit: cover; }
 .sx-inv-card.bad .sx-inv-ic { background: rgba(229, 72, 77, .18); color: #ff8a8d; } .sx-inv-card.bad .sx-inv-ic .ic { width: 22px; height: 22px; }
 .sx-inv-t { flex: 1; min-width: 0; display: grid; gap: 3px; }
-.sx-inv-t small { font: 650 10.5px/1 var(--font); letter-spacing: .06em; text-transform: uppercase; color: var(--faint); }
+.sx-inv-t small { font: 600 12.5px/1 var(--font); color: var(--faint); }
 .sx-inv-t b { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sx-inv-t b.line { height: 14px; width: 60%; border-radius: 4px; }
 .sx-inv-t em { font-style: normal; font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 5px; }

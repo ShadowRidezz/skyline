@@ -67,11 +67,11 @@ async function loadStats() { try { A.stats = await api.rpc("admin_stats"); } cat
 async function dbBox() {
   const el = $("#adDb"); if (!el || !sky.db) return;
   const r = await sky.db.status(); if (!r || !r.ok) return; const s = r.data;
-  el.innerHTML = !s.hasToken ? `<b>🗄 Database updates</b><p>Let Skyline update the database by itself, so you never have to open Supabase again. Do this once:</p>
+  el.innerHTML = !s.hasToken ? `<b>Database updates</b><p>Let Skyline update the database by itself, so you never have to open Supabase again. Do this once:</p>
       <ol><li>Open <a href="#" data-dblink>supabase.com → Account → Access Tokens</a> (it opens in a Skyline window; sign in with GitHub once and it remembers you).</li><li>Click <b>Generate new token</b>, name it “Skyline”, and copy it (it starts with <b>sbp_</b>).</li><li>Paste it here:</li></ol>
       <div class="ad-db-row"><input type="password" id="adDbTok" placeholder="sbp_…" autocomplete="off" spellcheck="false"><button class="btn sm primary" data-ad="dbtoken">Save and update now</button></div>
       <small>The token stays encrypted on this PC and only your Skyline uses it.</small>`
-    : `<b>🗄 Database</b> ${s.upToDate ? `<span class="ad-ok">✓ Up to date</span>` : `<span class="ad-warn">Update ready</span>`}
+    : `<b>Database</b> ${s.upToDate ? `<span class="ad-ok">Up to date</span>` : `<span class="ad-warn">Update ready</span>`}
       <p>${s.upToDate ? `Updated ${s.at ? new Date(s.at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : ""}. New versions of Skyline bring their database changes in by themselves.` : `This version of Skyline has database changes. ${s.error ? "Last try: " + esc(s.error) : ""}`}</p>
       <div class="ad-db-row">${s.upToDate ? "" : `<button class="btn sm primary" data-ad="dbapply">Update the database now</button>`}<button class="btn sm ghost" data-ad="dbforget">Remove token</button></div>`;
 }
@@ -176,8 +176,8 @@ async function click(e) {
   if (a === "tab") { A.tab = x; draw(); if (x === "overview") loadStats(); if (x === "badges") loadBadges(); if (x === "people") loadUsers(); if (x === "announce") $("#adText")?.focus(); return true; }
   if (a === "dbtoken") { const t = $("#adDbTok").value; b.disabled = true; b.textContent = "Checking…";
     const r = await sky.db.setToken(t); if (!r.ok) { toast(r.error, true); b.disabled = false; b.textContent = "Save and update now"; return true; }
-    b.textContent = "Updating…"; const u = await sky.db.apply(); toast(u.ok ? "✓ Database updated" : u.error, !u.ok); dbBox(); return true; }
-  if (a === "dbapply") { b.disabled = true; b.textContent = "Updating…"; const u = await sky.db.apply(); toast(u.ok ? "✓ Database updated" : u.error, !u.ok); dbBox(); return true; }
+    b.textContent = "Updating…"; const u = await sky.db.apply(); toast(u.ok ? "Database updated" : u.error, !u.ok); dbBox(); return true; }
+  if (a === "dbapply") { b.disabled = true; b.textContent = "Updating…"; const u = await sky.db.apply(); toast(u.ok ? "Database updated" : u.error, !u.ok); dbBox(); return true; }
   if (a === "dbforget") { await sky.db.forget(); dbBox(); return true; }
   if (a === "refresh") { A.stats = null; draw(); loadStats(); return true; }
   if (a === "newbadge") { badgeEditor(); return true; }

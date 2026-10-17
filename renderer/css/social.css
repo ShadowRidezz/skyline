@@ -52,7 +52,7 @@ svg.ic { width: 18px; height: 18px; flex: none; }   /* Social's icons, wherever 
 .sx-nav-i:hover, .sx-dm:hover { background: rgba(255,255,255,.05); color: var(--text); }
 .sx-nav-i.on, .sx-dm.on { background: color-mix(in srgb, var(--p-nav, var(--a1)) 16%, rgba(255,255,255,.04)); color: var(--text); }
 .sx-nav-i:focus-visible, .sx-dm:focus-visible, .sx-row:focus-visible, .sx-me-who:focus-visible { outline: 2px solid color-mix(in srgb, var(--a1) 70%, transparent); outline-offset: -2px; }
-.sx-sec { display: flex; align-items: center; padding: 14px 18px 6px; font: 650 11px/1 var(--font); letter-spacing: .06em; text-transform: uppercase; color: var(--faint); flex: none; }
+.sx-sec { display: flex; align-items: center; padding: 14px 18px 6px; font: 600 12.5px/1 var(--font); color: var(--faint); flex: none; }
 .sx-dms { flex: 1; min-height: 0; overflow-y: auto; padding: 0 8px 8px; display: grid; align-content: start; gap: 1px; }
 .sx-dm { height: 46px; padding: 0 8px; }
 .sx-dm-t { flex: 1; min-width: 0; display: grid; gap: 2px; }
@@ -87,7 +87,7 @@ svg.ic { width: 18px; height: 18px; flex: none; }   /* Social's icons, wherever 
 .sx-search > .ic { width: 16px; height: 16px; }
 .sx-search.sm { height: 32px; width: 200px; }
 .sx-list { padding: 8px 14px 18px; display: grid; gap: 1px; }
-.sx-group { padding: 14px 8px 6px; font: 650 11px/1 var(--font); letter-spacing: .06em; text-transform: uppercase; color: var(--faint); border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.sx-group { padding: 14px 8px 6px; font: 600 12.5px/1 var(--font); color: var(--faint); border-bottom: 1px solid var(--line); margin-bottom: 4px; }
 .sx-group:first-child { padding-top: 6px; }
 .sx-row { display: flex; align-items: center; gap: 12px; min-height: 58px; padding: 8px; border-radius: 10px; cursor: pointer; transition: background .12s; }
 .sx-row:hover { background: rgba(255,255,255,.045); }
@@ -193,7 +193,7 @@ svg.ic { width: 18px; height: 18px; flex: none; }   /* Social's icons, wherever 
 .sx-prof-badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; margin-top: 10px; }
 .sx-prof-facts { width: 100%; margin-top: 16px; border-top: 1px solid var(--line); display: grid; }
 .sx-prof-facts div { display: grid; gap: 2px; text-align: left; padding: 10px 2px; border-bottom: 1px solid var(--line); }
-.sx-prof-facts span { font: 650 10.5px/1 var(--font); letter-spacing: .06em; text-transform: uppercase; color: var(--faint); }
+.sx-prof-facts span { font: 600 12.5px/1 var(--font); color: var(--faint); }
 .sx-prof-facts b { font-size: 13px; font-weight: 500; }
 .sx-prof-facts:empty { display: none; }
 .sx-prof-acts { display: flex; gap: 6px; margin-top: 16px; flex-wrap: wrap; justify-content: center; }
@@ -213,7 +213,7 @@ svg.ic { width: 18px; height: 18px; flex: none; }   /* Social's icons, wherever 
 .sx-older { display: grid; place-items: center; padding: 10px; }
 .sx-day { display: flex; align-items: center; gap: 12px; margin: 16px 0 8px; font: 650 11px/1 var(--font); color: var(--faint); letter-spacing: .04em; }
 .sx-day::before, .sx-day::after { content: ""; flex: 1; border-top: 1px solid var(--line); }
-.sx-new { display: flex; align-items: center; gap: 8px; margin: 10px 0 4px; font: 700 10.5px/1 var(--font); color: #f87171; letter-spacing: .06em; text-transform: uppercase; }
+.sx-new { display: flex; align-items: center; gap: 8px; margin: 10px 0 4px; font: 600 12px/1 var(--font); color: var(--bad); }
 .sx-new::before { content: ""; flex: 1; border-top: 1px solid rgba(248,113,113,.5); }
 .sx-msg { display: grid; grid-template-columns: 36px minmax(0, 1fr); column-gap: 12px; padding: 6px 8px; margin: 0 -8px; border-radius: 8px; margin-top: 10px; }
 .sx-msg.cont { margin-top: 0; padding-top: 2px; padding-bottom: 2px; }
@@ -336,7 +336,7 @@ svg.ic { width: 18px; height: 18px; flex: none; }   /* Social's icons, wherever 
 .sx-color input[type=color]::-webkit-color-swatch-wrapper { padding: 3px; } .sx-color input[type=color]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .sx-color input[type=color]:disabled { opacity: .35; cursor: default; }
 .sx-preview { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 14px; padding: 14px 16px; border-radius: 12px; border: 1px dashed var(--line2); font-size: 13px; }
-.sx-preview-l { font: 650 10.5px/1 var(--font); letter-spacing: .06em; text-transform: uppercase; color: var(--faint); }
+.sx-preview-l { font: 600 12.5px/1 var(--font); color: var(--faint); }
 .sx-preview-nav { display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 10px; border-radius: 8px; background: color-mix(in srgb, var(--p-nav, var(--a1)) 18%, transparent); }
 .sx-preview-dot { width: 3px; height: 14px; border-radius: 2px; background: var(--p-nav, var(--a1)); }
 .sx-preview-sel { padding: 1px 3px; background: color-mix(in srgb, var(--p-hl, var(--a1)) 45%, transparent); border-radius: 3px; }
@@ -362,8 +362,7 @@ svg.ic { width: 18px; height: 18px; flex: none; }   /* Social's icons, wherever 
 
 /* ---------- your colours, when you've chosen your own ---------- */
 body.personal .btn.primary { background: var(--p-btn); color: var(--p-on-btn); box-shadow: none; }
-body.personal .rbtn.on { background: color-mix(in srgb, var(--p-nav) 20%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--p-nav) 32%, transparent); }
-body.personal .rbtn.on::before { background: var(--p-nav); box-shadow: none; }
+body.personal .rail-ind::before { background: var(--p-nav); }
 body.personal ::selection { background: color-mix(in srgb, var(--p-hl) 45%, transparent); }
 
 /* ---------- the rail's count ---------- */
@@ -449,3 +448,6 @@ body.still .sx-in-who .sx-av { animation: none; }
 .sx-badge > .ic, .sx-badge-l { filter: drop-shadow(0 1px 1px rgba(0,0,0,.35)); }
 .sx-badge[data-tip]:not(.named):hover::after { white-space: pre-line; width: max-content; max-width: 220px; text-align: center; line-height: 1.35; font-weight: 600; }
 .sx-badge-big .sx-badge.s-glow { box-shadow: inset 0 0 0 1px var(--bd, rgba(255,255,255,.12)), 0 0 22px -2px var(--bg2), 0 0 6px var(--bg2); }
+
+/* a toggle inside a settings row needs no box of its own */
+.sx-set-c .toggle { padding: 0; border: 0; background: none; }

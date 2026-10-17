@@ -98,7 +98,7 @@ export function voicePanel() {
       <button class="sx-cbtn sm${v.deafened ? " off" : ""}" data-sx="vdeafen" title="${v.deafened ? "Undeafen" : "Deafen (hear nobody)"}" aria-label="Deafen" aria-pressed="${v.deafened}">${icon(v.deafened ? "headphonesOff" : "headphones")}</button>
       <button class="sx-cbtn sm${v.live ? " live" : ""}" data-sx="vlive" title="${v.live ? `Stop streaming${v.viewers ? ` (${v.viewers} watching)` : ""}` : "Go Live: share your screen with the channel"}" aria-label="Go Live" aria-pressed="${v.live}">${icon(v.live ? "screenOff" : "screen")}</button>
       <button class="sx-cbtn sm end" data-sx="vleave" title="Leave voice" aria-label="Leave voice">${icon("phoneOff")}</button></div>
-    ${v.live ? `<small class="sx-vlive-t">🔴 Live${v.viewers ? ` · ${v.viewers} watching` : " · nobody watching yet"}</small>` : ""}</div>`;
+    ${v.live ? `<small class="sx-vlive-t">Live${v.viewers ? ` · ${v.viewers} watching` : " · nobody watching yet"}</small>` : ""}</div>`;
 }
 
 /* ================= members (the right-hand panel) ================= */

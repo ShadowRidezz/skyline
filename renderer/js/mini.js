@@ -35,7 +35,7 @@ function loop() {
   const frame = now => {
     if (!(meta.playing && !document.hidden)) { if (raf) raf(); raf = 0; }
     lv += (level - lv) * .35;
-    g.clearRect(0, 0, w, h); g.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--np-color") || "#8b5cf6";
+    g.clearRect(0, 0, w, h); g.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--np-color") || "#5b9cff";
     for (let i = 0; i < 6; i++) { const v = meta.playing ? clamp(lv * (.35 + .65 * Math.abs(Math.sin(now / 1000 * (1.8 + i * .6) + i))), .12, 1) : .12;
       g.beginPath(); g.roundRect(i * 8, h - v * h, 4, v * h, 2); g.fill(); }
   };

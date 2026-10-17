@@ -7,7 +7,7 @@ const FX = (fx) => ({ glow: 0, particles: 0, particleSpeed: 30, comets: 0, comet
   bgOpacity: 100, stars: 0, rain: 0, snow: 0, lightning: 0, droplets: 0, neon: 0, reflections: 0, sun: 0, moon: 0, beams: 0, traffic: 0,
   bright: 100, grade: 45, sparkle: 55, drift: 50, ...fx });
 // Real photos of cities at night that come alive: their own lights twinkle and pulse with your music.
-const BLUE = { bg: "#03060e", skyTop: "#071a38", skyMid: "#13407e", skyLow: "#3f86d6", city: "#06101e", window: "#bfe3ff", accent: "#60a5fa", accent2: "#818cf8" };
+const BLUE = { bg: "#03060e", skyTop: "#071a38", skyMid: "#13407e", skyLow: "#3f86d6", city: "#06101e", window: "#bfe3ff", accent: "#60a5fa", accent2: "#60a5fa" };
 const PHOTO = (id, name, src, desc, credit, focus, colors = {}, fx = {}) => ({ id, name, scene: "photo", desc, photo: { src, focus, credit },
   colors: { ...BLUE, ...colors }, fx: FX({ glow: 45, particles: 8, particleSpeed: 25, comets: 18, cometSpeed: 45, blur: 0, speed: 45, music: 65, ...fx }), ui: { panel: 70, glass: 20 } });
 export const PHOTOS = [
@@ -59,7 +59,7 @@ function normDoc(d) {
 /* ---------- turning a theme into the page's colours ---------- */
 export function cssVars(t) {
   const [h, s0, l0] = toHsl(t.colors.bg), s = Math.min(s0, .42), l = Math.min(l0, .1);
-  const P = clamp(t.ui.panel, 80, 100) / 100, tone = dl => fromHsl(h, s, clamp(l + dl, 0, .3));   // (cards stay readable over any photo)
+  const P = clamp(t.ui.panel, 85, 100) / 100, tone = dl => fromHsl(h, s, clamp(l + dl, 0, .3));   // (cards stay readable over any photo)
   const a1 = t.colors.accent, a2 = t.colors.accent2 || a1, [ah, as, al] = toHsl(a1);
   return {
     "--bg": fromHsl(h, s, l), "--bg2": rgba(tone(.02), Math.min(1, P + .08)),

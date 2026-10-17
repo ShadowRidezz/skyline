@@ -18,7 +18,7 @@
 .sx-msg.mention { border-radius: 12px; }
 .sx-msg.pinned { box-shadow: inset 2px 0 0 #facc15; }
 .sx-tools { right: 10px; top: -18px; border-radius: 12px; padding: 3px; backdrop-filter: blur(10px); background: color-mix(in srgb, var(--sheet) 92%, transparent); }
-.sx-msg-av .sx-av { transition: transform .15s; } .sx-msg-av:hover .sx-av { transform: scale(1.06); }
+
 
 /* the day between messages: a small centred label on a hairline */
 .sx-day { display: flex; align-items: center; gap: 12px; margin: 22px 24px 8px; }
@@ -26,7 +26,7 @@
 .sx-day span { padding: 3px 10px; border-radius: 10px; background: rgba(255,255,255,.05); font: 600 11px/1.3 var(--font); color: var(--muted); letter-spacing: .02em; }
 .sx-new { display: flex; align-items: center; gap: 10px; margin: 12px 24px 4px; }
 .sx-new::before { content: ""; flex: 1; height: 1px; background: #e5484d; opacity: .7; }
-.sx-new span { font: 700 10.5px/1 var(--font); letter-spacing: .08em; color: #ff6b70; text-transform: uppercase; }
+.sx-new span { font: 600 12.5px/1 var(--font); color: #ff6b70; }
 
 /* the start of a conversation: the person, big */
 .sx-chat-start { padding: 40px 24px 22px 22px; }
@@ -43,7 +43,7 @@
 .sx-compose-box:focus-within { border-color: color-mix(in srgb, var(--a1) 55%, transparent); box-shadow: 0 14px 34px -18px rgba(0,0,0,.85), 0 0 0 3px color-mix(in srgb, var(--a1) 14%, transparent); }
 .sx-compose textarea { font-size: 15px; padding: 8px 8px; line-height: 1.45; }
 .sx-cmp-btn { width: 38px; height: 38px; border-radius: 11px; }
-.sx-send { width: 38px; height: 38px; border-radius: 11px; border: 0; display: grid; place-items: center; background: var(--grad); color: #fff; cursor: pointer; transition: opacity .15s, transform .12s, filter .15s; }
+.sx-send { width: 38px; height: 38px; border-radius: 11px; border: 0; display: grid; place-items: center; background: var(--a1); color: var(--on-a); cursor: pointer; transition: opacity .15s, transform .12s, filter .15s; }
 .sx-send:disabled { opacity: 1; background: rgba(255,255,255,.06); color: var(--faint); cursor: default; }
 .sx-send:not(:disabled):hover { filter: brightness(1.12); } .sx-send:not(:disabled):active { transform: scale(.94); }
 .sx-send svg { width: 18px; height: 18px; }
@@ -55,7 +55,7 @@
 .sx-nav-i { height: 38px; border-radius: 10px; }
 .sx-dms { gap: 2px; }
 .sx-dm { position: relative; height: 52px; border-radius: 10px; padding: 0 10px 0 8px; }
-.sx-dm.on::before { content: ""; position: absolute; left: -8px; top: 12px; bottom: 12px; width: 3px; border-radius: 0 3px 3px 0; background: var(--grad); }
+.sx-dm.on::before { content: ""; position: absolute; left: -8px; top: 12px; bottom: 12px; width: 3px; border-radius: 0 3px 3px 0; background: var(--a1); }
 .sx-dm-t b { font-size: 14px; }
 .sx-dm-time { flex: none; font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
 .sx-dm .sx-pill { box-shadow: 0 0 0 2px rgba(0,0,0,.25); }

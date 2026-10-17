@@ -101,12 +101,12 @@
             <div class="meter hidden" id="gpuRow"><span>GPU</span><div class="mbar"><i id="gpuBar"></i></div><b id="gpuVal">–</b></div>
             <div class="meter hidden" id="batRow"><span>Battery</span><div class="mbar"><i id="batBar"></i></div><b id="batVal">–</b></div>
             <div class="meter net"><span>Network</span><canvas class="spark sm" id="netSpark"></canvas><b id="netVal">–</b></div></div>
-          <div class="glass widget" data-widget="links"><div class="ctitle" draggable="true">Quick links <span class="sp"></span><button class="ibtn xs" data-goto="settings:home" title="Edit links">✎</button></div><div class="links" id="links"></div></div>
-          <div class="glass widget" data-widget="countdown"><div class="ctitle" draggable="true">Countdown <span class="sp"></span><button class="ibtn xs" id="cdAddBtn" title="Add a countdown">＋</button></div><div id="countdown"></div></div>
+          <div class="glass widget" data-widget="links"><div class="ctitle" draggable="true">Quick links <span class="sp"></span><button class="ibtn xs" data-goto="settings:home" title="Edit links" aria-label="Edit links"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 5.5l4 4M4 20l1-4.5L15.8 4.7a1.4 1.4 0 0 1 2 0l1.5 1.5a1.4 1.4 0 0 1 0 2L8.5 19z"/></svg></button></div><div class="links" id="links"></div></div>
+          <div class="glass widget" data-widget="countdown"><div class="ctitle" draggable="true">Countdown <span class="sp"></span><button class="ibtn xs" id="cdAddBtn" title="Add a countdown" aria-label="Add a countdown"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div><div id="countdown"></div></div>
           <div class="glass widget" data-widget="calendar"><div class="ctitle" draggable="true">Calendar</div><div id="calendar"></div></div>
           <div class="glass widget" data-widget="focus"><div class="ctitle" draggable="true">Focus timer</div><div class="focus" id="focus"></div></div>
-          <div class="glass widget" data-widget="tasks"><div class="ctitle" draggable="true">Tasks <span class="sp"></span><span id="taskCount" class="ct-note"></span><button class="ibtn xs" id="taskClear" title="Clear finished">✓</button></div>
-            <form id="taskForm" class="task-add"><input id="taskIn" placeholder="Add a task…" maxlength="140" autocomplete="off"><button class="ibtn" title="Add">＋</button></form>
+          <div class="glass widget" data-widget="tasks"><div class="ctitle" draggable="true">Tasks <span class="sp"></span><span id="taskCount" class="ct-note"></span><button class="ibtn xs" id="taskClear" title="Clear finished" aria-label="Clear finished"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button></div>
+            <form id="taskForm" class="task-add"><input id="taskIn" placeholder="Add a task…" maxlength="140" autocomplete="off"><button class="ibtn" title="Add" aria-label="Add"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></form>
             <div class="tasks" id="taskList"></div></div>
           <div class="glass widget" data-widget="notes"><div class="ctitle" draggable="true">Notes</div><textarea id="notes" placeholder="Thoughts for tonight…" spellcheck="false"></textarea></div>
         </aside>
@@ -172,13 +172,13 @@
             <input id="gSearch" placeholder="Search games..." autocomplete="off" spellcheck="false"><kbd>Enter</kbd></label>
         </header>
         <section class="g-results hidden" id="gResults"></section>
-        <section class="g-sec"><div class="g-sec-h"><h2>🎮 My games</h2><span class="ct-note" id="gMineCount"></span><span class="sp"></span></div><div class="g-grid" id="gMine"></div></section>
-        <section class="g-sec"><div class="g-sec-h"><h2>📚 Library</h2><span class="ct-note">🌐 Browser · 💻 Local · 🔗 Web</span><span class="sp"></span>
-          <button class="btn sm" id="gScan">🔍 Find games on this PC</button><button class="btn sm" id="gAddLocal">＋ Add game…</button></div><div class="g-grid" id="gLib"></div></section>
+        <section class="g-sec"><div class="g-sec-h"><h2>My games</h2><span class="ct-note" id="gMineCount"></span><span class="sp"></span></div><div class="g-grid" id="gMine"></div></section>
+        <section class="g-sec"><div class="g-sec-h"><h2>Library</h2><span class="sp"></span>
+          <button class="btn sm" id="gScan"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/></svg>Find games on this PC</button><button class="btn sm" id="gAddLocal"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add game…</button></div><div class="g-grid" id="gLib"></div></section>
         <section class="g-sec glass g-time" id="gTime"></section>
         <section class="g-sec glass g-clips" id="gClips"></section>
         <section class="g-sec glass g-goals" id="gGoals"></section>
-        <section class="g-sec glass g-find" id="gFindSec"><div class="g-sec-h"><h2>🔎 Find games</h2><span class="ct-note">Browser games from itch.io and free-to-play games from FreeToGame. Opening one takes you to its website.</span></div>
+        <section class="g-sec glass g-find" id="gFindSec"><div class="g-sec-h"><h2>Find games</h2><span class="ct-note">Browser games from itch.io and free-to-play games from FreeToGame. Opening one takes you to its website.</span></div>
           <form class="g-findbar" id="gFindForm"><input id="gFindQ" placeholder="Search for browser games… e.g. platformer, horror, racing" autocomplete="off" spellcheck="false">
             <div class="seg" id="gSrc"><button type="button" data-v="all" class="on">All</button><button type="button" data-v="itch">itch.io</button><button type="button" data-v="freetogame">FreeToGame</button></div>
             <button class="btn primary">Search</button></form>
@@ -192,9 +192,9 @@
     <section class="view hidden" id="view-school">
       <div class="pg sc">
         <header class="pg-head"><div><h1>School</h1><p>What's due, your classes, grades and study tools, all in one place.</p></div><span class="sp"></span>
-          <button class="btn sm" data-sc="refresh" title="Check Google Classroom for new work now">↻ Refresh</button><button class="btn sm" data-sc="study">⏱ Study 25 min</button></header>
+          <button class="btn sm" data-sc="refresh" title="Check Google Classroom for new work now"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5a8 8 0 0 0-14.5-4.2L4 9M4 4.5V9h4.5M4 12.5a8 8 0 0 0 14.5 4.2L20 15M20 19.5V15h-4.5"/></svg>Refresh</button><button class="btn sm" data-sc="study"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4l2.5 1.5M9.5 2.5h5M19 6l1.5-1.5"/></svg>Study 25 min</button></header>
         <div class="sc-hero" id="scHero"></div>
-        <div class="sc-tabs"><div class="seg" id="scTabs"><button data-v="agenda">📋 Agenda</button><button data-v="calendar">📅 Calendar</button><button data-v="schedule">🕘 Schedule</button><button data-v="grades">📊 Grades</button><button data-v="study">🧠 Study</button></div></div>
+        <div class="sc-tabs"><div class="seg" id="scTabs"><button data-v="agenda">Agenda</button><button data-v="calendar">Calendar</button><button data-v="schedule">Schedule</button><button data-v="grades">Grades</button><button data-v="study">Study</button></div></div>
         <div id="scBody"></div>
       </div>
     </section>
@@ -206,15 +206,15 @@
         <div class="pg-stats" id="mStats"></div>
         <div class="pg-cols">
           <section class="glass pg-card">
-            <h3 class="pg-h">✍️ Log it</h3>
-            <div class="seg m-type"><button type="button" data-mtype="out">− Spent</button><button type="button" data-mtype="in">＋ Got</button></div>
+            <h3 class="pg-h">Log it</h3>
+            <div class="seg m-type"><button type="button" data-mtype="out">Spent</button><button type="button" data-mtype="in">Got</button></div>
             <form class="pg-add" id="mAdd"><input name="amt" type="number" min="0" step="0.01" placeholder="$0.00" class="w-amt"><select name="cat"></select>
               <input name="note" placeholder="What for? (optional)" autocomplete="off" maxlength="60"><input name="date" type="date"><button class="btn primary">Add</button></form>
-            <h3 class="pg-h">🧾 Recent</h3><div class="m-list" id="mList"></div>
+            <h3 class="pg-h">Recent</h3><div class="m-list" id="mList"></div>
           </section>
           <div class="pg-side">
-            <section class="glass pg-card"><h3 class="pg-h">📊 Where it went this month</h3><div class="m-cats" id="mCats"></div></section>
-            <section class="glass pg-card"><h3 class="pg-h">🎯 Savings goals</h3><div class="m-goals" id="mGoals"></div>
+            <section class="glass pg-card"><h3 class="pg-h">Where it went this month</h3><div class="m-cats" id="mCats"></div></section>
+            <section class="glass pg-card"><h3 class="pg-h">Savings goals</h3><div class="m-goals" id="mGoals"></div>
               <form class="pg-add slim" id="mGoal"><input name="name" placeholder="Saving for… e.g. new headset" autocomplete="off" maxlength="40"><input name="target" type="number" min="1" step="1" placeholder="$" class="w-amt"><button class="btn sm">Add</button></form></section>
           </div>
         </div>
@@ -229,7 +229,7 @@
           <input id="ytQ" placeholder="Search YouTube…" autocomplete="off" spellcheck="false"><button class="btn primary">Search</button></form>
         <div class="yt-chips"><button class="gchip" data-ytq="lofi hip hop">lofi hip hop</button><button class="gchip" data-ytq="Minecraft">Minecraft</button><button class="gchip" data-ytq="Fortnite">Fortnite</button><button class="gchip" data-ytq="music videos">music videos</button><button class="gchip" data-ytq="funny">funny</button><button class="gchip" data-ytq="speedruns">speedruns</button><button class="gchip" data-ytq="tutorials">tutorials</button></div>
         <section class="glass yt-now hidden" id="ytNow"><div class="yt-player" id="ytPlayer"></div>
-          <div class="yt-nowbar"><span class="yt-nt" id="ytNowT"></span><span class="sp"></span><button class="btn sm" data-yta="save">☆ Save</button><button class="btn sm" data-yta="full">⛶ Full screen</button><button class="btn sm" data-yta="open">Open on YouTube ↗</button><button class="btn sm ghost" data-yta="close">Close</button></div></section>
+          <div class="yt-nowbar"><span class="yt-nt" id="ytNowT"></span><span class="sp"></span><button class="btn sm" data-yta="save">Save</button><button class="btn sm" data-yta="full"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4H20v5.5M9.5 20H4v-5.5M20 4l-6.5 6.5M4 20l6.5-6.5"/></svg>Full screen</button><button class="btn sm" data-yta="open">Open on YouTube<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg></button><button class="btn sm ghost" data-yta="close">Close</button></div></section>
         <div id="ytResults"></div><div id="ytMore" class="yt-more"></div><div id="ytSaved"></div><div id="ytRecent"></div>
       </div>
     </section>
@@ -238,14 +238,14 @@
     <section class="view hidden" id="view-minecraft">
       <div class="pg">
         <header class="pg-head mc-hero glass"><div><h1>Minecraft</h1><p>Jump straight into a modpack. Play starts the one you played last; click any pack below to play that one.</p></div><span class="sp"></span>
-          <button class="btn primary mc-play" data-mc="play">▶ Play</button></header>
+          <button class="btn primary mc-play" data-mc="play">Play</button></header>
         <div class="pg-cols">
-          <section class="glass pg-card"><div class="pg-h">🌍 Servers <span class="sp"></span><button class="btn xs ghost" data-mc="refresh">↻ Refresh</button></div>
+          <section class="glass pg-card"><div class="pg-h">Servers <span class="sp"></span><button class="btn xs ghost" data-mc="refresh"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5a8 8 0 0 0-14.5-4.2L4 9M4 4.5V9h4.5M4 12.5a8 8 0 0 0 14.5 4.2L20 15M20 19.5V15h-4.5"/></svg>Refresh</button></div>
             <div class="mc-list" id="mcServers"></div>
             <form class="pg-add slim" id="mcAdd"><input name="host" placeholder="Server address, e.g. play.example.net" autocomplete="off" spellcheck="false"><button class="btn sm">Add</button></form></section>
           <div class="pg-side">
-            <section class="glass pg-card"><h3 class="pg-h">🧩 Your modpacks <span class="ct-note">click one to play it</span></h3><div class="mc-list" id="mcProfiles"></div></section>
-            <section class="glass pg-card"><h3 class="pg-h">🔗 Handy links</h3><div class="mc-links">
+            <section class="glass pg-card"><h3 class="pg-h">Your modpacks <span class="ct-note">click one to play it</span></h3><div class="mc-list" id="mcProfiles"></div></section>
+            <section class="glass pg-card"><h3 class="pg-h">Handy links</h3><div class="mc-links">
               <button class="lk" data-mclink="https://modrinth.com/mods">Modrinth mods</button><button class="lk" data-mclink="https://modrinth.com/shaders">Shaders</button>
               <button class="lk" data-mclink="https://minecraft.wiki">Minecraft Wiki</button><button class="lk" data-mclink="https://www.chunkbase.com/apps/seed-map">Seed map</button></div></section>
           </div>
@@ -274,7 +274,7 @@
         <div class="sset hidden" id="set-ui"><div class="sgrid" id="uiSet"></div></div>
 
         <div class="sset hidden" id="set-home"><div class="sgrid">
-          <div class="glass sbox"><h3>🌙 Bedtime</h3>
+          <div class="glass sbox"><h3>Bedtime</h3>
             <label class="toggle"><input type="checkbox" id="setBed"><span class="sw"></span><span class="t"><b>Bedtime on school nights</b><small>Sunday–Thursday the city dims and Sky says good night</small></span></label>
             <label class="field">Bedtime<input type="time" id="setBedAt"></label></div>
           <div class="glass sbox"><h3>You &amp; the clock</h3>
@@ -296,7 +296,7 @@
           <div class="glass sbox"><h3>Widgets</h3><p class="muted">Choose what shows on Home. Drag a widget by its title to move it.</p><div class="wtoggles" id="widgetToggles"></div>
             <div class="row"><label class="field small">Focus minutes<input type="number" id="setFocus" min="1" max="180"></label><label class="field small">Break minutes<input type="number" id="setBreak" min="1" max="60"></label></div></div>
           <div class="glass sbox"><h3>Quick links</h3><div class="lrows" id="linkRows"></div>
-            <div class="row"><button class="btn sm" id="linkAdd">＋ Add link</button></div>
+            <div class="row"><button class="btn sm" id="linkAdd"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button></div>
             <label class="field">Websites open in<select id="linkBrowser"></select></label>
             <label class="toggle"><input type="checkbox" id="linkApps"><span class="sw"></span><span class="t"><b>Open the app when it's installed</b><small>Discord, Spotify, Steam, Roblox, Epic Games… open in their app instead of the website.</small></span></label></div>
         </div></div>
@@ -320,16 +320,16 @@
 
         <div class="sset hidden" id="set-ai"><div class="sgrid">
           <div class="glass sbox"><h3>Sky's brain</h3><p class="muted" id="aiNote">Checking…</p>
-            <div class="row"><button class="btn sm" data-ai="memory">🧠 What Sky remembers</button></div></div>
+            <div class="row"><button class="btn sm" data-ai="memory">What Sky remembers</button></div></div>
           <div class="glass sbox"><h3>Study Helper</h3><p class="muted">The IXL &amp; Sadlier tutor in Chrome: hints, checking your answer, and the full solution after you try.</p>
-            <div class="row"><button class="btn sm" data-sh="toggle">📚 Set up / pair the helper</button></div></div>
+            <div class="row"><button class="btn sm" data-sh="toggle">Set up / pair the helper</button></div></div>
           <section class="glass sh-card hidden" id="shCard" style="grid-column: 1 / -1"></section>
           <div class="glass sbox"><h3>Claude connection <span class="badge" id="aiBadge">Not connected</span></h3>
             <p class="muted">Sky's smarter answers use Claude, Anthropic's AI, with your own API key (you pay Anthropic directly for what you use).
               The key is stored encrypted on this PC; only Skyline's background process uses it, never the page or the games.</p>
             <label class="field">API key<input type="password" id="aiKey" placeholder="sk-ant-…" autocomplete="off" spellcheck="false"></label>
             <div class="row"><button class="btn sm primary" id="aiSave">Save key</button><button class="btn sm" id="aiTest">Test connection</button><button class="btn sm danger" id="aiClear">Remove key</button>
-              <button class="btn sm ghost" id="aiConsole">Get a key ↗</button></div>
+              <button class="btn sm ghost" id="aiConsole">Get a key<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg></button></div>
           </div>
           <div class="glass sbox"><h3>Model</h3><label class="field">Which Claude builds your games<select id="aiModel"></select></label>
             <p class="muted">Games run in a sandbox with no internet and no access to your files or to Skyline. The builder only makes games and refuses harmful code.</p></div>
@@ -364,7 +364,7 @@
           </div>
           <div class="glass sbox"><h3>Back up &amp; restore</h3>
             <p class="muted">Everything you've made in Skyline in one file: themes, settings, notes, school, money, the assistant's memory, stats and the games you built. Sign-ins and keys are never included.</p>
-            <div class="row"><button class="btn sm" id="bkSave">💾 Back up…</button><button class="btn sm" id="bkRestore">Restore a backup…</button></div><p class="muted" id="bkNote"></p>
+            <div class="row"><button class="btn sm" id="bkSave">Back up…</button><button class="btn sm" id="bkRestore">Restore a backup…</button></div><p class="muted" id="bkNote"></p>
           </div>
         </div></div>
 
@@ -384,24 +384,24 @@
 <div class="resting-note">Skyline is resting while your game or video is full screen</div>
 <div class="g-stage hidden" id="gStage" data-mode="play">
   <header class="gs-bar">
-    <button class="btn sm ghost" data-gs="back">← Back</button>
+    <button class="btn sm ghost" data-gs="back"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 6l-6 6 6 6"/></svg>Back</button>
     <div class="gs-title"><b id="gsName" data-gs="rename" title="Rename">Game</b><span class="badge" id="gsGenre"></span><span class="badge" id="gsSaved"></span></div>
     <span class="sp"></span>
-    <span class="gs-build"><button class="btn sm ghost" data-gs="undo" id="gsUndo" title="Go back to before the last AI change">↶ Undo AI change</button>
-      <button class="btn sm" data-gs="regen">↻ Regenerate</button><button class="btn sm" data-gs="save">💾 Save Game</button><button class="btn sm" data-gs="export">⬇ Download Project</button></span>
-    <span class="gs-playonly"><button class="btn sm" data-gs="edit">✦ Edit with AI</button></span>
+    <span class="gs-build"><button class="btn sm ghost" data-gs="undo" id="gsUndo" title="Go back to before the last AI change">Undo AI change</button>
+      <button class="btn sm" data-gs="regen">Regenerate</button><button class="btn sm" data-gs="save">Save Game</button><button class="btn sm" data-gs="export">⬇ Download Project</button></span>
+    <span class="gs-playonly"><button class="btn sm" data-gs="edit">Edit with AI</button></span>
     <button class="btn sm danger-solid" data-gs="exit">Exit Game</button>
   </header>
   <div class="gs-body">
     <div class="gs-preview">
-      <div class="gs-tools"><button class="btn sm" data-gs="play">▶ Play</button><button class="btn sm" data-gs="pause" id="gsPause">⏸ Pause</button><button class="btn sm" data-gs="restart">↻ Restart</button>
-        <button class="btn sm" data-gs="expand">⛶ Expand</button><button class="btn sm gs-buildbtn" data-gs="save">💾 Save</button><span class="sp"></span><button class="btn sm ghost" data-gs="code" title="See the game's code">&lt;/&gt; Code</button></div>
+      <div class="gs-tools"><button class="btn sm" data-gs="play">Play</button><button class="btn sm" data-gs="pause" id="gsPause">Pause</button><button class="btn sm" data-gs="restart">Restart</button>
+        <button class="btn sm" data-gs="expand"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4H20v5.5M9.5 20H4v-5.5M20 4l-6.5 6.5M4 20l6.5-6.5"/></svg>Expand</button><button class="btn sm gs-buildbtn" data-gs="save">Save</button><span class="sp"></span><button class="btn sm ghost" data-gs="code" title="See the game's code">&lt;/&gt; Code</button></div>
       <div class="gs-error hidden" id="gsError"></div>
-      <div class="gs-frame"><iframe id="gFrame" title="Game" sandbox="allow-scripts allow-pointer-lock" allow="fullscreen; gamepad; autoplay"></iframe><div class="gs-paused">⏸ Paused · press Play</div>
+      <div class="gs-frame"><iframe id="gFrame" title="Game" sandbox="allow-scripts allow-pointer-lock" allow="fullscreen; gamepad; autoplay"></iframe><div class="gs-paused">Paused</div>
         <div class="gs-code"><div class="gs-tabs"><div id="gsTabs"></div><span class="sp"></span><span class="muted" id="gsLines"></span><button class="btn xs ghost" data-gs="copy">Copy</button></div><pre id="gsCode"></pre></div></div>
     </div>
     <aside class="gs-chat glass">
-      <div class="ctitle">✦ AI Game Builder <span class="sp"></span><span class="ct-note">Ask for any change</span></div>
+      <div class="ctitle">AI game builder <span class="sp"></span><span class="ct-note">Ask for any change</span></div>
       <div class="gs-msgs" id="gsChat"></div>
       <div class="gs-tweaks" id="gsTweaks"></div>
       <div class="gs-input"><textarea id="gsInput" rows="2" placeholder="Make the player faster, add a boss, fix the jump…" maxlength="2000"></textarea><button class="btn primary" id="gsSend">Send</button></div>
@@ -410,7 +410,7 @@
 </div>
 <div class="asst glass hidden" id="asst" role="dialog" aria-label="Sky, your assistant">
   <div class="as-head"><span class="as-dot"></span><b>Sky</b><span class="as-state" id="asState">Ready</span><span class="sp"></span>
-    <button class="ibtn xs" data-as="memory" title="What Sky remembers">🧠</button><button class="ibtn xs" data-as="close" title="Close (Esc)">✕</button></div>
+    <button class="ibtn xs" data-as="memory" title="What Sky remembers" aria-label="What Sky remembers"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 4.5a3 3 0 0 0-5 2.2 3 3 0 0 0-1 5.3 3.2 3.2 0 0 0 2.5 5.2 3 3 0 0 0 3.5 2.3V4.5zM14.5 4.5a3 3 0 0 1 5 2.2 3 3 0 0 1 1 5.3 3.2 3.2 0 0 1-2.5 5.2 3 3 0 0 1-3.5 2.3V4.5z"/></svg></button><button class="ibtn xs" data-as="close" title="Close (Esc)" aria-label="Close"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
   <div class="as-body" id="asBody">
     <canvas class="as-viz" id="asViz"></canvas>
     <div class="as-heard" id="asHeard"></div>
@@ -427,7 +427,7 @@
     <button class="pl-btn" data-np="prev" title="Previous"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="2.6" height="14" rx="1"/><path d="M19 6.2v11.6a1 1 0 0 1-1.55.83L9.2 12.83a1 1 0 0 1 0-1.66l8.25-5.8A1 1 0 0 1 19 6.2z"/></svg></button>
     <button class="pl-btn big" data-np="toggle" data-np-play title="Play / pause"></button>
     <button class="pl-btn" data-np="next" title="Next"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="16.4" y="5" width="2.6" height="14" rx="1"/><path d="M5 6.2v11.6a1 1 0 0 0 1.55.83l8.25-5.8a1 1 0 0 0 0-1.66L6.55 5.37A1 1 0 0 0 5 6.2z"/></svg></button>
-    <button class="ibtn" data-lyf="close" title="Close (Esc)">✕</button></header>
+    <button class="ibtn" data-lyf="close" title="Close (Esc)" aria-label="Close"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
   <div class="lyrics big" id="lyricsBig" data-lyrics></div>
 </div>
 <div class="g-menu hidden" id="gMenu"></div>

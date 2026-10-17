@@ -1,6 +1,7 @@
 // The School page: everything that's due (Google Classroom and your own), a calendar, your class schedule, grades,
 // and study tools (flashcards, quizzes, a study helper). Everything is saved on this PC.
 import { $, $$, esc, sky, toast, dialog, store } from "./util.js";
+import { icon } from "./social/icons.js";
 import { Widgets } from "./widgets.js";
 import { FX } from "./fx.js";
 
@@ -16,7 +17,7 @@ const clean = e => String((e && e.message) || e).replace(/^Error invoking remote
 const COLORS = ["#60a5fa", "#a78bfa", "#f472b6", "#34d399", "#fbbf24", "#fb7185", "#22d3ee", "#f97316", "#a3e635", "#e879f9"];
 const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"], DAYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-const KINDS = { hw: ["📝", "Homework"], test: ["🧪", "Test / quiz"], project: ["📐", "Project"] };
+const KINDS = { hw: ["pencil", "Homework"], test: ["flask", "Test / quiz"], project: ["layers", "Project"] };
 const CATS = { test: "Tests", quiz: "Quizzes", hw: "Homework", cw: "Classwork", project: "Projects", other: "Other" };
 const CR_ICON = `<svg class="sc-cri" viewBox="0 0 16 16" aria-hidden="true"><rect width="16" height="16" rx="4" fill="#16a34a"/><rect x="3" y="3.5" width="10" height="7" rx="1.2" fill="none" stroke="#fff" stroke-width="1.4"/><path d="M5.5 13h5" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>`;
 const INTERVALS = [0, 1, 2, 4, 8, 16, 32];   // flashcards: days until a card comes back, by how well you know it
@@ -145,7 +146,7 @@ function newGrades(s, was) {
   D.reminded.grades = [...seen, ...list.map(g => g.id + "|" + g.score + "/" + g.outOf)].slice(-300); save();
   const name = g => { const c = D.classes.find(c => c.cr === g.course); return (c ? c.name + " · " : "") + g.title; };
   say(list.length === 1 ? `New grade: you got ${Math.round(pct(list[0]))} percent on ${list[0].title}.` : `You have ${list.length} new grades in Google Classroom.`);
-  sky.app.notify({ title: list.length === 1 ? `📊 New grade: ${fmtPct(pct(list[0]))}` : `📊 ${list.length} new grades`, body: list.slice(0, 4).map(g => `${name(g)}: ${fmtPct(pct(g))} (${g.score}/${g.outOf})`).join("\n") });
+  sky.app.notify({ title: list.length === 1 ? `New grade: ${fmtPct(pct(list[0]))}` : `${list.length} new grades`, body: list.slice(0, 4).map(g => `${name(g)}: ${fmtPct(pct(g))} (${g.score}/${g.outOf})`).join("\n") });
 }
 
 /* ---------- everything that's due, in one list ---------- */
@@ -178,7 +179,7 @@ function markDone(it, on, x, y) {
   else if (on) D.crDone[it.x.id] = Date.now(); else delete D.crDone[it.x.id];
   const k = ymd(Date.now()); D.doneLog[k] = Math.max(0, (D.doneLog[k] || 0) + (on ? 1 : -1));
   save();
-  if (on) { FX.confetti(x || innerWidth / 2, y || innerHeight / 2); if (it.src === "classroom") toast("✓ Done here. Remember to turn it in on Classroom too"); }
+  if (on) { FX.confetti(x || innerWidth / 2, y || innerHeight / 2); if (it.src === "classroom") toast("Done here. Remember to turn it in on Classroom too"); }
 }
 function streak() {
   let n = 0, t = today(); if (!D.doneLog[ymd(t)]) t = addDays(t, -1);   // today still counts until it's over
@@ -277,12 +278,12 @@ function remind() {
     const tmr = all.filter(i => dayStart(i.when) === addDays(today(), 1)), over = all.filter(late);
     if (tmr.length) say(`Heads up: ${tmr.length === 1 ? "your " + tmr[0].title + " is" : "you have " + tmr.length + " things"} due tomorrow${tmr.length > 1 ? ": " + spokenList(tmr.slice(0, 4).map(i => i.title)) : ""}.${over.length ? ` And ${over.length} ${over.length === 1 ? "thing is" : "things are"} overdue.` : ""}`);
     else if (over.length) say(`You have ${over.length} overdue ${over.length === 1 ? "assignment" : "assignments"}.`);
-    if (tmr.length || over.length) sky.app.notify({ title: tmr.length ? `📚 ${tmr.length} thing${tmr.length > 1 ? "s" : ""} due tomorrow` : `📚 ${over.length} overdue`,
+    if (tmr.length || over.length) sky.app.notify({ title: tmr.length ? `${tmr.length} thing${tmr.length > 1 ? "s" : ""} due tomorrow` : `${over.length} overdue`,
       body: tmr.slice(0, 4).map(i => `• ${i.title}${clsName(i.classId) ? " (" + clsName(i.classId) + ")" : ""}`).join("\n") + (over.length && tmr.length ? `\n+ ${over.length} overdue` : over.length ? over.slice(0, 4).map(i => `• ${i.title}`).join("\n") : "") });
   }
   if (now.getHours() >= 7) for (const t of all.filter(i => i.kind === "test")) {   // tests: 3 days and 1 day ahead, in the morning
     const n = Math.round((dayStart(t.when) - today()) / day), id = t.key + "|" + n;
-    if ((n === 3 || n === 1) && !D.reminded.tests[id]) { D.reminded.tests[id] = 1; save(); sky.app.notify({ title: `🧪 ${t.title} ${n === 1 ? "is tomorrow" : "in 3 days"}`, body: `${clsName(t.classId) || "Test"} · Make a flashcard deck and quiz yourself on the School page.` }); }
+    if ((n === 3 || n === 1) && !D.reminded.tests[id]) { D.reminded.tests[id] = 1; save(); sky.app.notify({ title: `${t.title} ${n === 1 ? "is tomorrow" : "in 3 days"}`, body: `${clsName(t.classId) || "Test"} · Make a flashcard deck and quiz yourself on the School page.` }); }
   }
 }
 
@@ -323,18 +324,18 @@ export const School = {
     const over = all.filter(late), dueToday = all.filter(i => !late(i) && dayStart(i.when) === t0), week = all.filter(i => !late(i) && dayStart(i.when) < addDays(t0, 7));
     const next = all.find(i => !late(i)) || over[0];
     let a;
-    if (!D.periods.length) a = `<span class="sc-hk">🕘 Class schedule</span><b class="sc-hb">Add your classes and times</b><p>See which class is on now, what's next, and how long until the bell.</p><button class="btn xs" data-tab="schedule">Set up schedule</button>`;
+    if (!D.periods.length) a = `<span class="sc-hk">Class schedule</span><b class="sc-hb">Add your classes and times</b><p>See which class is on now, what's next, and how long until the bell.</p><button class="btn xs" data-tab="schedule">Set up schedule</button>`;
     else if (nn.now) { const left = toMin(nn.now.end) - nn.mins, len = toMin(nn.now.end) - toMin(nn.now.start), pct = Math.round((1 - left / len) * 100);
-      a = `<span class="sc-hk">● Now</span><b class="sc-hb" style="--c:${periodColor(nn.now)}"><i class="dot"></i>${esc(periodName(nn.now))}</b><p>${nn.now.room ? esc(nn.now.room) + " · " : ""}${left} min left · ends ${clock(nn.now.end)}</p>
+      a = `<span class="sc-hk"><i class="sc-live"></i>Now</span><b class="sc-hb" style="--c:${periodColor(nn.now)}"><i class="dot"></i>${esc(periodName(nn.now))}</b><p>${nn.now.room ? esc(nn.now.room) + " · " : ""}${left} min left · ends ${clock(nn.now.end)}</p>
         <div class="sc-bar"><i style="width:${pct}%;background:${periodColor(nn.now)}"></i></div>${nn.next ? `<small>Next: ${esc(periodName(nn.next))} at ${clock(nn.next.start)}</small>` : `<small>Last class today</small>`}`; }
     else if (nn.next) { const inMin = toMin(nn.next.start) - nn.mins;
       a = `<span class="sc-hk">Next class</span><b class="sc-hb" style="--c:${periodColor(nn.next)}"><i class="dot"></i>${esc(periodName(nn.next))}</b><p>${nn.next.room ? esc(nn.next.room) + " · " : ""}at ${clock(nn.next.start)} · in ${inMin >= 60 ? Math.floor(inMin / 60) + " h " + (inMin % 60) + " min" : inMin + " min"}</p>`; }
-    else a = `<span class="sc-hk">🌙 School's out</span><b class="sc-hb">${nn.later ? `${esc(periodName(nn.later.p))} ${nn.later.day === 1 ? "tomorrow" : DAY_NAMES[(new Date().getDay() + nn.later.day) % 7]}` : "No classes set"}</b><p>${nn.later ? `First class at ${clock(nn.later.p.start)}` : ""}</p>`;
-    const b = next ? `<span class="sc-hk">${late(next) ? "⚠ Overdue" : "📌 Due next"}</span><b class="sc-hb" style="--c:${clsColor(next.classId)}"><i class="dot"></i>${esc(next.title)}</b><p>${esc(clsName(next.classId) || (next.src === "classroom" ? "Classroom" : "Homework"))} · ${esc(dueText(next))}</p>
+    else a = `<span class="sc-hk">School's out</span><b class="sc-hb">${nn.later ? `${esc(periodName(nn.later.p))} ${nn.later.day === 1 ? "tomorrow" : DAY_NAMES[(new Date().getDay() + nn.later.day) % 7]}` : "No classes set"}</b><p>${nn.later ? `First class at ${clock(nn.later.p.start)}` : ""}</p>`;
+    const b = next ? `<span class="sc-hk">${late(next) ? "Overdue" : "Due next"}</span><b class="sc-hb" style="--c:${clsColor(next.classId)}"><i class="dot"></i>${esc(next.title)}</b><p>${esc(clsName(next.classId) || (next.src === "classroom" ? "Classroom" : "Homework"))} · ${esc(dueText(next))}</p>
         <div class="sc-hcounts"><span class="${over.length ? "bad" : ""}"><b>${over.length}</b> overdue</span><span class="${dueToday.length ? "warn" : ""}"><b>${dueToday.length}</b> today</span><span><b>${week.length}</b> this week</span></div>`
-      : `<span class="sc-hk">📌 Due next</span><b class="sc-hb">Nothing due 🎉</b><p>${Classroom.st.connected ? "You're all caught up." : "Add homework below, or connect Google Classroom."}</p>`;
+      : `<span class="sc-hk">Due next</span><b class="sc-hb">Nothing due</b><p>${Classroom.st.connected ? "You're all caught up." : "Add homework below, or connect Google Classroom."}</p>`;
     const st = streak(), bars = [...Array(7)].map((_, i) => { const t = addDays(today(), i - 6); return { n: D.doneLog[ymd(t)] || 0, d: DAY_NAMES[new Date(t).getDay()][0], today: i === 6 }; }), mx = Math.max(1, ...bars.map(x => x.n));
-    const c = `<span class="sc-hk">${st ? "🔥 Streak" : "✓ Done this week"}</span><b class="sc-hb">${st ? `${st} day${st > 1 ? "s" : ""}` : sum(bars, x => x.n) + " done"}</b><p>${st ? `${sum(bars, x => x.n)} done this week. Keep it going!` : "Finish something today to start a streak."}</p>
+    const c = `<span class="sc-hk">${st ? "Streak" : "Done this week"}</span><b class="sc-hb">${st ? `${st} day${st > 1 ? "s" : ""}` : sum(bars, x => x.n) + " done"}</b><p>${st ? `${sum(bars, x => x.n)} done this week. Keep it going!` : "Finish something today to start a streak."}</p>
       <div class="sc-week">${bars.map(x => `<span class="${x.today ? "on" : ""}" title="${x.n} done"><i style="height:${Math.round(x.n / mx * 100)}%"></i><small>${x.d}</small></span>`).join("")}</div>`;
     const html = `<div class="glass sc-h">${a}</div><div class="glass sc-h">${b}</div><div class="glass sc-h">${c}</div>`;
     if (box.dataset.sig !== html) { box.innerHTML = html; box.dataset.sig = html; }
@@ -345,19 +346,19 @@ export const School = {
     const t0 = today(), all = items(), f = S.filter;
     const pass = i => f === "all" || (f === "classroom" && i.src === "classroom") || (f === "mine" && i.src === "mine") || (f === "tests" && i.kind === "test") || i.classId === f;
     const open = all.filter(i => !i.done && pass(i)).sort((a, b) => a.when - b.when), done = all.filter(i => i.done && pass(i)).sort((a, b) => b.doneAt - a.doneAt).slice(0, 8);
-    const groups = [["⚠ Overdue", i => late(i)], ["Today", i => dayStart(i.when) === t0], ["Tomorrow", i => dayStart(i.when) === addDays(t0, 1)], ["This week", i => dayStart(i.when) < addDays(t0, 7)], ["Next week", i => dayStart(i.when) < addDays(t0, 14)], ["Later", () => true]];
-    const placed = new Set(), sections = groups.map(([name, test]) => { const l = open.filter(i => !placed.has(i.key) && test(i)); l.forEach(i => placed.add(i.key)); return l.length ? `<div class="sc-g ${name.startsWith("⚠") ? "bad" : ""}">${name}<span>${l.length}</span></div>` + l.map(i => this.row(i)).join("") : ""; }).join("");
+    const groups = [["Overdue", i => late(i)], ["Today", i => dayStart(i.when) === t0], ["Tomorrow", i => dayStart(i.when) === addDays(t0, 1)], ["This week", i => dayStart(i.when) < addDays(t0, 7)], ["Next week", i => dayStart(i.when) < addDays(t0, 14)], ["Later", () => true]];
+    const placed = new Set(), sections = groups.map(([name, test]) => { const l = open.filter(i => !placed.has(i.key) && test(i)); l.forEach(i => placed.add(i.key)); return l.length ? `<div class="sc-g ${name === "Overdue" ? "bad" : ""}">${name}<span>${l.length}</span></div>` + l.map(i => this.row(i)).join("") : ""; }).join("");
     const usedCls = [...new Set(all.filter(i => !i.done).map(i => i.classId).filter(Boolean))];
-    const chips = [["all", "All"], ["classroom", CR_ICON + "Classroom"], ["mine", "✍️ Mine"], ["tests", "🧪 Tests"], ...usedCls.map(id => [id, clsName(id)])].map(([v, n]) => `<button class="sc-f ${f === v ? "on" : ""}" data-filter="${esc(v)}" ${cls(v) ? `style="--c:${clsColor(v)}"` : ""}>${cls(v) ? `<i class="dot"></i>` : ""}${v === "classroom" ? n : esc(n)}</button>`).join("");
+    const chips = [["all", "All"], ["classroom", CR_ICON + "Classroom"], ["mine", "Mine"], ["tests", "Tests"], ...usedCls.map(id => [id, clsName(id)])].map(([v, n]) => `<button class="sc-f ${f === v ? "on" : ""}" data-filter="${esc(v)}" ${cls(v) ? `style="--c:${clsColor(v)}"` : ""}>${cls(v) ? `<i class="dot"></i>` : ""}${v === "classroom" ? n : esc(n)}</button>`).join("");
     const q = $("#scQuick input[name=text]"), keep = q ? { text: q.value, focus: document.activeElement === q } : null;
     $("#scBody").innerHTML = `<div class="pg-cols sc-cols">
       <section class="glass pg-card">
         <form class="sc-quick" id="scQuick"><div class="sc-qrow"><input name="text" placeholder="Add homework… try “math worksheet due friday” or “science test oct 20”" maxlength="140" autocomplete="off"><button class="btn primary">Add</button></div>
           <div class="sc-qrow sm"><span class="sc-guess" id="scGuess"></span><select name="cls" title="Class"><option value="">No class</option>${D.classes.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select>
-          <select name="kind" title="Type">${Object.entries(KINDS).map(([k, [i, n]]) => `<option value="${k}">${i} ${n}</option>`).join("")}</select><input name="due" type="date" title="Due" value="${ymd(addDays(t0, 1))}"></div></form>
+          <select name="kind" title="Type">${Object.entries(KINDS).map(([k, [i, n]]) => `<option value="${k}">${n}</option>`).join("")}</select><input name="due" type="date" title="Due" value="${ymd(addDays(t0, 1))}"></div></form>
         <div class="sc-fs">${chips}</div>
         ${this.crBanner()}${this.focusBar()}${this.cardHints()}
-        <div class="sc-list">${sections || `<div class="sc-empty"><b>🎉 Nothing due${f !== "all" ? " here" : ""}</b><span>${Classroom.st.connected ? "You're all caught up." : "Add homework above, or connect Google Classroom to fill this in by itself."}</span></div>`}</div>
+        <div class="sc-list">${sections || `<div class="sc-empty"><b>Nothing due${f !== "all" ? " here" : ""}</b><span>${Classroom.st.connected ? "You're all caught up." : "Add homework above, or connect Google Classroom to fill this in by itself."}</span></div>`}</div>
         ${done.length ? `<div class="sc-g">Done<span>${done.length}</span><button class="btn xs ghost" data-sc="clear">Clear mine</button></div>` + done.map(i => this.row(i)).join("") : ""}
       </section>
       <div class="pg-side">${this.crCard()}${this.classesCard()}${this.linksCard()}${this.remindCard()}</div></div>`;
@@ -368,27 +369,27 @@ export const School = {
     const c = clsColor(i.classId), steps = i.steps.length ? `${i.steps.filter(s => s.done).length}/${i.steps.length} steps` : "", open = S.open === i.key;
     const meta = [esc(clsName(i.classId) || (i.src === "classroom" ? (i.x.cls ? shortName(i.x.cls) : "Classroom") : "No class")), i.src === "classroom" ? "Classroom" : "", i.missing ? "<em>missing</em>" : "", i.points ? i.points + " pts" : "", steps].filter(Boolean).join(" · ");
     return `<div class="sc-it ${late(i) ? "late" : ""} ${!i.done && !late(i) && i.when - Date.now() < 36e5 * 30 ? "soon" : ""} ${i.done ? "done" : ""} ${open ? "open" : ""}" style="--c:${c}" data-key="${esc(i.key)}">
-      <div class="sc-r"><button class="sc-ck" data-ck="${esc(i.key)}" title="${i.done ? "Not done" : "Mark done"}">✓</button><span class="sc-k">${KINDS[i.kind] ? KINDS[i.kind][0] : "📝"}</span>
+      <div class="sc-r"><button class="sc-ck" data-ck="${esc(i.key)}" title="${i.done ? "Not done" : "Mark done"}" aria-label="${i.done ? "Not done" : "Mark done"}">${icon("check")}</button><span class="sc-k" title="${(KINDS[i.kind] || KINDS.hw)[1]}">${icon((KINDS[i.kind] || KINDS.hw)[0])}</span>
         <button class="sc-m" data-tog="${esc(i.key)}"><b>${esc(i.title)}</b><small><i class="dot"></i>${meta}</small></button>
         <span class="sc-when">${esc(dueText(i))}</span>
-        <span class="sc-acts">${i.url ? `<button class="ibtn xs" data-act="open" title="Open in Google Classroom">↗</button>` : ""}<button class="ibtn xs" data-act="focus" title="Focus on this for 25 minutes">⏱</button>${i.src === "mine" ? `<button class="ibtn xs" data-act="del" title="Remove">✕</button>` : ""}</span></div>
+        <span class="sc-acts">${i.url ? `<button class="ibtn xs" data-act="open" title="Open in Google Classroom">↗</button>` : ""}<button class="ibtn xs" data-act="focus" title="Focus on this for 25 minutes" aria-label="Focus on this for 25 minutes">${icon("timer")}</button>${i.src === "mine" ? `<button class="ibtn xs" data-act="del" title="Remove">${icon("x")}</button>` : ""}</span></div>
       ${open ? this.detail(i) : ""}</div>`;
   },
   detail(i) {
     const busy = S.busy[i.key];
     return `<div class="sc-x">
-      ${i.steps.length ? `<div class="sc-steps">${i.steps.map((s, n) => `<label class="sc-step ${s.done ? "done" : ""}"><input type="checkbox" data-step="${n}" ${s.done ? "checked" : ""}><span class="tk"></span><span class="t">${esc(s.t)}</span>${s.mins ? `<small>${s.mins} min</small>` : ""}<button class="ibtn xs" data-stepdel="${n}" title="Remove">✕</button></label>`).join("")}</div>` : ""}
+      ${i.steps.length ? `<div class="sc-steps">${i.steps.map((s, n) => `<label class="sc-step ${s.done ? "done" : ""}"><input type="checkbox" data-step="${n}" ${s.done ? "checked" : ""}><span class="tk"></span><span class="t">${esc(s.t)}</span>${s.mins ? `<small>${s.mins} min</small>` : ""}<button class="ibtn xs" data-stepdel="${n}" title="Remove">${icon("x")}</button></label>`).join("")}</div>` : ""}
       <form class="sc-stepadd" data-stepadd="${esc(i.key)}"><input name="t" placeholder="${i.steps.length ? "Add a step" : "Break it into steps: add one, or let the AI plan it"}" maxlength="140" autocomplete="off"><button class="btn xs">Add</button></form>
-      ${i.tip ? `<p class="sc-tip">💡 ${esc(i.tip)}</p>` : ""}
+      ${i.tip ? `<p class="sc-tip">${esc(i.tip)}</p>` : ""}
       <textarea class="sc-notes" data-notes="${esc(i.key)}" placeholder="Notes: what the teacher said, page numbers, links…" rows="2">${esc(i.notes)}</textarea>
-      <div class="sc-xb"><button class="btn xs" data-act="plan" ${busy ? "disabled" : ""}>${busy ? "✦ Planning…" : "✦ Plan it with AI"}</button><button class="btn xs" data-act="focus">⏱ Focus 25 min</button><button class="btn xs" data-act="help">💬 Get help</button><button class="btn xs" data-act="cards">🧠 Make flashcards</button>
+      <div class="sc-xb"><button class="btn xs" data-act="plan" ${busy ? "disabled" : ""}>${busy ? "Planning…" : "Plan it with AI"}</button><button class="btn xs" data-act="focus">Focus 25 min</button><button class="btn xs" data-act="help">Get help</button><button class="btn xs" data-act="cards">Make flashcards</button>
         ${i.url ? `<button class="btn xs" data-act="open">Open in Classroom ↗</button>` : ""}
-        ${i.src === "mine" ? `<span class="sp"></span><select data-wkind title="Type">${Object.entries(KINDS).map(([k, [ic, n]]) => `<option value="${k}" ${i.kind === k ? "selected" : ""}>${ic} ${n}</option>`).join("")}</select><select data-wcls title="Class"><option value="">No class</option>${D.classes.map(c => `<option value="${c.id}" ${c.id === i.classId ? "selected" : ""}>${esc(c.name)}</option>`).join("")}</select><input type="date" data-wdue value="${ymd(i.when)}" title="Due">` : ""}</div></div>`;
+        ${i.src === "mine" ? `<span class="sp"></span><select data-wkind title="Type">${Object.entries(KINDS).map(([k, [ic, n]]) => `<option value="${k}" ${i.kind === k ? "selected" : ""}>${n}</option>`).join("")}</select><select data-wcls title="Class"><option value="">No class</option>${D.classes.map(c => `<option value="${c.id}" ${c.id === i.classId ? "selected" : ""}>${esc(c.name)}</option>`).join("")}</select><input type="date" data-wdue value="${ymd(i.when)}" title="Due">` : ""}</div></div>`;
   },
   crBanner() {
     const st = Classroom.st;
-    if (!st.connected) return `<div class="sc-cr-cta"><span class="cr-logo">🎓</span><div><b>Connect Google Classroom</b><span>Your assignments show up here by themselves, with due dates, and open in one click.</span></div><button class="btn primary sm" data-cr="connect" ${st.signingIn ? "disabled" : ""}>${st.signingIn ? "Signing in…" : "Connect"}</button></div>`;
-    if (st.expired) return `<div class="sc-warn">⚠ Your school Google sign-in ran out (school accounts ask again every so often). Showing Classroom as of ${esc(ago(st.at))}. <button class="btn xs primary" data-cr="connect" ${st.signingIn ? "disabled" : ""}>${st.signingIn ? "Signing in…" : "Sign in again"}</button></div>`;
+    if (!st.connected) return `<div class="sc-cr-cta"><span class="cr-logo">${icon("cap")}</span><div><b>Connect Google Classroom</b><span>Your assignments show up here by themselves, with due dates, and open in one click.</span></div><button class="btn primary sm" data-cr="connect" ${st.signingIn ? "disabled" : ""}>${st.signingIn ? "Signing in…" : "Connect"}</button></div>`;
+    if (st.expired) return `<div class="sc-warn">Your school Google sign-in ran out (school accounts ask again every so often). Showing Classroom as of ${esc(ago(st.at))}. <button class="btn xs primary" data-cr="connect" ${st.signingIn ? "disabled" : ""}>${st.signingIn ? "Signing in…" : "Sign in again"}</button></div>`;
     return "";
   },
   crCard() {
@@ -399,15 +400,15 @@ export const School = {
       <div class="sc-crb"><button class="btn xs" data-cr="open">Open Classroom ↗</button><button class="btn xs ghost" data-cr="off">Disconnect</button></div></section>`;
   },
   classesCard() {
-    return `<section class="glass pg-card"><div class="pg-h">🏫 Classes</div><div class="sc-classes">${D.classes.length ? D.classes.map(c => `<span class="sc-chip" style="--c:${c.color}"><button class="dot" data-ccol="${c.id}" title="Change colour"></button><button class="nm" data-cren="${c.id}" title="${esc(c.full || "Rename")}">${esc(c.name)}</button>${c.cr ? `<small title="From Google Classroom">${CR_ICON}</small>` : `<button class="ibtn xs" data-cdel="${c.id}" title="Remove class">✕</button>`}</span>`).join("") : `<span class="muted">No classes yet${Classroom.st.connected ? "" : ". Connect Classroom and they're added by themselves"}.</span>`}</div>
+    return `<section class="glass pg-card"><div class="pg-h">Classes</div><div class="sc-classes">${D.classes.length ? D.classes.map(c => `<span class="sc-chip" style="--c:${c.color}"><button class="dot" data-ccol="${c.id}" title="Change colour"></button><button class="nm" data-cren="${c.id}" title="${esc(c.full || "Rename")}">${esc(c.name)}</button>${c.cr ? `<small title="From Google Classroom">${CR_ICON}</small>` : `<button class="ibtn xs" data-cdel="${c.id}" title="Remove class">${icon("x")}</button>`}</span>`).join("") : `<span class="muted">No classes yet${Classroom.st.connected ? "" : ". Connect Classroom and they're added by themselves"}.</span>`}</div>
       <form class="pg-add slim" id="scClassAdd"><input name="name" placeholder="Add a class" autocomplete="off" maxlength="30"><button class="btn sm">Add</button></form></section>`;
   },
   linksCard() {
-    return `<section class="glass pg-card"><div class="pg-h">🔗 School links</div><div class="sc-links">${D.links.map((l, i) => { let h = ""; try { h = new URL(l.url).hostname.replace(/^www\./, ""); } catch (e) {} return `<div class="sc-link"><button class="lk" data-sclink="${i}" title="${esc(l.url)}"><span class="lk-i" data-host="${esc(h)}">${esc(l.name[0] || "?")}</span><span>${esc(l.name)}</span></button><button class="ibtn xs" data-ldel="${i}" title="Remove">✕</button></div>`; }).join("")}</div>
+    return `<section class="glass pg-card"><div class="pg-h">School links</div><div class="sc-links">${D.links.map((l, i) => { let h = ""; try { h = new URL(l.url).hostname.replace(/^www\./, ""); } catch (e) {} return `<div class="sc-link"><button class="lk" data-sclink="${i}" title="${esc(l.url)}"><span class="lk-i" data-host="${esc(h)}">${esc(l.name[0] || "?")}</span><span>${esc(l.name)}</span></button><button class="ibtn xs" data-ldel="${i}" title="Remove">${icon("x")}</button></div>`; }).join("")}</div>
       <form class="pg-add slim" id="scLinkAdd"><input name="name" placeholder="Name" autocomplete="off" maxlength="24" class="w-name"><input name="url" placeholder="Web address" autocomplete="off"><button class="btn sm">Add</button></form></section>`;
   },
   remindCard() {
-    return `<section class="glass pg-card"><div class="pg-h">🔔 Reminders</div>
+    return `<section class="glass pg-card"><div class="pg-h">Reminders</div>
       <label class="toggle"><input type="checkbox" data-remind="on" ${D.remind.on ? "checked" : ""}><span class="sw"></span><span class="t"><b>Remind me</b><small>What's due tomorrow at <input type="time" data-remind="at" value="${esc(D.remind.at || "19:00")}" class="sc-time">, tests 3 days and 1 day ahead, new Classroom work and new grades.</small></span></label>
       <label class="toggle"><input type="checkbox" data-remind="voice" ${voiceOn() ? "checked" : ""}><span class="sw"></span><span class="t"><b>Sky says it out loud</b><small>“Your Chapter 7 HW is due tomorrow”, and new grades as they come in.</small></span></label></section>`;
   },
@@ -433,7 +434,7 @@ export const School = {
     const cells = [...Array(weeks * 7)].map((_, n) => {
       const t = new Date(y, m, 1 - lead + n).getTime(), list = (byDay[t] || []).filter(i => !i.done), out = new Date(t).getMonth() !== m;
       return `<button class="sc-cd ${out ? "out" : ""} ${t === t0 ? "today" : ""} ${t === S.calDay ? "sel" : ""} ${list.some(i => i.kind === "test") ? "test" : ""}" data-calday="${t}"><span class="n">${new Date(t).getDate()}</span>
-        ${list.slice(0, 3).map(i => `<span class="pill" style="--c:${clsColor(i.classId)}">${i.kind === "test" ? "🧪 " : ""}${esc(i.title)}</span>`).join("")}${list.length > 3 ? `<span class="more">+${list.length - 3} more</span>` : ""}</button>`;
+        ${list.slice(0, 3).map(i => `<span class="pill" style="--c:${clsColor(i.classId)}">${i.kind === "test" ? "" : ""}${esc(i.title)}</span>`).join("")}${list.length > 3 ? `<span class="more">+${list.length - 3} more</span>` : ""}</button>`;
     }).join("");
     const sel = S.calDay || t0, list = (byDay[sel] || []).sort((a, b) => a.done - b.done || a.when - b.when);
     $("#scBody").innerHTML = `<div class="pg-cols sc-cols"><section class="glass pg-card">
@@ -447,7 +448,7 @@ export const School = {
   /* ----- class schedule ----- */
   renderSchedule() {
     $("#scBody").innerHTML = `<div class="pg-cols sc-cols"><section class="glass pg-card" id="scTl"></section>
-      <section class="glass pg-card"><div class="pg-h">✏️ Your periods<span class="sp"></span><button class="btn xs" data-padd>＋ Add period</button></div><div class="sc-pe" id="scPe"></div></section></div>`;
+      <section class="glass pg-card"><div class="pg-h">Your periods<span class="sp"></span><button class="btn xs" data-padd>＋ Add period</button></div><div class="sc-pe" id="scPe"></div></section></div>`;
     this.renderTimeline(); this.renderPeriods();
   },
   // the day, with the class that's on now (redrawn by the clock)
@@ -458,16 +459,16 @@ export const School = {
       const st = isToday ? (nn.mins >= toMin(p.end) ? "past" : nn.mins >= toMin(p.start) ? "now" : "") : "", pct = st === "now" ? Math.round((nn.mins - toMin(p.start)) / (toMin(p.end) - toMin(p.start)) * 100) : 0;
       return `<div class="sc-p ${st}" style="--c:${periodColor(p)}"><span class="tm">${clock(p.start)}<small>${clock(p.end)}</small></span><span class="nm"><b>${esc(periodName(p))}</b><small>${[p.room, st === "now" ? `${toMin(p.end) - nn.mins} min left` : ""].filter(Boolean).map(esc).join(" · ")}</small>${st === "now" ? `<span class="sc-bar"><i style="width:${pct}%;background:${periodColor(p)}"></i></span>` : ""}</span></div>`;
     }).join("") : `<div class="pg-empty">No classes on ${DAY_NAMES[dow]}.${D.periods.length ? "" : " Add your periods on the right."}</div>`;
-    const html = `<div class="pg-h">🕘 ${isToday ? "Today" : DAY_NAMES[dow]}<span class="sp"></span><div class="seg sm">${[1, 2, 3, 4, 5, 6, 0].map(d => `<button data-sday="${d}" class="${d === dow ? "on" : ""}">${DAY_NAMES[d].slice(0, 3)}</button>`).join("")}</div></div><div class="sc-tl">${timeline}</div>`;
+    const html = `<div class="pg-h">${isToday ? "Today" : DAY_NAMES[dow]}<span class="sp"></span><div class="seg sm">${[1, 2, 3, 4, 5, 6, 0].map(d => `<button data-sday="${d}" class="${d === dow ? "on" : ""}">${DAY_NAMES[d].slice(0, 3)}</button>`).join("")}</div></div><div class="sc-tl">${timeline}</div>`;
     if (box.dataset.sig !== html) { box.innerHTML = html; box.dataset.sig = html; }
   },
   // the editor: only redrawn when periods are added, removed or re-sorted (never while you type a time)
   renderPeriods() {
     const box = $("#scPe"); if (!box) return;
     box.innerHTML = D.periods.length ? D.periods.slice().sort((a, b) => toMin(a.start) - toMin(b.start)).map(p => `<div class="sc-pr" data-pid="${p.id}" style="--c:${periodColor(p)}">
-          <select data-pf="classId"><option value="">${esc(p.name || "Other…")}</option>${D.classes.map(c => `<option value="${c.id}" ${c.id === p.classId ? "selected" : ""}>${esc(c.name)}</option>`).join("")}<option value="__name">✎ Name it (Lunch, Homeroom…)</option></select>
+          <select data-pf="classId"><option value="">${esc(p.name || "Other…")}</option>${D.classes.map(c => `<option value="${c.id}" ${c.id === p.classId ? "selected" : ""}>${esc(c.name)}</option>`).join("")}<option value="__name">Name it (Lunch, Homeroom…)</option></select>
           <input type="time" data-pf="start" value="${p.start}"><span class="muted">–</span><input type="time" data-pf="end" value="${p.end}"><input data-pf="room" value="${esc(p.room || "")}" placeholder="Room" maxlength="16" class="rm">
-          <span class="sc-days">${[1, 2, 3, 4, 5, 6, 0].map(d => `<button data-pday="${d}" class="${(p.days || []).includes(d) ? "on" : ""}" title="${DAY_NAMES[d]}">${DAY_NAMES[d][0]}</button>`).join("")}</span><button class="ibtn xs" data-pdel title="Remove">✕</button></div>`).join("")
+          <span class="sc-days">${[1, 2, 3, 4, 5, 6, 0].map(d => `<button data-pday="${d}" class="${(p.days || []).includes(d) ? "on" : ""}" title="${DAY_NAMES[d]}">${DAY_NAMES[d][0]}</button>`).join("")}</span><button class="ibtn xs" data-pdel title="Remove">${icon("x")}</button></div>`).join("")
       : `<div class="pg-empty">Add each class period with its start and end time and pick the days it happens. Skyline shows what's on now and counts down to the bell.</div>`;
   },
 
@@ -479,7 +480,7 @@ export const School = {
     const c = cls(S.gradeCls);
     const ring = p => `<span class="sc-ring" style="--p:${p == null ? 0 : Math.min(100, p)};--c:${p == null ? "#475569" : gradeColor(p)}"><b>${p == null ? "–" : Math.round(p)}</b></span>`;
     const spark = id => { const g = gradesOf(id).filter(x => x.outOf > 0).sort((a, b) => (a.at || a.seen) - (b.at || b.seen)).slice(-10); if (g.length < 2) return ""; const pts = g.map((x, i) => `${(i / (g.length - 1) * 76 + 2).toFixed(1)},${(22 - Math.max(0, Math.min(110, x.score / x.outOf * 100)) / 110 * 20).toFixed(1)}`).join(" "); return `<svg class="sc-spark" viewBox="0 0 80 24"><polyline points="${pts}"/></svg>`; };
-    const cards = withG.map(({ c: k, avg, n }) => `<button class="sc-gc ${k.id === S.gradeCls ? "on" : ""}" data-gcls="${k.id}" style="--c:${k.color}">${ring(avg)}<span class="t"><b>${esc(k.name)}</b><small>${avg == null ? "No grades yet" : `${letter(avg)[1]} · ${n} grade${n > 1 ? "s" : ""}${slipping(k) ? " · 📉 dropping" : ""}`}</small></span>${spark(k.id)}</button>`).join("");
+    const cards = withG.map(({ c: k, avg, n }) => `<button class="sc-gc ${k.id === S.gradeCls ? "on" : ""}" data-gcls="${k.id}" style="--c:${k.color}">${ring(avg)}<span class="t"><b>${esc(k.name)}</b><small>${avg == null ? "No grades yet" : `${letter(avg)[1]} · ${n} grade${n > 1 ? "s" : ""}${slipping(k) ? " · dropping" : ""}`}</small></span>${spark(k.id)}</button>`).join("");
     let detail = `<div class="pg-empty">Add a class first (on the Agenda tab, or connect Google Classroom).</div>`;
     if (c) {
       const g = gradesOf(c.id).sort((a, b) => (b.at || b.seen || 0) - (a.at || a.seen || 0)), avg = classAvg(c), w = c.weights || {};
@@ -488,12 +489,12 @@ export const School = {
       const chart = tr.length >= 2 ? (() => { let lo = Math.min(...tr) - 5, hi = Math.max(...tr) + 5; if (hi - lo < 24) { const mid = (hi + lo) / 2; lo = mid - 12; hi = mid + 12; } const X = i => (i / (tr.length - 1) * 560 + 20).toFixed(1), Y = v => (110 - (v - lo) / (hi - lo || 1) * 90).toFixed(1);
         return `<svg class="sc-trend" viewBox="0 0 600 130" preserveAspectRatio="none"><defs><linearGradient id="scTrendFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c.color}" stop-opacity=".22"/><stop offset="1" stop-color="${c.color}" stop-opacity="0"/></linearGradient></defs><path d="M${tr.map((v, i) => X(i) + " " + Y(v)).join(" L")} L${X(tr.length - 1)} 125 L20 125Z" fill="url(#scTrendFill)"/><polyline points="${tr.map((v, i) => X(i) + "," + Y(v)).join(" ")}" fill="none" stroke="${c.color}" stroke-width="3" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>${[100, 90, 80, 70].filter(v => v > lo + 2 && v < hi - 2).map(v => `<line x1="20" x2="556" y1="${Y(v)}" y2="${Y(v)}" stroke="rgba(255,255,255,.12)" stroke-dasharray="4 6"/><text x="562" y="${(+Y(v) + 4).toFixed(1)}" fill="rgba(255,255,255,.45)" font-size="11">${v}</text>`).join("")}<circle cx="${X(tr.length - 1)}" cy="${Y(tr[tr.length - 1])}" r="5" fill="${c.color}"/></svg>`; })() : "";
       detail = `<div class="pg-h" style="--c:${c.color}"><i class="dot"></i>${esc(c.name)}<span class="sp"></span>${avg != null ? `<span class="sc-big" style="color:${gradeColor(avg)}">${avg.toFixed(1)}% · ${letter(avg)[1]}</span>` : ""}</div>
-        ${slip ? `<div class="sc-warn">📉 Your ${esc(c.name)} average dropped ${slip.toFixed(1)} points over the last few grades. A study session or a chat with your teacher could help.</div>` : ""}${chart ? `<div class="sc-trendw"><small>Your average over time</small>${chart}</div>` : ""}
+        ${slip ? `<div class="sc-warn">Your ${esc(c.name)} average dropped ${slip.toFixed(1)} points over the last few grades. A study session or a chat with your teacher could help.</div>` : ""}${chart ? `<div class="sc-trendw"><small>Your average over time</small>${chart}</div>` : ""}
         <form class="pg-add" id="scGradeAdd"><input name="name" placeholder="What was it? e.g. Unit 2 test" maxlength="60" autocomplete="off"><input name="score" type="number" step="0.5" min="0" placeholder="Score" class="w-amt"><span class="muted">/</span><input name="outOf" type="number" step="0.5" min="0.5" placeholder="Out of" value="100" class="w-amt">
           <select name="cat">${Object.entries(CATS).map(([k, n]) => `<option value="${k}">${n}</option>`).join("")}</select><button class="btn primary">Add</button></form>
-        <div class="sc-gl">${g.length ? g.map(x => { const p = x.outOf ? x.score / x.outOf * 100 : 0; return `<div class="sc-gr"><span class="p" style="color:${gradeColor(p)}">${Math.round(p)}%</span><span class="t"><b>${x.cr ? CR_ICON + " " : ""}${esc(x.name || "Grade")}</b><small>${CATS[x.cat] || "Other"}${x.at ? " · " + (x.cr ? "due " : "") + new Date(x.at).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : ""}${x.late ? " · late" : ""}${x.cr ? " · from Classroom" : ""}</small></span><span class="s">${x.score} / ${x.outOf}</span>${x.cr ? `<span class="sc-gsp"></span>` : `<button class="ibtn xs" data-gdel="${x.id}" title="Remove">✕</button>`}</div>`; }).join("") : `<div class="pg-empty">No grades in ${esc(c.name)} yet.${Classroom.st.connected ? " Grades from Google Classroom show up here by themselves." : ""} You can add scores yourself above.</div>`}</div>
-        ${avg != null ? `<div class="sc-need"><div class="pg-sub">🎯 What do I need?</div><form id="scNeed" class="sc-needf">To get <input name="target" type="number" min="1" max="110" value="${tgt}" class="w-s">% , on a <input name="pts" type="number" min="1" value="${pts}" class="w-s">-point <select name="cat">${Object.entries(CATS).map(([k, n]) => `<option value="${k}" ${k === cat ? "selected" : ""}>${n.replace(/s$/, "").toLowerCase()}</option>`).join("")}</select> I need:</form>
-          <p class="sc-needr">${r.safe ? `✅ You're set: even a 0 keeps you at ${r.at0.toFixed(1)}%.` : r.never ? `Even a perfect score only gets you to ${r.best.toFixed(1)}%. Ask about extra credit!` : `<b>${r.score} / ${pts}</b> (${r.pct.toFixed(1)}%)`}</p></div>` : ""}
+        <div class="sc-gl">${g.length ? g.map(x => { const p = x.outOf ? x.score / x.outOf * 100 : 0; return `<div class="sc-gr"><span class="p" style="color:${gradeColor(p)}">${Math.round(p)}%</span><span class="t"><b>${x.cr ? CR_ICON + " " : ""}${esc(x.name || "Grade")}</b><small>${CATS[x.cat] || "Other"}${x.at ? " · " + (x.cr ? "due " : "") + new Date(x.at).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : ""}${x.late ? " · late" : ""}${x.cr ? " · from Classroom" : ""}</small></span><span class="s">${x.score} / ${x.outOf}</span>${x.cr ? `<span class="sc-gsp"></span>` : `<button class="ibtn xs" data-gdel="${x.id}" title="Remove">${icon("x")}</button>`}</div>`; }).join("") : `<div class="pg-empty">No grades in ${esc(c.name)} yet.${Classroom.st.connected ? " Grades from Google Classroom show up here by themselves." : ""} You can add scores yourself above.</div>`}</div>
+        ${avg != null ? `<div class="sc-need"><div class="pg-sub">What do I need?</div><form id="scNeed" class="sc-needf">To get <input name="target" type="number" min="1" max="110" value="${tgt}" class="w-s">% , on a <input name="pts" type="number" min="1" value="${pts}" class="w-s">-point <select name="cat">${Object.entries(CATS).map(([k, n]) => `<option value="${k}" ${k === cat ? "selected" : ""}>${n.replace(/s$/, "").toLowerCase()}</option>`).join("")}</select> I need:</form>
+          <p class="sc-needr">${r.safe ? `You're set: even a 0 keeps you at ${r.at0.toFixed(1)}%.` : r.never ? `Even a perfect score only gets you to ${r.best.toFixed(1)}%. Ask about extra credit!` : `<b>${r.score} / ${pts}</b> (${r.pct.toFixed(1)}%)`}</p></div>` : ""}
         <details class="sc-wts" ${c.weights ? "open" : ""}><summary>Weighted categories (optional)</summary><p class="muted">If your teacher weights grades (like tests 50%, homework 20%), enter the percentages. Leave empty to average by points.</p>
           <div class="sc-wrow">${Object.entries(CATS).map(([k, n]) => `<label>${n}<input type="number" min="0" max="100" data-wt="${k}" value="${w[k] || ""}" placeholder="–">%</label>`).join("")}</div></details>`;
     }
@@ -505,7 +506,7 @@ export const School = {
       ${recent.length > 8 ? `<button class="btn xs ghost sc-rgm" data-allgrades>${S.allGrades ? "Show less" : `Show all ${recent.length}`}</button>` : ""}</section>`;
     const stats = graded.length ? `<div class="sc-gstats"><div><span>Overall</span><b style="color:${gradeColor(overall)}">${overall.toFixed(1)}%</b><small>${graded.length} class${graded.length > 1 ? "es" : ""}</small></div><div><span>GPA</span><b>${gpa.toFixed(2)}</b><small>unweighted</small></div></div>` : "";
     $("#scBody").innerHTML = recentCard + `
-      <div class="pg-cols sc-cols"><section class="glass pg-card">${detail}</section><div class="pg-side"><section class="glass pg-card"><div class="pg-h">📊 Your classes</div>${stats}<div class="sc-gcs">${cards || `<div class="pg-empty">No classes yet.</div>`}</div></section></div></div>`;
+      <div class="pg-cols sc-cols"><section class="glass pg-card">${detail}</section><div class="pg-side"><section class="glass pg-card"><div class="pg-h">Your classes</div>${stats}<div class="sc-gcs">${cards || `<div class="pg-empty">No classes yet.</div>`}</div></section></div></div>`;
   },
 
   /* ----- study: flashcards, quizzes, help ----- */
@@ -514,21 +515,21 @@ export const School = {
     const clsOpts = sel => `<option value="">No class</option>${D.classes.map(c => `<option value="${c.id}" ${c.id === sel ? "selected" : ""}>${esc(c.name)}</option>`).join("")}`;
     const decks = D.decks.slice().sort((a, b) => (b.at || 0) - (a.at || 0)).map(d => { const due = deckDue(d).length, m = mastery(d);
       return `<button class="sc-deck ${d.id === S.deck ? "on" : ""}" data-deck="${d.id}" style="--c:${clsColor(d.classId)}"><b>${esc(d.name)}</b><small><i class="dot"></i>${esc(clsName(d.classId) || "Flashcards")} · ${d.cards.length} card${d.cards.length === 1 ? "" : "s"}${due ? ` · <em>${due} to review</em>` : ""}</small><span class="sc-mast"><i style="width:${m}%"></i></span></button>`; }).join("");
-    const left = deck ? `<div class="pg-h" style="--c:${clsColor(deck.classId)}"><button class="ibtn xs" data-deck="" title="All decks">‹</button><i class="dot"></i><span class="sc-dn" data-dren title="Rename">${esc(deck.name)}</span><span class="sp"></span><select data-dcls title="Class">${clsOpts(deck.classId)}</select><button class="ibtn xs" data-ddel title="Delete deck">🗑</button></div>
-        <div class="sc-dacts"><button class="btn primary" data-sess="due" ${deck.cards.length ? "" : "disabled"}>▶ Study${deckDue(deck).length ? ` ${deckDue(deck).length} due` : " all"}</button><button class="btn" data-quiz="deck" ${deck.cards.length >= 4 ? "" : "disabled title='Needs 4 cards'"}>❓ Quiz me</button><button class="btn" data-quiz="ai" ${deck.cards.length && !S.busy.quiz ? "" : "disabled"}>${S.busy.quiz ? "✦ Writing…" : "✦ AI quiz"}</button>
+    const left = deck ? `<div class="pg-h" style="--c:${clsColor(deck.classId)}"><button class="ibtn xs" data-deck="" title="All decks">‹</button><i class="dot"></i><span class="sc-dn" data-dren title="Rename">${esc(deck.name)}</span><span class="sp"></span><select data-dcls title="Class">${clsOpts(deck.classId)}</select><button class="ibtn xs" data-ddel title="Delete deck" aria-label="Delete deck">${icon("trash")}</button></div>
+        <div class="sc-dacts"><button class="btn primary" data-sess="due" ${deck.cards.length ? "" : "disabled"}>Study${deckDue(deck).length ? ` ${deckDue(deck).length} due` : " all"}</button><button class="btn" data-quiz="deck" ${deck.cards.length >= 4 ? "" : "disabled title='Needs 4 cards'"}>Quiz me</button><button class="btn" data-quiz="ai" ${deck.cards.length && !S.busy.quiz ? "" : "disabled"}>${S.busy.quiz ? "Writing…" : "AI quiz"}</button>
           <span class="sc-mlabel">${mastery(deck)}% learned${deck.best != null ? ` · best quiz ${deck.best}%` : ""}</span></div>
         <form class="sc-cadd" id="scCardAdd"><input name="q" placeholder="Front (term or question)" maxlength="200" autocomplete="off"><input name="a" placeholder="Back (answer)" maxlength="400" autocomplete="off"><button class="btn sm">Add</button></form>
-        <div class="sc-cards">${deck.cards.map(k => `<div class="sc-card" data-cid="${k.id}"><span class="q" contenteditable="plaintext-only" data-ced="q">${esc(k.q)}</span><span class="a" contenteditable="plaintext-only" data-ced="a">${esc(k.a)}</span><span class="bx" title="How well you know it">${"●".repeat(Math.min(5, k.box || 0))}${"○".repeat(5 - Math.min(5, k.box || 0))}</span><button class="ibtn xs" data-cdel2="${k.id}" title="Remove">✕</button></div>`).join("") || `<div class="pg-empty">No cards yet. Add some above, paste a list below, or make them with AI.</div>`}</div>
-        <details class="sc-paste"><summary>📋 Paste a list (from Quizlet or your notes)</summary><form id="scPaste"><textarea name="t" rows="5" placeholder="One card per line:&#10;mitochondria - the powerhouse of the cell&#10;photosynthesis: how plants make food from light&#10;(Quizlet export: term and definition separated by a tab)"></textarea><button class="btn sm">Add cards</button></form></details>`
-      : `<div class="pg-h">🧠 Flashcard decks<span class="sp"></span><button class="btn xs" data-dnew>＋ New deck</button></div><div class="sc-decks">${decks || `<div class="pg-empty">No decks yet. Make one by hand, paste a list, or let the AI make one from a topic or your notes.</div>`}</div>`;
+        <div class="sc-cards">${deck.cards.map(k => `<div class="sc-card" data-cid="${k.id}"><span class="q" contenteditable="plaintext-only" data-ced="q">${esc(k.q)}</span><span class="a" contenteditable="plaintext-only" data-ced="a">${esc(k.a)}</span><span class="bx" title="How well you know it">${"●".repeat(Math.min(5, k.box || 0))}${"○".repeat(5 - Math.min(5, k.box || 0))}</span><button class="ibtn xs" data-cdel2="${k.id}" title="Remove">${icon("x")}</button></div>`).join("") || `<div class="pg-empty">No cards yet. Add some above, paste a list below, or make them with AI.</div>`}</div>
+        <details class="sc-paste"><summary>Paste a list (from Quizlet or your notes)</summary><form id="scPaste"><textarea name="t" rows="5" placeholder="One card per line:&#10;mitochondria - the powerhouse of the cell&#10;photosynthesis: how plants make food from light&#10;(Quizlet export: term and definition separated by a tab)"></textarea><button class="btn sm">Add cards</button></form></details>`
+      : `<div class="pg-h">Flashcard decks<span class="sp"></span><button class="btn xs" data-dnew>＋ New deck</button></div><div class="sc-decks">${decks || `<div class="pg-empty">No decks yet. Make one by hand, paste a list, or let the AI make one from a topic or your notes.</div>`}</div>`;
     const busyC = S.busy.cards, busyQ = S.busy.tquiz, busyH = S.busy.help;
     $("#scBody").innerHTML = `<div class="pg-cols sc-cols"><section class="glass pg-card">${left}</section><div class="pg-side">
-      <section class="glass pg-card"><div class="pg-h">✦ Make flashcards with AI</div><form id="scAiCards" class="sc-aif"><input name="topic" placeholder="Topic, e.g. “cell organelles” or “Spanish -ar verbs”" maxlength="120" autocomplete="off" value="${esc(S.cardTopic || "")}">
-        <textarea name="notes" rows="3" placeholder="…or paste your notes / study guide here (optional)"></textarea><div class="sc-qrow sm"><select name="cls">${clsOpts(S.cardCls || "")}</select><select name="count">${[8, 12, 20, 30].map(n => `<option ${n === 12 ? "selected" : ""}>${n}</option>`).join("")}</select><span class="muted">cards</span><span class="sp"></span><button class="btn primary sm" ${busyC ? "disabled" : ""}>${busyC ? "✦ Making cards…" : "✦ Make deck"}</button></div></form></section>
-      <section class="glass pg-card"><div class="pg-h">❓ Practice quiz</div><form id="scAiQuiz" class="sc-aif"><input name="topic" placeholder="What's the test on? e.g. “Civil War causes”" maxlength="160" autocomplete="off"><div class="sc-qrow sm"><select name="cls">${clsOpts("")}</select><span class="sp"></span><button class="btn sm" ${busyQ ? "disabled" : ""}>${busyQ ? "✦ Writing…" : "✦ Quiz me"}</button></div></form></section>
-      <section class="glass pg-card"><div class="pg-h">💬 Homework help</div><form id="scHelp" class="sc-aif"><textarea name="q" rows="3" placeholder="Stuck? Ask how to do something. It explains and gives hints, it won't do it for you." maxlength="2000">${esc(S.help.q)}</textarea><div class="sc-qrow sm"><select name="cls">${clsOpts(S.help.cls)}</select><span class="sp"></span><button class="btn sm" ${busyH ? "disabled" : ""}>${busyH ? "✦ Thinking…" : "Explain it"}</button></div></form>
+      <section class="glass pg-card"><div class="pg-h">Make flashcards with AI</div><form id="scAiCards" class="sc-aif"><input name="topic" placeholder="Topic, e.g. “cell organelles” or “Spanish -ar verbs”" maxlength="120" autocomplete="off" value="${esc(S.cardTopic || "")}">
+        <textarea name="notes" rows="3" placeholder="…or paste your notes / study guide here (optional)"></textarea><div class="sc-qrow sm"><select name="cls">${clsOpts(S.cardCls || "")}</select><select name="count">${[8, 12, 20, 30].map(n => `<option ${n === 12 ? "selected" : ""}>${n}</option>`).join("")}</select><span class="muted">cards</span><span class="sp"></span><button class="btn primary sm" ${busyC ? "disabled" : ""}>${busyC ? "Making cards…" : "Make deck"}</button></div></form></section>
+      <section class="glass pg-card"><div class="pg-h">Practice quiz</div><form id="scAiQuiz" class="sc-aif"><input name="topic" placeholder="What's the test on? e.g. “Civil War causes”" maxlength="160" autocomplete="off"><div class="sc-qrow sm"><select name="cls">${clsOpts("")}</select><span class="sp"></span><button class="btn sm" ${busyQ ? "disabled" : ""}>${busyQ ? "Writing…" : "Quiz me"}</button></div></form></section>
+      <section class="glass pg-card"><div class="pg-h">Homework help</div><form id="scHelp" class="sc-aif"><textarea name="q" rows="3" placeholder="Stuck? Ask how to do something. It explains and gives hints, it won't do it for you." maxlength="2000">${esc(S.help.q)}</textarea><div class="sc-qrow sm"><select name="cls">${clsOpts(S.help.cls)}</select><span class="sp"></span><button class="btn sm" ${busyH ? "disabled" : ""}>${busyH ? "Thinking…" : "Explain it"}</button></div></form>
         ${S.help.a ? `<div class="sc-ans">${esc(S.help.a).replace(/\n/g, "<br>")}</div>` : ""}</section>
-      <section class="glass pg-card sc-tips"><div class="pg-h">⏱ Study session</div><p class="muted">25 minutes of focus, then a 5-minute break. Phone away!</p><div class="sc-qrow sm"><button class="btn sm" data-sc="study">Start 25 min</button><button class="btn sm ghost" data-focus="45">45 min</button><button class="btn sm ghost" data-focus="15">15 min</button></div></section>
+      <section class="glass pg-card sc-tips"><div class="pg-h">Study session</div><p class="muted">25 minutes of focus, then a 5-minute break. Phone away!</p><div class="sc-qrow sm"><button class="btn sm" data-sc="study">Start 25 min</button><button class="btn sm ghost" data-focus="45">45 min</button><button class="btn sm ghost" data-focus="15">15 min</button></div></section>
       </div></div>`;
   },
   // study session and quiz: a card in the middle of the page
@@ -539,22 +540,22 @@ export const School = {
     if (S.sess) {
       const s = S.sess, deck = D.decks.find(d => d.id === s.deck), card = deck && deck.cards.find(c => c.id === s.queue[0]);
       if (!card) { const pct = s.seen ? Math.round(s.right / s.seen * 100) : 0;
-        ov.innerHTML = `<div class="sc-ovc glass"><button class="ibtn sc-x2" data-ovx>✕</button><div class="sc-fin"><span class="big">${pct >= 80 ? "🏆" : pct >= 50 ? "💪" : "📚"}</span><h2>Session done</h2><p>${s.seen} card${s.seen === 1 ? "" : "s"} · ${s.right} known first try · ${mastery(deck)}% of the deck learned</p><div class="sc-qrow"><button class="btn primary" data-ovx>Done</button>${deck.cards.length >= 4 ? `<button class="btn" data-quiz="deck">❓ Quiz me now</button>` : ""}</div></div></div>`;
+        ov.innerHTML = `<div class="sc-ovc glass"><button class="ibtn sc-x2" data-ovx>${icon("x")}</button><div class="sc-fin"><span class="big">${icon(pct >= 80 ? "trophy" : "cards")}</span><h2>Session done</h2><p>${s.seen} card${s.seen === 1 ? "" : "s"} · ${s.right} known first try · ${mastery(deck)}% of the deck learned</p><div class="sc-qrow"><button class="btn primary" data-ovx>Done</button>${deck.cards.length >= 4 ? `<button class="btn" data-quiz="deck">Quiz me now</button>` : ""}</div></div></div>`;
         return; }
       const done = s.total - s.queue.length;
-      ov.innerHTML = `<div class="sc-ovc glass"><button class="ibtn sc-x2" data-ovx title="Stop (Esc)">✕</button><div class="sc-ovh"><b>${esc(deck.name)}</b><span>${done} / ${s.total}</span></div><div class="sc-bar"><i style="width:${s.total ? done / s.total * 100 : 0}%"></i></div>
+      ov.innerHTML = `<div class="sc-ovc glass"><button class="ibtn sc-x2" data-ovx title="Stop (Esc)">${icon("x")}</button><div class="sc-ovh"><b>${esc(deck.name)}</b><span>${done} / ${s.total}</span></div><div class="sc-bar"><i style="width:${s.total ? done / s.total * 100 : 0}%"></i></div>
         <button class="sc-flip ${s.flipped ? "back" : ""}" data-flip><span class="f">${esc(card.q)}</span><span class="b">${esc(card.a)}</span><small>${s.flipped ? "" : "Click or press Space to flip"}</small></button>
         <div class="sc-grade ${s.flipped ? "" : "hide"}"><button class="btn bad" data-gr="0">Again <kbd>1</kbd></button><button class="btn" data-gr="1">Got it <kbd>2</kbd></button><button class="btn good" data-gr="2">Easy <kbd>3</kbd></button></div></div>`;
       return;
     }
     const z = S.quiz, q = z.qs[z.i];
     if (!q) { const pct = Math.round(z.score / z.qs.length * 100);
-      ov.innerHTML = `<div class="sc-ovc glass"><button class="ibtn sc-x2" data-ovx>✕</button><div class="sc-fin"><span class="big">${pct >= 90 ? "🏆" : pct >= 70 ? "🎉" : pct >= 50 ? "💪" : "📚"}</span><h2>${z.score} / ${z.qs.length} · ${pct}%</h2><p>${pct >= 90 ? "You're ready." : pct >= 70 ? "Nice work. Review the ones you missed." : "Keep going: study the cards, then try again."}</p>
+      ov.innerHTML = `<div class="sc-ovc glass"><button class="ibtn sc-x2" data-ovx>${icon("x")}</button><div class="sc-fin"><span class="big">${icon(pct >= 70 ? "trophy" : "cards")}</span><h2>${z.score} / ${z.qs.length} · ${pct}%</h2><p>${pct >= 90 ? "You're ready." : pct >= 70 ? "Nice work. Review the ones you missed." : "Keep going: study the cards, then try again."}</p>
         ${z.missed.length ? `<div class="sc-miss">${z.missed.map(m => `<div><b>${esc(m.q)}</b><span>${esc(m.a)}</span></div>`).join("")}</div>` : ""}<div class="sc-qrow"><button class="btn primary" data-ovx>Done</button><button class="btn" data-quiz="again">Try again</button></div></div></div>`;
       return; }
-    ov.innerHTML = `<div class="sc-ovc glass"><button class="ibtn sc-x2" data-ovx title="Stop (Esc)">✕</button><div class="sc-ovh"><b>${esc(z.title)}</b><span>${z.i + 1} / ${z.qs.length} · ${z.score} right</span></div><div class="sc-bar"><i style="width:${z.i / z.qs.length * 100}%"></i></div>
+    ov.innerHTML = `<div class="sc-ovc glass"><button class="ibtn sc-x2" data-ovx title="Stop (Esc)">${icon("x")}</button><div class="sc-ovh"><b>${esc(z.title)}</b><span>${z.i + 1} / ${z.qs.length} · ${z.score} right</span></div><div class="sc-bar"><i style="width:${z.i / z.qs.length * 100}%"></i></div>
       <div class="sc-qq">${esc(q.q)}</div><div class="sc-ch">${q.choices.map((c, n) => `<button class="sc-c ${z.picked == null ? "" : n === q.answer ? "right" : n === z.picked ? "wrong" : "dim"}" data-pick="${n}" ${z.picked == null ? "" : "disabled"}><kbd>${n + 1}</kbd>${esc(c)}</button>`).join("")}</div>
-      ${z.picked != null ? `<div class="sc-why ${z.picked === q.answer ? "ok" : "bad"}">${z.picked === q.answer ? "✓ Right!" : "✗ Not quite."} ${esc(q.why || "")}</div><div class="sc-qrow end"><button class="btn primary" data-next>${z.i + 1 < z.qs.length ? "Next" : "See score"} <kbd>Enter</kbd></button></div>` : ""}</div>`;
+      ${z.picked != null ? `<div class="sc-why ${z.picked === q.answer ? "ok" : "bad"}">${z.picked === q.answer ? "Right!" : "Not quite."} ${esc(q.why || "")}</div><div class="sc-qrow end"><button class="btn primary" data-next>${z.i + 1 < z.qs.length ? "Next" : "See score"} <kbd>Enter</kbd></button></div>` : ""}</div>`;
   },
   startSession(deck, all) {
     const due = deckDue(deck), list = shuffle(all || !due.length ? deck.cards : due).map(c => c.id);
@@ -605,7 +606,7 @@ export const School = {
     if (!st.connected) { this.render(); return toast("Connect Google Classroom to load your assignments"); }
     if (st.expired) { toast("Your school sign-in ran out. Sign in again in the window that opened"); return sky.classroom.connect(); }
     if (b) { b.disabled = true; b.innerHTML = `<span class="sc-spin"></span>Refreshing…`; }
-    try { Classroom.st = await sky.classroom.sync(true); linkCourses(); toast(Classroom.st.error ? Classroom.st.error : "✓ Up to date with Google Classroom"); }
+    try { Classroom.st = await sky.classroom.sync(true); linkCourses(); toast(Classroom.st.error ? Classroom.st.error : "Up to date with Google Classroom"); }
     catch (er) { toast(clean(er), true); }
     finally { if (b) { b.disabled = false; b.textContent = "↻ Refresh"; } this.render(); }
   },
@@ -613,7 +614,7 @@ export const School = {
   async planItem(it) {
     const r = await this.ai("plan", { title: it.title, cls: clsName(it.classId) || (it.x && it.x.cls) || "", due: dueText(it), notes: it.notes }, it.key); if (!r) return;
     const e = extra(it); e.steps = (e.steps || []).concat(r.steps.map(s => ({ t: s.t, mins: s.mins, done: false }))); if (r.tip) e.tip = r.tip; save(); S.open = it.key; this.render();
-    toast(`✦ Planned: ${r.steps.length} steps, about ${sum(r.steps, s => s.mins)} minutes`);
+    toast(`Planned: ${r.steps.length} steps, about ${sum(r.steps, s => s.mins)} minutes`);
   },
 
   /* ----- events ----- */
@@ -623,11 +624,11 @@ export const School = {
     if ((b = at("[data-tab]"))) return this.setTab(b.dataset.tab);
     if ((b = at("#scTabs button"))) return this.setTab(b.dataset.v);
     if (at("[data-sc=refresh]")) return this.refresh();
-    if ((b = at("[data-focusmode]"))) { this.setFocus(b.dataset.focusmode === "1"); toast(D.focus ? "🎯 Focus mode on: games and YouTube are locked until your homework is done" : "Focus mode off"); return; }
+    if ((b = at("[data-focusmode]"))) { this.setFocus(b.dataset.focusmode === "1"); toast(D.focus ? "Focus mode on: games and YouTube are locked until your homework is done" : "Focus mode off"); return; }
     if ((b = at("[data-autocards]"))) return this.autoCards(b.dataset.autocards);
     if ((b = at("[data-cardhintoff]"))) { D.cardHintOff = (D.cardHintOff || []).concat(b.dataset.cardhintoff).slice(-50); save(); return this.render(); }
-    if (at("[data-sc=study]")) { Widgets.timer(25); toast("⏱ 25-minute study timer started. You've got this"); return; }
-    if ((b = at("[data-focus]"))) { Widgets.timer(+b.dataset.focus); toast(`⏱ ${b.dataset.focus}-minute study timer started`); return; }
+    if (at("[data-sc=study]")) { Widgets.timer(25); toast("25-minute study timer started. You've got this"); return; }
+    if ((b = at("[data-focus]"))) { Widgets.timer(+b.dataset.focus); toast(`${b.dataset.focus}-minute study timer started`); return; }
     // Classroom
     if ((b = at("[data-cr]"))) {
       const a = b.dataset.cr;
@@ -645,7 +646,7 @@ export const School = {
     if ((b = at("[data-act]")) && it) {
       const a = b.dataset.act;
       if (a === "open") return sky.classroom.open(it.url).catch(er => toast(clean(er), true));
-      if (a === "focus") { Widgets.timer(25); toast(`⏱ 25 minutes on “${it.title}”. You've got this`); return; }
+      if (a === "focus") { Widgets.timer(25); toast(`25 minutes on “${it.title}”. You've got this`); return; }
       if (a === "del") { D.work = D.work.filter(w => w.id !== it.w.id); save(); return this.render(); }
       if (a === "plan") return this.planItem(it);
       if (a === "help") { S.help = { q: `I'm working on “${it.title}”${clsName(it.classId) ? ` for ${clsName(it.classId)}` : ""}. How should I get started?`, a: "", cls: it.classId || "" }; this.setTab("study"); setTimeout(() => { const q = $("#scHelp textarea"); if (q) { q.focus(); q.select(); } }, 60); return; }
@@ -720,7 +721,7 @@ export const School = {
       S.cardTopic = topic; S.cardCls = f.cls.value;
       const r = await this.ai("cards", { topic, notes, cls: clsName(f.cls.value), count: +f.count.value }, "cards"); if (!r) return;
       const d = { id: uid("d"), name: (r.title || topic || "AI deck").slice(0, 50), classId: S.cardCls, cards: r.cards.map(newCard), at: Date.now(), ai: true }; D.decks.push(d); S.deck = d.id; S.cardTopic = ""; save(); this.render();
-      toast(`✦ Made “${d.name}”: ${d.cards.length} cards`); return;
+      toast(`Made “${d.name}”: ${d.cards.length} cards`); return;
     }
     if (f.id === "scAiQuiz") { const topic = v("topic"); if (!topic) return toast("What's the quiz on?", true); const r = await this.ai("quiz", { topic, cls: clsName(f.cls.value), count: 8 }, "tquiz"); if (r) this.startQuiz(r.questions, topic); return; }
     if (f.id === "scHelp") { const q = v("q"); if (!q) return; S.help = { q, a: "", cls: f.cls.value }; const r = await this.ai("explain", { question: q, cls: clsName(f.cls.value) }, "help"); if (r) { S.help.a = r.answer; this.render(); } return; }
@@ -760,8 +761,8 @@ export const School = {
   // for the command bar: homework and flashcard decks, and showing one of them
   search() {
     if (!D) return [];
-    return items().filter(i => !i.done).map(i => ({ i: KINDS[i.kind] ? KINDS[i.kind][0] : "📝", t: i.title, s: `${clsName(i.classId) || "School"} · due ${dueText(i)}`, key: i.key }))
-      .concat(D.decks.map(d => ({ i: "🧠", t: d.name, s: `Flashcards · ${d.cards.length} cards`, deck: d.id })));
+    return items().filter(i => !i.done).map(i => ({ i: (KINDS[i.kind] || KINDS.hw)[0], t: i.title, s: `${clsName(i.classId) || "School"} · due ${dueText(i)}`, key: i.key }))
+      .concat(D.decks.map(d => ({ i: "cards", t: d.name, s: `Flashcards · ${d.cards.length} cards`, deck: d.id })));
   },
   reveal(x) { if (x.deck) { S.tab = "study"; S.deck = x.deck; } else { S.tab = "agenda"; S.filter = "all"; S.open = x.key; } store.local("sc-tab", S.tab); if (this.visible()) this.render(); },
   // homework focus mode: games and YouTube wait until what's due soon is done
@@ -769,20 +770,20 @@ export const School = {
   setFocus(on) { D.focus = !!on; save(); if (this.visible()) this.render(); },
   focusBar() {
     const n = items().filter(i => !i.done && (late(i) || dayStart(i.when) <= addDays(today(), 1))).length;
-    return D.focus ? `<div class="sc-focus on">🎯 <b>Focus mode is on</b><span>Games and YouTube are locked until the ${n} thing${n === 1 ? "" : "s"} due by tomorrow ${n === 1 ? "is" : "are"} done.</span><button class="btn xs ghost" data-focusmode="0">Turn off</button></div>`
-      : n ? `<div class="sc-focus">🎯 <span>${n} thing${n === 1 ? "" : "s"} due by tomorrow. Lock games and YouTube until ${n === 1 ? "it's" : "they're"} done?</span><button class="btn xs primary" data-focusmode="1">Focus mode</button></div>` : "";
+    return D.focus ? `<div class="sc-focus on"><b>Focus mode is on</b><span>Games and YouTube are locked until the ${n} thing${n === 1 ? "" : "s"} due by tomorrow ${n === 1 ? "is" : "are"} done.</span><button class="btn xs ghost" data-focusmode="0">Turn off</button></div>`
+      : n ? `<div class="sc-focus"><span>${n} thing${n === 1 ? "" : "s"} due by tomorrow. Lock games and YouTube until ${n === 1 ? "it's" : "they're"} done?</span><button class="btn xs primary" data-focusmode="1">Focus mode</button></div>` : "";
   },
   // tests coming up: offer flashcards made by Sky
   cardHints() {
     const t0 = today(), tests = items().filter(i => !i.done && i.kind === "test" && dayStart(i.when) >= t0 && dayStart(i.when) <= addDays(t0, 5) && !D.decks.some(d => d.from === i.key) && !(D.cardHintOff || []).includes(i.key));
     return tests.slice(0, 2).map(i => { const n = Math.round((dayStart(i.when) - t0) / day);
-      return `<div class="sc-cardhint" data-key="${esc(i.key)}">🧠 <span><b>${esc(i.title)}</b> is ${n === 0 ? "today" : n === 1 ? "tomorrow" : "in " + n + " days"}. Want Sky to make flashcards for it?</span><button class="btn xs primary" data-autocards="${esc(i.key)}" ${S.busy.cards ? "disabled" : ""}>${S.busy.cards ? "✦ Making…" : "✦ Make flashcards"}</button><button class="ibtn xs" data-cardhintoff="${esc(i.key)}" title="No thanks">✕</button></div>`; }).join("");
+      return `<div class="sc-cardhint" data-key="${esc(i.key)}"><span><b>${esc(i.title)}</b> is ${n === 0 ? "today" : n === 1 ? "tomorrow" : "in " + n + " days"}. Want Sky to make flashcards for it?</span><button class="btn xs primary" data-autocards="${esc(i.key)}" ${S.busy.cards ? "disabled" : ""}>${S.busy.cards ? "Making…" : "Make flashcards"}</button><button class="ibtn xs" data-cardhintoff="${esc(i.key)}" title="No thanks">${icon("x")}</button></div>`; }).join("");
   },
   async autoCards(key) {
     const it = find(key); if (!it) return;
     const r = await this.ai("cards", { topic: it.title, notes: it.notes, cls: clsName(it.classId) || (it.x && it.x.cls) || "", count: 15 }, "cards"); if (!r) return;
     const d = { id: uid("d"), name: (r.title || it.title).slice(0, 50), classId: it.classId || "", cards: r.cards.map(newCard), at: Date.now(), ai: true, from: key }; D.decks.push(d); save();
-    toast(`🧠 ${d.cards.length} flashcards ready for “${it.title}”. Find them on the Study tab`); this.render();
+    toast(`${d.cards.length} flashcards ready for “${it.title}”. Find them on the Study tab`); this.render();
   },
   // for the assistant and the daily briefing
   brief() {
