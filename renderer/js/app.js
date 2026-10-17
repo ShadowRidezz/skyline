@@ -26,7 +26,7 @@ const DEFAULTS = {
           { name: "Gmail", url: "https://mail.google.com" }, { name: "Reddit", url: "https://www.reddit.com" }],
   widgets: null, widgetOrder: null, focusMin: 25, breakMin: 5,
   lyrics: true, visualizer: true, notifyTrack: false, ambientLyrics: true,
-  closeToTray: true, startHidden: false, hotkeyOn: true, hotkey: "Alt+Shift+S", asst: { ...ASST_DEFAULTS },
+  closeToTray: true, startHidden: false, fastStart: true, hotkeyOn: true, hotkey: "Alt+Shift+S", asst: { ...ASST_DEFAULTS },
 };
 const S = () => Settings.data;
 const save = () => Settings.save();
@@ -180,7 +180,7 @@ function renderSettings() {
   $("#setReduce").checked = Themes.reduceOn(); setSeg($("#setFps"), String(d.fps));
   $("#setSched").checked = !!d.schedule.on;
   $$("[data-sched]").forEach(sel => { sel.innerHTML = Themes.all().map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join(""); sel.value = d.schedule[sel.dataset.sched]; sel.disabled = !d.schedule.on; });
-  $("#setTray").checked = s.closeToTray !== false; $("#setHidden").checked = !!s.startHidden; $("#setHotkeyOn").checked = s.hotkeyOn !== false;
+  $("#setTray").checked = s.closeToTray !== false; $("#setHidden").checked = !!s.startHidden; $("#setFast").checked = s.fastStart !== false; $("#setHotkeyOn").checked = s.hotkeyOn !== false;
   $("#setHotkey").value = s.hotkey || "Alt+Shift+S"; $("#setHotkey").disabled = s.hotkeyOn === false;
   if (sky) sky.ai.status().then(a => {
     $("#aiBadge").textContent = a.configured ? (a.source === "env" ? "Connected (environment key)" : "Connected · " + a.hint) : "Not connected";
@@ -227,6 +227,7 @@ function settingsEvents() {
   bind("#setSched", "change", e => { Themes.doc.schedule.on = e.target.checked; Themes.persist(); renderSettings(); Themes.scheduleTick(); });
   $$("[data-sched]").forEach(sel => sel.addEventListener("change", () => { Themes.doc.schedule[sel.dataset.sched] = sel.value; Themes.persist(); Themes.scheduleTick(); }));
   bind("#setTray", "change", e => { S().closeToTray = e.target.checked; save(); });
+  bind("#setFast", "change", e => { S().fastStart = e.target.checked; save(); });
   bind("#setHidden", "change", e => { S().startHidden = e.target.checked; save(); if (sky && $("#setLogin").checked) sky.app.setLogin(true, e.target.checked); });
   bind("#setLogin", "change", async e => { if (!sky) return; const on = await sky.app.setLogin(e.target.checked, !!S().startHidden); e.target.checked = on;
     toast(on ? "Skyline will open when Windows starts" : "Skyline won't open with Windows"); });
@@ -342,7 +343,8 @@ async function start() {
   Settings.data = { ...DEFAULTS, ...(store.cached("settings") || {}) };
   FX.init(() => uiPrefs(), () => Themes.reduceOn());
   Interface.init();
-  const playIntro = FX.level() !== "off" && uiPrefs().intro !== false;
+  const fast = (store.cached("settings") || {}).fastStart !== false;   // fast start: the clock first, everything else right after
+  const playIntro = !fast && FX.level() !== "off" && uiPrefs().intro !== false;
   if (playIntro) document.body.classList.add("booting");
   Scene.init($("#sceneCanvas"));
   Themes.start();
@@ -357,21 +359,32 @@ async function start() {
   $("#ambientExit").onclick = () => ambient(false);
   await Widgets.init();
   await Music.init(S());
-  await Songs.init(Music);
-  await Games.init(go);
-  await Pages.init();
-  Assistant.init({ go, ambient, studioRefresh: () => Studio.refresh() });
-  Extras.init({ go, ambient, shortcuts });
-  Fun.init({ go });
   Social.init();   // friends, messages and calls: live from the start, so calls and messages reach you on any page
-  if (sky) sky.tray.onAction(a => {
-    if (a.type === "theme") Themes.select(a.id, { quiet: true }).then(() => { Themes.persist(); Studio.refresh(); });
-    if (a.type === "ambient") ambient(true);
-  });
-  Themes.on(w => { if (w === "select") { Themes.trayList(); if (view === "settings") renderSettings(); } });
-  skyClicks();
+  // the heavier parts (your songs, games, school, money, YouTube, Minecraft, the assistant). With fast start they load
+  // just after the clock is on screen; then whatever page is open is drawn again with everything in it.
+  const rest = async () => {
+    await Songs.init(Music);
+    await Games.init(go);
+    await Pages.init();
+    Assistant.init({ go, ambient, studioRefresh: () => Studio.refresh() });
+    Extras.init({ go, ambient, shortcuts });
+    Fun.init({ go });
+    if (sky) sky.tray.onAction(a => {
+      if (a.type === "theme") Themes.select(a.id, { quiet: true }).then(() => { Themes.persist(); Studio.refresh(); });
+      if (a.type === "ambient") ambient(true);
+    });
+    Themes.on(w => { if (w === "select") { Themes.trayList(); if (view === "settings") renderSettings(); } });
+    skyClicks();
+  };
+  if (!fast) await rest();
   if (!picked) go("home");
   document.body.classList.add("ready");
+  if (fast) {
+    await new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));   // (after the first paint)
+    await rest();
+    if (view === "games") Games.show();
+    Pages.show(view); Extras.onView(view); Fun.onView(view);
+  }
   if (playIntro) {
     Scene.intro();
     await FX.intro();
