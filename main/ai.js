@@ -304,8 +304,9 @@ class AI {
   }
   engineOllama(prompt, existing, abort, onProgress) {   // only when you've allowed it: far weaker than Claude
     const want3d = /visual style:[^\n]*\b(3d|realistic)\b|\b3d\b/i.test(prompt) || Object.values(existing || {}).some(t => /three\.module\.js/.test(t));
-    const local = pickCoder(this.brain.oll.models || []);
-    return { claude: false, name: local + " on this PC", ask: async (text, images = [], label = "") => {
+    let local = pickCoder(this.brain.oll.models || []);
+    return { claude: false, get name() { return (local || "Ollama") + " on this PC"; }, ask: async (text, images = [], label = "") => {
+      if (!local) local = pickCoder(await this.brain.ollamaModels(true, true));   // (starts Ollama now, only because you're building with it)
       let out = "", lastFile = "", tick = 0;
       if (!label) onProgress({ phase: "thinking", thinking: `Loading ${local} on your graphics card…` });
       const r = await net.fetch(OLLAMA + "/api/chat", { method: "POST", signal: abort.signal, headers: { "Content-Type": "application/json" },

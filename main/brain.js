@@ -52,13 +52,14 @@ class Brain {
     return ok;
   }
   ollamaExe() { return [path.join(process.env.LOCALAPPDATA || "", "Programs", "Ollama", "ollama.exe")].find(isFile) || null; }
-  async ollamaModels(force) {
+  // start: only when you're actually talking to it. Starting Ollama opens its own windows, so checks never do.
+  async ollamaModels(force, start) {
     if (!force && Date.now() - this.oll.at < 60e3) return this.oll.models;
     const list = async () => ((await getJson(OLLAMA + "/api/tags", 1500)).models || []).map(m => m.name).filter(n => !/embed/i.test(n));
     let models = [];
     try { models = await list(); }
-    catch (e) {   // installed but not running: start it quietly in the background
-      const exe = this.ollamaExe();
+    catch (e) {   // installed but not running: start it quietly in the background (only when asked to answer)
+      const exe = start && this.ollamaExe();
       if (exe) {
         // Ollama's own tray app runs the server with no windows. Started "detached" instead, the server has no console,
         // so every model it loads would open a visible command window.
@@ -84,7 +85,7 @@ class Brain {
     if (!force && this.auth.at) { claude = this.auth.ok; if (Date.now() - this.auth.at > (this.auth.ok ? 10 : 2) * 60e3 && !this.checking) { this.checking = true; this.claudeOk(true).finally(() => { this.checking = false; }); } }
     else claude = await this.claudeOk(force);
     const models = await this.ollamaModels(force);
-    const local = this.ollamaModel(models);
+    const local = this.ollamaModel(models) || (this.ollamaExe() ? "ollama" : "");   // (installed but not running: it starts when it's needed)
     const gpt = this.gpt ? await this.gpt.ok(force).catch(() => false) : false;
     // which brain: the one you picked (if it's ready), else Claude, then ChatGPT, then the AI on this PC
     const ready = { claude, chatgpt: gpt, ollama: !!local };
@@ -153,7 +154,7 @@ class Brain {
     return out;
   }
   async askOllama(prime, turn, history) {
-    const models = await this.ollamaModels(), model = this.ollamaModel(models); if (!model) throw new Error("No AI model is installed in Ollama");
+    const models = await this.ollamaModels(false, true), model = this.ollamaModel(models); if (!model) throw new Error("No AI model is installed in Ollama");
     const messages = [{ role: "system", content: prime }];
     for (const h of history || []) messages.push({ role: "user", content: h.said }, { role: "assistant", content: JSON.stringify({ reply: h.reply }) });
     messages.push({ role: "user", content: turn });
