@@ -430,11 +430,42 @@ function msgClick(e) {
 function msgMenu(e) {
   const row = e.target.closest(".sx-msg"); if (!row || e.target.closest("textarea, a, video")) return;
   const m = msg(row.dataset.mid); if (!m || m._local || m.deleted_at) return;
-  e.preventDefault(); openMsgMenu(m, null, { x: e.clientX, y: e.clientY });
+  e.preventDefault(); openMsgMenu(m, null, { x: e.clientX, y: e.clientY }, picAt(e.target));
 }
-function openMsgMenu(m, anchor, at) {
+// the picture under the cursor: a sent picture (its file), or a GIF / sticker (its address)
+function picAt(target) {
+  const b = target.closest(".sx-img"); if (b) return { url: fileUrl(b.dataset.view), name: b.dataset.name || "picture" };
+  const img = target.closest("img"); if (img && img.closest(".sx-msg-body, .sx-sticker, .sx-gif, .sx-files") && !img.closest(".sx-av")) return { url: img.currentSrc || img.src, name: (img.alt || "picture").replace(/[^\w .-]/g, "") || "picture" };
+  return null;
+}
+async function pictureBlob(url) {   // PC: Skyline fetches it (the page may not); phone: fetch it directly
+  if (sky.picture) { const p = await sky.picture(url); return new Blob([p.bytes], { type: p.type }); }
+  return (await fetch(url)).blob();
+}
+async function copyPicture(url) {   // the clipboard takes PNG pictures: anything else is drawn into one first (a GIF copies its first frame)
+  const blob = await pictureBlob(url);
+  const png = blob.type === "image/png" ? blob : await new Promise((ok, no) => {
+    const im = new Image(); im.crossOrigin = "anonymous";
+    im.onload = () => { const cv = document.createElement("canvas"); cv.width = im.naturalWidth; cv.height = im.naturalHeight; cv.getContext("2d").drawImage(im, 0, 0); cv.toBlob(b => b ? ok(b) : no(new Error("png")), "image/png"); };
+    im.onerror = () => no(new Error("load")); im.src = URL.createObjectURL(blob);
+  });
+  if (sky.copyImage) return sky.copyImage(await new Promise(ok => { const r = new FileReader(); r.onload = () => ok(r.result); r.readAsDataURL(png); }));   // PC: works even without focus
+  await navigator.clipboard.write([new ClipboardItem({ "image/png": png })]);
+}
+async function savePicture(url, name) {
+  try {
+    const blob = await pictureBlob(url), ext = (blob.type.split("/")[1] || "png").replace("jpeg", "jpg").replace("svg+xml", "svg");
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = /\.[a-z0-9]{2,4}$/i.test(name) ? name : `${name}.${ext}`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  } catch (e) { toast("Couldn't save that picture.", true); }
+}
+function openMsgMenu(m, anchor, at, pic) {
   closeMenu();
   const t = T(), mine = m.sender === S.me.id, items = [
+    ...(pic && pic.url ? [
+      ["Copy image", "copy", () => copyPicture(pic.url).then(() => toast("Image copied")).catch(() => toast("Couldn't copy that picture.", true))],
+      ["Save image", "download", () => savePicture(pic.url, pic.name)],
+      ["Copy image link", "link", () => (sky.copy ? sky.copy(pic.url) : navigator.clipboard.writeText(pic.url)).then(() => toast("Link copied"))],
+    ] : []),
     ["Reply", "reply", () => { reply = m; extra(); $("#sxText").focus(); }],
     ["Add reaction", "smilePlus", () => pickEmoji(anchor || document.querySelector(`.sx-msg[data-mid="${CSS.escape(m.id)}"]`), x => react(m, x), { save: saveSettings })],
     ...(m.body ? [["Copy text", "copy", () => (sky.copy ? sky.copy(m.body) : navigator.clipboard.writeText(m.body)).then(() => toast("Copied"))]] : []),
@@ -503,13 +534,19 @@ function onMessage(ch) {
     return;
   }
   if (ch.type !== "INSERT" || S.seenMsgs.has(m.id)) return; S.seenMsgs.add(m.id);
-  if (typing.delete(m.sender)) drawTyping();
+  // a message that arrives live but was sent long ago (the live feed sometimes hands old rows over again after
+  // reconnecting): it goes in its place, quietly. No pop-up, no unread count, never at the bottom.
+  const old = Date.now() - new Date(m.created_at).getTime() > 10 * 60e3;
+  if (!old && typing.delete(m.sender)) drawTyping();
   const full = { ...m, reactions: [], reply: null };
   if (c && (c.loaded || c.loading)) {   // (while loading too: the load keeps it)
     if (m.sender === S.me.id && c.msgs.some(x => x.client_id && x.client_id === m.client_id)) return;   // our own, being confirmed by send
-    c.msgs.push(full);
+    if (c.msgs.some(x => x.id === m.id)) return;   // already on screen
+    const at = old ? c.msgs.findIndex(x => x.created_at && new Date(x.created_at) > new Date(m.created_at)) : -1;
+    if (at >= 0) c.msgs.splice(at, 0, full); else c.msgs.push(full);
     if (m.reply_to || (m.meta && m.meta.files)) refresh(m.id, key);   // fetch the quote / file links
   }
+  if (old) { if (cur === key) draw(false); return; }
   if (isCh) return channelMessage(m, key, full);
   const other = key, f = friend(other);
   if (f) f.last_message_at = m.created_at;

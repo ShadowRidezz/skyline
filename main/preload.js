@@ -149,6 +149,8 @@ contextBridge.exposeInMainWorld("sky", {
     notify: n => ipcRenderer.invoke("social:notify", n),
     onAuth: on("social:auth"), onChange: on("social:change"), onLive: on("social:live"), onOpen: on("social:open"),
   },
+  picture: url => ipcRenderer.invoke("app:picture", url),   // { type, bytes } of a picture message
+  copyImage: dataUrl => ipcRenderer.invoke("app:copyImage", dataUrl),   // a PNG data: URL onto Windows' clipboard
   copy: text => ipcRenderer.invoke("app:copy", text),   // Windows' clipboard (works even when the window isn't focused)
   update: {
     status: () => ipcRenderer.invoke("update:status"),

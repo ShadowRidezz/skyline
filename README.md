@@ -3,7 +3,7 @@
 A living night-city dashboard for Windows, with your music, your friends, your games and your school in one place.
 Your desktop becomes a city at night, and its lights move with whatever you're listening to.
 
-<!-- version -->**Latest version: 1.29.2**<!-- /version -->
+<!-- version -->**Latest version: 1.29.3**<!-- /version -->
 
 ## Get it
 
@@ -39,7 +39,8 @@ to reorder them, or turn them off.
 **Social:** your Skyline account, with friends and messages like Discord. Forgot your password? You get a 6-digit
 code by email: type it in and you're signed in, then pick a new password or just carry on.
 - Direct messages with pictures, GIF search (with favorites and recents), stickers, emoji, replies and typing
-  indicators. Right-click a sticker to delete it.
+  indicators. Right-click a picture, GIF or sticker to **copy it, save it or copy its link** (like Discord);
+  right-click a sticker to delete it.
 - **Servers** with text and voice channels, invites, and roles for the owner.
 - Voice and video calls, screen sharing (full screen, high quality), and **Go Live** in voice channels.
 - **Clear voice on calls:** your mic is sent at full quality (64 kbps Opus, or 128 kbps in Studio) with rumble taken

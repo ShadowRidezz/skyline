@@ -451,6 +451,20 @@ function ipc() {
   ipcMain.handle("mini:state", () => !!(mini && !mini.isDestroyed()));
   ipcMain.handle("main:show", () => showWindow());
   ipcMain.handle("notify", (e, n) => notify(String(n.title || "Skyline"), String(n.body || "")));
+  ipcMain.handle("app:picture", async (e, url) => {
+    url = String(url || "");
+    if (url.startsWith("data:image/")) { const [head, b64] = url.split(","); return { type: head.slice(5).split(";")[0], bytes: Buffer.from(b64 || "", "base64") }; }
+    if (!/^https:\/\//.test(url)) throw new Error("not a picture address");
+    const r = await net.fetch(url); if (!r.ok) throw new Error("HTTP " + r.status);
+    const type = (r.headers.get("content-type") || "").split(";")[0]; if (!type.startsWith("image/")) throw new Error("not a picture");
+    const bytes = Buffer.from(await r.arrayBuffer()); if (bytes.length > 40e6) throw new Error("too big");
+    return { type, bytes };
+  });
+  ipcMain.handle("app:copyImage", async (e, url) => {   // Electron 44's clipboard: write([new ClipboardItem({...})])
+    const m = /^data:image\/png;base64,(.+)$/.exec(String(url || "")); if (!m) throw new Error("not a PNG");
+    const { clipboard, ClipboardItem } = require("electron");
+    await clipboard.write([new ClipboardItem({ "image/png": new Blob([Buffer.from(m[1], "base64")], { type: "image/png" }) })]); return true;
+  });
   ipcMain.handle("app:copy", (e, text) => { require("electron").clipboard.writeText(String(text || "").slice(0, 20000)); return true; });
   ipcMain.handle("app:quit", () => { quitting = true; app.quit(); });
 }
